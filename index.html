@@ -518,6 +518,7 @@ td.num,th.num{text-align:right}
 .recol-tier .rt-receta{margin-top:auto;display:flex;flex-wrap:wrap;gap:4px}
 .recol-tier .rt-receta .chip{margin:0}
 .recol-tier .rt-pie{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.recol-tier .rt-bts{display:flex;flex-wrap:wrap;gap:6px}
 .recol-tier .rt-pie .num{font-size:13px;color:var(--apagado)}
 .encs{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:8px}
 .enc{background:#0d1f23;border:1px solid var(--linea);border-radius:4px;padding:10px 12px}
@@ -782,7 +783,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie">Partida única · se guarda en este dispositivo · v153</p>
+      <p class="menu-pie">Partida única · se guarda en este dispositivo · v154</p>
     </div>
   </div>
 
@@ -5012,14 +5013,16 @@ function objetivoRecol() {
   const M = BAL.materiales[n0.mat];
   if (RC.instalados.some(r => r.nodo === n0.id)) return { tipo: 'no', n: n0, motivo: 'Esta veta ya tiene un recolector' };
   if (M.jefe) return { tipo: 'no', n: n0, motivo: `${M.n}: los botines de jefe no se pueden recolectar` };
-  const id = idsRecol().find(k => (I.recolABordo[k] | 0) > 0 && admiteRecol(tierRecol(k), n0));
+  const aptos = idsRecol().filter(k => (I.recolABordo[k] | 0) > 0 && admiteRecol(tierRecol(k), n0));
+  const id = aptos.find(k => instaladosTier(k) < BAL.recolectores.maxActivos);   // v152: el tope es por tier (3 R1 + 3 R2 + 3 R3)
+  if (aptos.length && !id) return { tipo: 'no', n: n0, motivo: `Ya tienes ${BAL.recolectores.maxActivos} ${aptos.map(k => tierRecol(k).et).join(' y ')} instalados: retira uno` };
   if (!id) {
     const min = tierMinimoRecol(n0), T = min && tierRecol(min);
     return { tipo: 'no', n: n0, motivo: T ? `${M.n}${M.raro ? ' (raro)' : ''} a ${fmt(n0.y)} m: necesitas un ${T.n} (${T.et})` : `${M.n}: ningún recolector aguanta aquí` };
   }
-  if (RC.instalados.length >= BAL.recolectores.maxActivos) return { tipo: 'no', n: n0, motivo: `Ya tienes ${RC.instalados.length} recolectores instalados: retira uno` };
   return { tipo: 'instalar', n: n0, id };
 }
+function instaladosTier(t) { return G.recolectores.instalados.filter(r => r.tier === t).length; }
 function usarRecolector() {
   const I = inm, s = I.sub, o = I.objRecol;
   if (!o || I.minado || I.recogiendo) return;
@@ -11710,7 +11713,7 @@ function htmlMuelle() {
 function listaRecolHTML() {
   const RC = G.recolectores, ins = RC.instalados, max = BAL.recolectores.maxActivos;
   const stock = idsRecol().filter(id => RC.stock[id] > 0).map(id => `${tierRecol(id).et} ×${RC.stock[id]}`).join(', ');
-  const pie = `<p class="nota">Instalados <b class="num">${ins.length}/${max}</b>${stock ? ` · bajan a bordo: ${stock}` : ''}</p>`;
+  const pie = `<p class="nota">Instalados ${idsRecol().map(t => `${tierRecol(t).et} <b class="num">${instaladosTier(t)}/${max}</b>`).join(' · ')}${stock ? ` · bajan a bordo: ${stock}` : ''}</p>`;
   if (!ins.length) return pie + `<p class="vacio">${stock ? 'Instálalos junto a una veta con G (o tocando su aviso) en tu próxima inmersión.' : 'Ninguno instalado. Se fabrican en el Taller y producen solos, también con el juego cerrado.'}</p>`;
   let valor = 0;
   const filas = [...ins].sort((a, b) => a.y - b.y).map(r => {
@@ -11731,11 +11734,11 @@ function htmlRecolTaller() {
       <p class="nota">${T.raros ? 'Vetas comunes y raras' : 'Solo vetas comunes'}, hasta <b class="num">${fmt(T.profMax)} m</b>.</p>
       <p class="nota"><b class="num">${fmt1(T.ritmo)} u/h</b>${T.raros ? ` (raras ${fmt1(T.ritmo * RB.factorRaro)} u/h)` : ''} · guarda ${T.cap} u · lleno en ${durLarga(horas * 3600000)} · pesa <b class="num">${fmt(T.peso || 0)} kg</b> a bordo</p>
       <div class="rt-receta">${recetaHTML(T.receta)}</div>
-      <div class="rt-pie"><span class="num">En almacén: ${RC.stock[id] | 0}</span><button class="boton peq" type="button" data-accion="fabricarRecol:${id}" ${puede ? '' : 'disabled'}>Fabricar · ${fmt(T.cr || 0)} cr</button></div></div>`;
+      <div class="rt-pie"><span class="num">En almacén: ${RC.stock[id] | 0} · instalados ${instaladosTier(id)}/${RB.maxActivos}</span><span class="rt-bts">${(RC.stock[id] | 0) > 0 ? `<button class="boton peq" type="button" data-accion="desmantelarRecol:${id}" title="Devuelve la mitad de los materiales de la receta">Desmantelar</button>` : ''}<button class="boton peq" type="button" data-accion="fabricarRecol:${id}" ${puede ? '' : 'disabled'}>Fabricar · ${fmt(T.cr || 0)} cr</button></span></div></div>`;
   }).join('');
   return `<section class="placa">
-      <div class="cab-placa"><h2>Recolectores <span class="nota">· GDD 9.8</span></h2><span class="pill">${RC.instalados.length}/${RB.maxActivos} instalados</span></div>
-      <p class="nota">Se instalan junto a una veta con <kbd>G</kbd> (o tocando su aviso) y extraen solos, también con el juego cerrado, hasta llenarse. Para cobrar hay que bajar a vaciarlos con Acción; con <kbd>G</kbd> se retiran y vuelven a bordo. Bajan a bordo todos los que tengas fabricados. Cuanto más hondo y más rara la veta, más tier hace falta. Los botines de jefe no se pueden recolectar.</p>
+      <div class="cab-placa"><h2>Recolectores <span class="nota">· GDD 9.8</span></h2><span class="pill">${RB.maxActivos} por tier</span></div>
+      <p class="nota">Se instalan junto a una veta con <kbd>G</kbd> (o tocando su aviso) y extraen solos, también con el juego cerrado, hasta llenarse. Para cobrar hay que bajar a vaciarlos con Acción; con <kbd>G</kbd> se retiran y vuelven a bordo. Bajan a bordo los que elijas en el Muelle. Cuanto más hondo y más rara la veta, más tier hace falta. Puedes tener 3 instalados de cada tier a la vez, así los de tier bajo siguen trabajando en las zonas altas; los que sobren en el almacén se desmantelan y devuelven la mitad de sus materiales. Los botines de jefe no se pueden recolectar.</p>
       <div class="recol-tiers">${tarjetas}</div>
     </section>`;
 }
@@ -13078,6 +13081,7 @@ function htmlBalance() {
         <li>Trofeos del kraken y del Guardián del Abismo rehechos (v151; lo pidió el autor), con la calidad del diente y el pico. Farol del kraken: tarro cilíndrico de cristal con tapa de latón roscada, líquido con menisco y burbujas, la punta del brazo pálida y enroscada con un filamento, y el fotóforo como lo describe su texto (bolsa en forma de huevo, reflector blanco detrás, lente delante y un resto de luz dentro); etiqueta de papel «Magnapinna · 5.600 m». Cristal del latido: agujas talladas con luz que sube desde la base, fracturas internas, los hilos con gotas de luz, dos anillos tenues del latido y una base de basalto con caras y poros.</li>
         <li>Avisos, perlas y tortugas (v152; tras jugar bastante, el autor y un amigo que ya lo prueba desde GitHub). Los avisos de bioma salen enteros solo la primera vez (quedan en el Cuaderno de campo); en las siguientes inmersiones, solo el nombre y la franja. Lo mismo con el sifonóforo. En la semilla del autor no había ni una perla: salían al azar y con algunas semillas ninguna; ahora cada tramo de 50 m entre 60 y 200 m tiene un banco de perlas fijo, y las vetas al azar las eligen casi el doble (de 3 a 6 vetas de perla por partida, que vuelven a crecer como cualquier veta rara). Los encargos de suministro de materiales raros piden 1 o 2 unidades (antes de 3 a 8, imposible con las perlas). La fauna ya no es la misma en cada inmersión con la misma semilla (antes, si en tu semilla no salía una tortuga, no salía nunca), y las tortugas son algo más frecuentes.</li>
         <li>Número de versión al pie del menú principal (v153), para saber de un vistazo qué versión tiene cada probador.</li>
+        <li>Recolectores por tier (v154; el autor vio que al fabricar el tier siguiente los anteriores se quedaban inservibles). El tope pasa de 3 instalados en total a 3 de cada tier (3 R1 + 3 R2 + 3 R3): cada tier es su propia red, y los de tier bajo siguen trabajando en las zonas altas, que es justo lo que pide el GDD (9.8: liberar al jugador de farmear lo ya dominado). Sustituye a la mejora de base «Centro de Control de Recolectores» que preveía el GDD para ampliar el límite: aquí cada tier nuevo es la ampliación. Al instalar se usa el tier más bajo que sirve para esa veta y que aún tiene hueco. Los que sobran en el almacén se pueden desmantelar en el Taller: devuelven la mitad de los materiales de la receta (no los créditos).</li>
         <li>Sensor de sigilo (13.3, la otra familia del punto Dorsal; diseño aprobado por el autor): una cámara de luz roja lejana (como la Eye-in-the-Sea de Edith Widder: casi toda la fauna profunda no ve el rojo) y un revestimiento anecoico (las losetas que absorben el sonido en los submarinos). Se fabrica una vez en Piezas de equipo (4 Aceite de fauna de aguas frías, 3 Aleación titanio-cobalto y 2 Geodas de cuarzo, 1.800 cr; 3 kg: todo de la Batial y sus cuevas, así que llega antes que el dormilón) y se monta o desmonta antes de bajar; montado, sustituye a los Focos fabricados: haz rojo de 26 m, más estrecho que el T1, sin foco ventral ni trasero y con halo de 6 m, pero con él encendido la fauna te detecta como si fueras a oscuras; motor y taladro hacen un 30 % menos de ruido. Cambia los jefes sin reglas nuevas: al calamar no se le puede deslumbrar (tampoco ve el rojo), el kraken no ataca más a menudo por tu luz (su latido sí la reinicia, como cualquier aparato eléctrico), el dormilón te oye menos y el Guardián del Abismo se inquieta menos por el ruido. Un solo nivel (el GDD da tiers a cada familia; aquí no hacen falta). En el panel, el botón de luces dice «Rojo» y en el plano del Taller el punto Dorsal dice «Sigilo». Pendiente de pasar al GDD.</li>
         <li>Hilo narrativo (sección 11): el juego ocurre tres años después de «Lo que queda debajo». Caronte (1.000 m), Estigia (4.000 m, con la T-1 del Consorcio al lado) y Leteo (6.000 m, sin esfera) están sobre cornisas fijas, apagadas, con páginas del diario de Lucía. Por debajo de 4.000 m se oye a veces su señal (tres cortos y uno largo). Las páginas son un borrador para que el autor las revise. Pendiente de pasar a 4.6bis y 11.2: la expedición ya no «desapareció»; su destino se conoce, pero su señal sigue llegando.</li>
         <li>Sonido (sección 15), fases 1 y 2 de 4: todo sintetizado por código en la demo (en Unity irán grabaciones y un AudioMixer). Tres canales: ambiente, submarino y efectos. Ambiente que cambia con la profundidad: oleaje cerca de la superficie, rumor del agua cada vez más grave, un dron desde los 500 m que late más inquieto en la Abisal y suma una nota disonante, gruñidos lejanos cada vez más frecuentes y agua más sorda dentro de las cuevas. Submarino: motor que sube de tono con el empuje (y se corta en un fallo de motor), hélice «troceada» al ritmo de las palas, agua rozando el casco según la velocidad y zumbido de cabina. Crujidos del casco desde el 80 % de la profundidad segura, más largos y graves al acercarte, casi continuos por debajo. En pausa o acoplado, el exterior se oye lejos. Primeras muestras grabadas, de prueba (hechas por el autor con Suno): la hélice de submarino suena de fondo en el menú principal, una copia tras otra alternando de lado; y un ambiente de la inmensidad del océano entra en las inmersiones desde los 700 m, cada vez más lento y grave. Tras escucharlo pidió el motor más grave y más bajo y el mar más de fondo (bus de ambiente a −6 dB). En el menú, por encima de las hélices y suena la firma de Lucía (la primera a los 2,5 s y luego cada 14–24 s, sin horario fijo) (tres cortos y uno largo, grave, ondulante y con un eco lejano); es la misma que se oye en las inmersiones por debajo de 4.000 m, más grave cuanto más hondo. Base (fase 3 adelantada): grabación de muelle tranquilo hecha por el autor con Suno, en bucle sin costura (parte central, golpes sueltos aplanados y dos voces desfasadas para que no se reconozca la repetición), muy baja; encima, sonidos sintetizados sueltos: crujidos de amarras, algún golpe metálico lejano del taller y alguna gaviota. Al bajar a la inmersión, el muelle se cruza con el agua. Clic de consola de latón al pulsar las pestañas de la base y los botones del menú (se descartó usar el pitido de la firma de Lucía para no gastar su significado). Volúmenes en Opciones (fase 4 adelantada): Ambiente, Efectos y Música, guardados con la partida. Primera música (GDD 15.2), hecha por el autor con Suno: una pista instrumental de 6 min que suena en bucle en el menú y en la zona Fótica, muy baja por defecto (se apaga entre los 140 y los 200 m y sigue donde iba al volver). Ping de sonar en las cuevas: tono limpio con cola larga y reverberación de roca, y tres ecos (pared más cercana, intermedia y más lejana) sincronizados con los ecos que se dibujan y del lado por el que vuelven. En el fondo del menú cruza de vez en cuando, lenta y difusa, la sombra del Guardián de la Plataforma (el tiburón jefe de la Fótica, 10.2), por detrás del submarino y de la nieve marina, con un rumor grave al pasar: la primera a los 10 s, siempre de derecha a izquierda, y luego cada 35–55 s en cualquier sentido. Silueta de tiburón blanco con proporciones reales (dorsal de un 12 % del largo, pectorales en hoz, cola en media luna), con el cuerpo ondulando hacia la cola y teñida del azul del agua honda en vez de negro. Pantalla de inicio en el menú («Pulsa cualquier tecla / Toca la pantalla para empezar»): el navegador no deja sonar nada hasta el primer toque, así el ambiente del menú se oye siempre; ese toque no pulsa ningún botón. En Unity no hace falta (una aplicación nativa puede sonar al abrirse), aunque la pantalla de «pulsa para empezar» es habitual. Fase 2, taladro y fauna: el taladro suena distinto en cada estado del minijuego de minería (9.11), como información de juego: con poca potencia, ahogado y a mordiscos; en la banda óptima, liso y con un zumbido afinado; en sobrecarga, más forzado y con chasquidos de roca cada vez más seguidos (todo en graves y lento, como una perforadora pesada: con agudos sonaba a motosierra) cuanto más cerca está la fractura. La fractura es un estallido con golpe grave, cascotes contra el casco y burbujas; al terminar la extracción, la roca se suelta y se cierra la escotilla de la bodega. Recoger orgánicos sorbe agua. Fauna: al detectarte, el agua que desplaza al girar hacia ti (del lado por el que viene y más grave cuanto más grande) y un aviso suave de contacto en cabina; mientras te persigue, su estela se oye crecer al acercarse; la embestida contra el blindaje suena a chapa que aguanta (golpe sordo, retumbo y placas sueltas) y contra el casco sin blindaje a algo que cede (más grave y largo, crujido de la estructura, siseo de agua y alarma de casco), para distinguirlas sin mirar las barras. También el choque contra la roca y el chorro de tinta del pulpo. Añade al GDD el ambiente de la base y de las estaciones, el sonido del taladro, el acoplamiento, el pulso y el sonar (fases siguientes).</li>
@@ -13192,6 +13196,16 @@ function accionBase(b) {
     case 'frontal2': G.frontal2 = x === 'ninguna' || !frontalValido(x, G.niveles) || x === G.frontal ? null : x; break;
     case 'ligero': if (x === 'focos' || x === 'motor') G.ligeroUsa = x; break;
     case 'frontal': if (frontalValido(x, G.niveles)) { G.frontal = x; if (G.frontal2 === x) G.frontal2 = null; } break;
+    case 'desmantelarRecol': {   // v152: devuelve la mitad de los materiales de la receta (redondeando hacia abajo), no los créditos
+      const T = tierRecol(x); if (!T || !((G.recolectores.stock[x] | 0) > 0)) return;
+      const dev = Object.entries(T.receta || {}).map(([k, q]) => [k, Math.floor(q / 2)]).filter(([, q]) => q > 0);
+      confirmar(`Desmantelar un ${T.n}`, `Recuperas ${dev.map(([k, q]) => `${q} × ${escapar(BAL.materiales[k] ? BAL.materiales[k].n : k)}`).join(', ')}. Los créditos no se recuperan.`, 'Desmantelar', () => {
+        if (!((G.recolectores.stock[x] | 0) > 0)) return;
+        G.recolectores.stock[x]--; for (const [k, q] of dev) G.almacen[k] = (G.almacen[k] || 0) + q;
+        toast(`${T.n} desmantelado`, ''); guardar(); renderBase();
+      });
+      return;
+    }
     case 'fabricarRecol': {
       const T = tierRecol(x);
       if (T && hayMateriales(T.receta) && G.creditos >= (T.cr || 0)) {
