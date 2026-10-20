@@ -1,7 +1,7 @@
 // Service worker de Abismo.
 // IMPORTANTE: sube CACHE_NAME cada vez que cambies index.html, el manifest o los iconos,
 // así los móviles que ya tienen la app instalada descargan la versión nueva.
-const CACHE_NAME = 'abismo-v152';
+const CACHE_NAME = 'abismo-v153';
 const ARCHIVOS = ['./', './index.html', './manifest.json', './favicon-32.png', './apple-touch-icon-180.png',
   './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png'];
 
@@ -16,8 +16,8 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || url.origin !== location.origin) return;   // fuentes de Google y demás: directo a la red
   if (url.pathname.endsWith('.mp3')) return;   // la música se pide por trozos (peticiones Range): no se cachea aquí
   if (req.mode === 'navigate' || url.pathname.endsWith('/index.html')) {
-    // el juego: primero la red (para recibir siempre la última versión) y, sin conexión, lo guardado
-    e.respondWith(fetch(req).then(r => { const copia = r.clone(); caches.open(CACHE_NAME).then(c => c.put('./index.html', copia)); return r; })
+    // el juego: primero la red, saltándose la caché del navegador (GitHub Pages la guarda 10 min), y sin conexión lo guardado
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(r => { const copia = r.clone(); caches.open(CACHE_NAME).then(c => c.put('./index.html', copia)); return r; })
       .catch(() => caches.match('./index.html')));
     return;
   }
