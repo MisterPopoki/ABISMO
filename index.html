@@ -783,7 +783,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie">Partida única · se guarda en este dispositivo · v154</p>
+      <p class="menu-pie">Partida única · se guarda en este dispositivo · v155</p>
     </div>
   </div>
 
@@ -1561,13 +1561,27 @@ const Fosa = {
 
 // Nodos de recursos por "chunk" de profundidad: deterministas por semilla.
 const cacheNodos = new Map();
+// ¿Habría que taladrar esta veta de pared desde dentro del chorro de una chimenea activa, o pegado a ella? Se mira
+// la franja de agua delante de la veta por donde se pone el submarino (hasta 11 m de la pared), con margen.
+function vetaEnChorro(x, y, lado) {
+  const F = BAL.biomas.fumarolas;
+  for (const c of Biomas.activas()) {
+    if (Math.abs(c.ty - y) > F.alturaPluma + 15) continue;
+    for (let k = 1; k <= 11; k += 1.5) {
+      const px = x - lado * k, dy = c.ty - y;
+      if (dy > -3.5 && dy < F.alturaPluma + 2 && Math.abs(px - c.tx) < c.w * 0.5 + 0.8 + Math.max(0, dy) * 0.16 + 1.4 + 1.5) return true;
+      if (distSegmento(px, y, c.x, c.y, c.tx, c.ty) < c.w * 0.5 + 1.3 + 2) return true;
+    }
+  }
+  return false;
+}
 function nodosChunk(ci) {
   if (cacheNodos.has(ci)) return cacheNodos.get(ci);
   const tam = BAL.spawn.tamChunk, rng = mulberry32(hash2(G.semilla, ci * 31 + 7)), arr = [];
   const base = BAL.spawn.nodosPorChunk, FB = BAL.biomas.fumarolas, campo = Biomas.en(ci * tam + tam / 2, 'fumarolas');
   const n = Math.floor(base) + (rng() < base % 1 ? 1 : 0) + (campo ? FB.nodosExtra : 0);   // en un campo de fumarolas, alguna veta más
   for (let i = 0; i < n; i++) {
-    const y = ci * tam + rng() * tam;
+    let y = ci * tam + rng() * tam;
     const r1 = rng(), r2 = rng(), r3 = rng();
     if (y < 8 || y > BAL.fondo - 5) continue;
     if (y - ci * tam < 1.5 || (ci + 1) * tam - y < 1.5) continue;   // lejos del borde del tramo: así no se monta con una veta del tramo vecino
@@ -1576,9 +1590,15 @@ function nodosChunk(ci) {
     const enCampo = !!Biomas.en(y, 'fumarolas'), pesoV = (id, m) => m.peso * (enCampo && FB.vetas[id] || 1);   // geotermal y helio salen junto a las chimeneas
     let total = cand.reduce((s, [id, m]) => s + pesoV(id, m), 0), x = r1 * total, mat = cand[0][0];
     for (const [id, m] of cand) { x -= pesoV(id, m); if (x <= 0) { mat = id; break; } }
-    const lado = r2 < 0.5 ? -1 : 1, M = BAL.materiales[mat];
-    const nx = lado < 0 ? Fosa.izq(y) + 0.6 : Fosa.der(y) - 0.6;
+    let lado = r2 < 0.5 ? -1 : 1, M = BAL.materiales[mat];
+    let nx = lado < 0 ? Fosa.izq(y) + 0.6 : Fosa.der(y) - 0.6;
     if (aguaCuevas(nx + lado * 2, y)) continue;   // ahí la pared está abierta: es la boca de una cueva
+    if (enCampo && vetaEnChorro(nx, y, lado)) {   // v155: se busca otro sitio en el mismo tramo (azar aparte: no cambia las demás vetas)
+      const rv = mulberry32(hash2(G.semilla + 6161, ci * 31 + i)); let ok = false;
+      for (let k = 0; k < 8 && !ok; k++) { const y2 = ci * tam + 2 + rv() * (tam - 4), l2 = rv() < 0.5 ? -1 : 1, x2 = l2 < 0 ? Fosa.izq(y2) + 0.6 : Fosa.der(y2) - 0.6;
+        if (!aguaCuevas(x2 + l2 * 2, y2) && !vetaEnChorro(x2, y2, l2)) { y = y2; lado = l2; nx = x2; ok = true; } }
+      if (!ok) continue;
+    }
     const unidades = M.raro ? 1 + Math.floor(r3 * 2) : 2 + Math.floor(r3 * 3);
     // Forma precalculada (rocas o frondas) para dibujarla siempre igual.
     const fr = mulberry32(hash2(G.semilla + 55, ci * 97 + i)), piezas = [];
@@ -4870,7 +4890,7 @@ function accionPrimaria() {
   if (M.dureza > 0) {
     if (!I.eq.tieneTaladro) { toast('Sin el Taladro en el punto Frontal no puedes extraer (se cambia en el Muelle o el Taller)', 'mal'); return; }
     if (M.dureza > I.eq.dureza) { toast(`Roca demasiado dura: necesitas Taladro T${M.dureza}`, 'mal'); return; }
-    I.minado = { nodo: n, potencia: 0, progreso: 0, inestabilidad: 0, tVerde: 0, tTotal: 0 };
+    I.minado = { nodo: n, potencia: 0, progreso: 0, inestabilidad: 0, tVerde: 0, tTotal: 0, dirPrev: entrada.izq || entrada.der || entrada.subir || entrada.bajar };
   } else {
     if (!I.eq.tieneGarra) { toast(`Para ${M.tipo === 'gas' ? 'capturar' : 'recoger'} ${M.n.toLowerCase()} necesitas la Garra en el punto Frontal (se cambia en el Muelle o el Taller)`, 'mal'); return; }
     I.recogiendo = { nodo: n, t: 0 };
@@ -4886,6 +4906,11 @@ function actualizarRecoleccion(dt) {
     const mi = I.minado, n = mi.nodo, B = BAL.mineria, M = BAL.materiales[n.mat];
     if (Math.hypot(n.x - s.x, n.y - s.y) > BAL.recoleccion.radio + 3) { I.minado = null; toast('Extracción interrumpida', 'mal'); return; }
     if (!delante(n)) { I.minado = null; toast('Extracción interrumpida: la proa ya no apunta a la veta', 'mal'); return; }
+    // v155: pulsar una dirección cancela la extracción y suelta el motor (antes no había forma de salir del minijuego:
+    // junto a una fumarola podías morir taladrando). Hay que pulsarla de nuevo: si ya la tenías pulsada al empezar, no cuenta.
+    { const dir = entrada.izq || entrada.der || entrada.subir || entrada.bajar;
+      if (dir && !mi.dirPrev) { I.minado = null; toast('Extracción cancelada', ''); return; }
+      mi.dirPrev = dir; }
     // Mantener pulsado sube la potencia; soltar la deja caer (GDD 9.11)
     mi.potencia = clamp(mi.potencia + (entrada.accion ? B.subida : -B.bajada) * dt, 0, 1);
     // Banda óptima: el tier del Taladro la ensancha y el mineral la estrecha (más duro = más estrecha).
@@ -7869,7 +7894,7 @@ function nodosBioma(ci, tam) {
     const fr = mulberry32(hash2(G.semilla + 5353, ci));
     if (fr() < CP.pSeccion) {
       const y = ci * tam + 4 + fr() * (tam - 8), lado = fr() < 0.5 ? -1 : 1, x = lado < 0 ? Fosa.izq(y) + 0.6 : Fosa.der(y) - 0.6;
-      if (!aguaCuevas(x + lado * 2, y)) out.push({ id: `co${ci}`, x, y, mat: 'costras', unidades: 3 + (fr() * 2 | 0), lado, piezas: piezasDe(fr), centro: centro(fr) });
+      if (!aguaCuevas(x + lado * 2, y) && !(Biomas.en(y, 'fumarolas') && vetaEnChorro(x, y, lado))) out.push({ id: `co${ci}`, x, y, mat: 'costras', unidades: 3 + (fr() * 2 | 0), lado, piezas: piezasDe(fr), centro: centro(fr) });
     }
   }
   // Rarezas de pared (coral negro, esférulas, xenofióforo): una de vez en cuando, con su propio azar
@@ -10645,7 +10670,7 @@ function actualizarHUD(dt) {
   if (I.minado) {
     const mi = I.minado, M = BAL.materiales[mi.nodo.mat], lo = mi.lo === undefined ? 0.55 : mi.lo, hi = mi.hi === undefined ? 0.65 : mi.hi;
     txt('m-mat', `${M.n} · dureza ${M.dureza}${M.deriva ? ' · veta inestable' : ''}`);
-    txt('m-pista', document.body.classList.contains('tactil') ? 'Mantén Acción: más potencia' : 'Mantén F: más potencia');
+    txt('m-pista', document.body.classList.contains('tactil') ? 'Mantén Acción: más potencia · una flecha cancela' : 'Mantén F: más potencia · muévete para cancelar');
     const banda = document.getElementById('m-banda'); banda.style.left = lo * 100 + '%'; banda.style.width = (hi - lo) * 100 + '%';
     document.getElementById('m-sobre').style.width = (1 - hi) * 100 + '%';
     document.getElementById('m-aguja').style.left = mi.potencia * 100 + '%';
@@ -13082,6 +13107,7 @@ function htmlBalance() {
         <li>Avisos, perlas y tortugas (v152; tras jugar bastante, el autor y un amigo que ya lo prueba desde GitHub). Los avisos de bioma salen enteros solo la primera vez (quedan en el Cuaderno de campo); en las siguientes inmersiones, solo el nombre y la franja. Lo mismo con el sifonóforo. En la semilla del autor no había ni una perla: salían al azar y con algunas semillas ninguna; ahora cada tramo de 50 m entre 60 y 200 m tiene un banco de perlas fijo, y las vetas al azar las eligen casi el doble (de 3 a 6 vetas de perla por partida, que vuelven a crecer como cualquier veta rara). Los encargos de suministro de materiales raros piden 1 o 2 unidades (antes de 3 a 8, imposible con las perlas). La fauna ya no es la misma en cada inmersión con la misma semilla (antes, si en tu semilla no salía una tortuga, no salía nunca), y las tortugas son algo más frecuentes.</li>
         <li>Número de versión al pie del menú principal (v153), para saber de un vistazo qué versión tiene cada probador.</li>
         <li>Recolectores por tier (v154; el autor vio que al fabricar el tier siguiente los anteriores se quedaban inservibles). El tope pasa de 3 instalados en total a 3 de cada tier (3 R1 + 3 R2 + 3 R3): cada tier es su propia red, y los de tier bajo siguen trabajando en las zonas altas, que es justo lo que pide el GDD (9.8: liberar al jugador de farmear lo ya dominado). Sustituye a la mejora de base «Centro de Control de Recolectores» que preveía el GDD para ampliar el límite: aquí cada tier nuevo es la ampliación. Al instalar se usa el tier más bajo que sirve para esa veta y que aún tiene hueco. Los que sobran en el almacén se pueden desmantelar en el Taller: devuelven la mitad de los materiales de la receta (no los créditos).</li>
+        <li>Cancelar la extracción y vetas fuera del chorro (v155; el autor murió taladrando junto a una fumarola sin poder salir del minijuego). Mientras taladras, pulsar una dirección cancela la extracción y te devuelve el motor (si ya la tenías pulsada al empezar, hay que soltarla y volver a pulsarla; la pista del minijuego lo dice). En los campos de fumarolas, las vetas de pared que obligaban a taladrar dentro del chorro o pegado a una chimenea activa se colocan en otro punto del mismo tramo; si no hay sitio seguro, no salen. Las vetas de geotermal y helio siguen siendo cuatro veces más frecuentes en los campos.</li>
         <li>Sensor de sigilo (13.3, la otra familia del punto Dorsal; diseño aprobado por el autor): una cámara de luz roja lejana (como la Eye-in-the-Sea de Edith Widder: casi toda la fauna profunda no ve el rojo) y un revestimiento anecoico (las losetas que absorben el sonido en los submarinos). Se fabrica una vez en Piezas de equipo (4 Aceite de fauna de aguas frías, 3 Aleación titanio-cobalto y 2 Geodas de cuarzo, 1.800 cr; 3 kg: todo de la Batial y sus cuevas, así que llega antes que el dormilón) y se monta o desmonta antes de bajar; montado, sustituye a los Focos fabricados: haz rojo de 26 m, más estrecho que el T1, sin foco ventral ni trasero y con halo de 6 m, pero con él encendido la fauna te detecta como si fueras a oscuras; motor y taladro hacen un 30 % menos de ruido. Cambia los jefes sin reglas nuevas: al calamar no se le puede deslumbrar (tampoco ve el rojo), el kraken no ataca más a menudo por tu luz (su latido sí la reinicia, como cualquier aparato eléctrico), el dormilón te oye menos y el Guardián del Abismo se inquieta menos por el ruido. Un solo nivel (el GDD da tiers a cada familia; aquí no hacen falta). En el panel, el botón de luces dice «Rojo» y en el plano del Taller el punto Dorsal dice «Sigilo». Pendiente de pasar al GDD.</li>
         <li>Hilo narrativo (sección 11): el juego ocurre tres años después de «Lo que queda debajo». Caronte (1.000 m), Estigia (4.000 m, con la T-1 del Consorcio al lado) y Leteo (6.000 m, sin esfera) están sobre cornisas fijas, apagadas, con páginas del diario de Lucía. Por debajo de 4.000 m se oye a veces su señal (tres cortos y uno largo). Las páginas son un borrador para que el autor las revise. Pendiente de pasar a 4.6bis y 11.2: la expedición ya no «desapareció»; su destino se conoce, pero su señal sigue llegando.</li>
         <li>Sonido (sección 15), fases 1 y 2 de 4: todo sintetizado por código en la demo (en Unity irán grabaciones y un AudioMixer). Tres canales: ambiente, submarino y efectos. Ambiente que cambia con la profundidad: oleaje cerca de la superficie, rumor del agua cada vez más grave, un dron desde los 500 m que late más inquieto en la Abisal y suma una nota disonante, gruñidos lejanos cada vez más frecuentes y agua más sorda dentro de las cuevas. Submarino: motor que sube de tono con el empuje (y se corta en un fallo de motor), hélice «troceada» al ritmo de las palas, agua rozando el casco según la velocidad y zumbido de cabina. Crujidos del casco desde el 80 % de la profundidad segura, más largos y graves al acercarte, casi continuos por debajo. En pausa o acoplado, el exterior se oye lejos. Primeras muestras grabadas, de prueba (hechas por el autor con Suno): la hélice de submarino suena de fondo en el menú principal, una copia tras otra alternando de lado; y un ambiente de la inmensidad del océano entra en las inmersiones desde los 700 m, cada vez más lento y grave. Tras escucharlo pidió el motor más grave y más bajo y el mar más de fondo (bus de ambiente a −6 dB). En el menú, por encima de las hélices y suena la firma de Lucía (la primera a los 2,5 s y luego cada 14–24 s, sin horario fijo) (tres cortos y uno largo, grave, ondulante y con un eco lejano); es la misma que se oye en las inmersiones por debajo de 4.000 m, más grave cuanto más hondo. Base (fase 3 adelantada): grabación de muelle tranquilo hecha por el autor con Suno, en bucle sin costura (parte central, golpes sueltos aplanados y dos voces desfasadas para que no se reconozca la repetición), muy baja; encima, sonidos sintetizados sueltos: crujidos de amarras, algún golpe metálico lejano del taller y alguna gaviota. Al bajar a la inmersión, el muelle se cruza con el agua. Clic de consola de latón al pulsar las pestañas de la base y los botones del menú (se descartó usar el pitido de la firma de Lucía para no gastar su significado). Volúmenes en Opciones (fase 4 adelantada): Ambiente, Efectos y Música, guardados con la partida. Primera música (GDD 15.2), hecha por el autor con Suno: una pista instrumental de 6 min que suena en bucle en el menú y en la zona Fótica, muy baja por defecto (se apaga entre los 140 y los 200 m y sigue donde iba al volver). Ping de sonar en las cuevas: tono limpio con cola larga y reverberación de roca, y tres ecos (pared más cercana, intermedia y más lejana) sincronizados con los ecos que se dibujan y del lado por el que vuelven. En el fondo del menú cruza de vez en cuando, lenta y difusa, la sombra del Guardián de la Plataforma (el tiburón jefe de la Fótica, 10.2), por detrás del submarino y de la nieve marina, con un rumor grave al pasar: la primera a los 10 s, siempre de derecha a izquierda, y luego cada 35–55 s en cualquier sentido. Silueta de tiburón blanco con proporciones reales (dorsal de un 12 % del largo, pectorales en hoz, cola en media luna), con el cuerpo ondulando hacia la cola y teñida del azul del agua honda en vez de negro. Pantalla de inicio en el menú («Pulsa cualquier tecla / Toca la pantalla para empezar»): el navegador no deja sonar nada hasta el primer toque, así el ambiente del menú se oye siempre; ese toque no pulsa ningún botón. En Unity no hace falta (una aplicación nativa puede sonar al abrirse), aunque la pantalla de «pulsa para empezar» es habitual. Fase 2, taladro y fauna: el taladro suena distinto en cada estado del minijuego de minería (9.11), como información de juego: con poca potencia, ahogado y a mordiscos; en la banda óptima, liso y con un zumbido afinado; en sobrecarga, más forzado y con chasquidos de roca cada vez más seguidos (todo en graves y lento, como una perforadora pesada: con agudos sonaba a motosierra) cuanto más cerca está la fractura. La fractura es un estallido con golpe grave, cascotes contra el casco y burbujas; al terminar la extracción, la roca se suelta y se cierra la escotilla de la bodega. Recoger orgánicos sorbe agua. Fauna: al detectarte, el agua que desplaza al girar hacia ti (del lado por el que viene y más grave cuanto más grande) y un aviso suave de contacto en cabina; mientras te persigue, su estela se oye crecer al acercarse; la embestida contra el blindaje suena a chapa que aguanta (golpe sordo, retumbo y placas sueltas) y contra el casco sin blindaje a algo que cede (más grave y largo, crujido de la estructura, siseo de agua y alarma de casco), para distinguirlas sin mirar las barras. También el choque contra la roca y el chorro de tinta del pulpo. Añade al GDD el ambiente de la base y de las estaciones, el sonido del taladro, el acoplamiento, el pulso y el sonar (fases siguientes).</li>
