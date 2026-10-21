@@ -783,7 +783,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie">Partida única · se guarda en este dispositivo · v157</p>
+      <p class="menu-pie">Partida única · se guarda en este dispositivo · v160</p>
     </div>
   </div>
 
@@ -972,6 +972,10 @@ const BAL_DEFECTO = {
     // Limitado a propósito: un escondite para no perder la carga, no un segundo almacén.
     deposito: { caronte: 40, estigia: 70, leteo: 100 },
     modulo: { n: 'Módulo de energía de estación', kg: 20, receta: { chatarra: 6, ferroniquel: 4, alga: 4 }, cr: 350 } },
+  // v160: Fondeo. Un depósito pequeño con baliza que fabricas y anclas tú en una repisa por debajo de Leteo: una botella de
+  // O2 y una carga de batería que el Anfitrite repone bajando una cesta lastrada por su cabo. Solo hay uno; para moverlo
+  // de sitio, se iza desde la base. desde = profundidad mínima · radio = distancia para repostar · destello = cada cuántos s.
+  fondeo: { n: 'Fondeo', kg: 25, receta: { nodulos: 6, cristal: 4, sedimento: 4 }, cr: 6000, desde: 6000, reponerHoras: 6, izar: 300, radio: 9, destello: 4 },
   // Piezas de expedición: un plano único en cada estación. No son un tier más: añaden algo y cuestan algo.
   // Se fabrican una vez, se montan o desmontan en el Taller y, si van montadas, suman 'rec' al coste de reconstruir.
   expedicion: {
@@ -1068,7 +1072,7 @@ const BAL_DEFECTO = {
   // (BAL.fondo) cede bajo su peso y cae como una losa hasta suelo. El agujero (el ancho de la fosa) baja hasta techo y
   // la cavidad se abre en una bóveda hasta abre, con medio metros a cada lado del centro. ecoFirma: segundos que tarda
   // el Abismo en devolverte la firma (en la novela, cuarenta minutos). latido: cada cuánto late el fondo, ya en calma.
-  cocito: { techo: 11028, abre: 11100, suelo: 11414, medio: 190, ecoFirma: 40, latido: [7, 11], escamas: 7 },
+  cocito: { techo: 11028, abre: 11100, suelo: 11412,   /* v158: la cifra de la novela (el profundímetro de Perséfone marca 11.412) */ medio: 190, ecoFirma: 40, latido: [7, 11], escamas: 7 },
   zonas: [
     { nombre: 'Zona Fótica', desde: 0, hasta: 200 },
     { nombre: 'Zona Mesopelágica', desde: 200, hasta: 1000 },
@@ -1116,7 +1120,7 @@ const BAL_DEFECTO = {
     // tapizó de cristales. Real: el cuarzo fundido es el tubo de las lámparas de descarga, de ahí que lo pidan los Focos.
     // Nunca sale en la pared de la fosa ni en encargos; aparece al fondo de algunos ramales y, a veces, en la cámara.
     cuarzo:      { n: 'Geoda de cuarzo', desde: 0, hasta: 11000, kg: 2, precio: 70, dureza: 1, banda: 0.85, deriva: 0.04, tipo: 'mineral', peso: 0, raro: true, cueva: true, brillo: true, color: '#cdb8ef' },
-    escama:      { n: 'Escama del Guardián del Abismo', desde: 11000, hasta: 11414, kg: 4, precio: 1500, dureza: 0, tipo: 'organico', peso: 0.12, raro: true, jefe: true, de: 'abismo', brillo: true, color: '#7af2e0' },
+    escama:      { n: 'Escama del Guardián del Abismo', desde: 11000, hasta: 11412, kg: 4, precio: 1500, dureza: 0, tipo: 'organico', peso: 0.12, raro: true, jefe: true, de: 'abismo', brillo: true, color: '#7af2e0' },
     // --- Rarezas por zona (cierre de la fase 2): solo se venden, a la universidad o al museo. Se recogen a mano. ---
     // Rama de coral negro caída: el coral negro vive miles de años (hay colonias de más de 4.000) y sus anillos guardan
     // el clima del pasado. Solo ramas muertas, sueltas.
@@ -1257,6 +1261,8 @@ const BAL_DEFECTO = {
     { id: 'rape', n: 'Rape abisal', desde: 4000, hasta: 4700, porChunk: 0.35, grupo: [1, 1], conducta: 'emboscada', tam: 3, velPatrulla: 0.6, velPersecucion: 7, deteccion: 9, danio: 32, enfriamiento: 8, color: '#26222a', aleta: '#3a3240', ojos: '#c7ff8a', ojoPos: [0.24, -0.12], senueloPos: [0.6, -0.56] },
     { id: 'anguila', n: 'Anguila cuello cortado', desde: 4700, hasta: 6000, porChunk: 0.35, grupo: [1, 2], conducta: 'agresivo', tam: 5, velPatrulla: 4, velPersecucion: 11, deteccion: 16, danio: 30, enfriamiento: 5, color: '#3a3438', ojos: '#ff5f6d', ojoPos: [0.48, -0.012] },
     // Pez caracol (Pseudoliparis): gelatinoso, rosado y medio transparente, con forma de renacuajo
+    // v160: el último pez de la novela (cap. 16): un pez caracol pequeño y tranquilo, el más hondo; por debajo de ~8.400 m ya no hay peces
+    { id: 'ultimoPez', n: 'Pez caracol hadal', desde: 7600, hasta: 8400, porChunk: 0.6, grupo: [1, 1], conducta: 'decorativo', tam: 1.1, velPatrulla: 0.5, velPersecucion: 0, deteccion: 0, danio: 0, enfriamiento: 0, radio: 6, color: '#efd2d6', aleta: 'rgba(245,220,225,.4)', ojos: '#d7aab2' },
     { id: 'caracol', n: 'Pez caracol', desde: 6000, hasta: 7500, porChunk: 0.35, grupo: [1, 2], conducta: 'territorial', tam: 3, velPatrulla: 2, velPersecucion: 10, deteccion: 12, danio: 38, enfriamiento: 6, radioTerritorio: 35, color: '#e7c3c9', aleta: 'rgba(240,210,215,.35)', ojos: '#c99aa4', ojoPos: [0.37, -0.05] },
     { id: 'anfipodos', n: 'Enjambre de anfípodos', desde: 7500, hasta: 11000, porChunk: 0.35, grupo: [4, 6], conducta: 'agresivo', tam: 1.4, velPatrulla: 2.5, velPersecucion: 8, deteccion: 11, danio: 8, enfriamiento: 4, color: '#d8c9b4', ojos: '#ffe9c4' }
   ]
@@ -1388,7 +1394,7 @@ function aplicarBal(obj) {
     if (f && d && (!f.ojoPos || f.n === 'Depredador mesopelágico' || f.n === 'Depredador de aguas frías' || f.n === 'Manada batial')) Object.assign(f, { n: d.n, color: d.color, aleta: d.aleta, ojos: d.ojos, ojoPos: d.ojoPos, senueloPos: d.senueloPos });
   }
   const sg = BAL.piezas && BAL.piezas.sigilo; if (sg && sg.receta && sg.receta.piel) Object.assign(sg, { receta: { aceite: 4, titanio: 3, cuarzo: 2 }, cr: 1800, rec: 450 });   // receta de la Batial (v134)
-  const me = BAL.materiales.escama; if (me && me.desde === 9000) Object.assign(me, { desde: 11000, hasta: 11414, de: 'abismo' });   // las escamas que suelta el Guardián: solo en Cocito
+  const me = BAL.materiales.escama; if (me && me.desde === 9000) Object.assign(me, { desde: 11000, hasta: 11412, de: 'abismo' });   // las escamas que suelta el Guardián: solo en Cocito
   const mv = BAL.materiales.ventosa; if (mv && mv.desde === 750 && mv.hasta === 1000) { mv.desde = 800; mv.hasta = 950; if (mv.peso === 0.18) mv.peso = 0.3; }   // a la guarida del calamar   // tras jugarlo: un poco más grande
   // v150: el autor no veía casi nada al fondo (luces, halo y sigilo más generosos; oscuridad 0,97 → 0,9) y el Soporte
   // vital T4 no llegaba al fondo (el CO2 que se produce iguala la depuración 2,0 a 9.000 m; con 2,6, a 12.000 m)
@@ -1403,7 +1409,9 @@ function aplicarBal(obj) {
   if (BAL.materiales.perla && BAL.materiales.perla.peso === 0.35) BAL.materiales.perla.peso = 0.6;
   { const tg = BAL.fauna && BAL.fauna.find(f => f.id === 'tortuga'); if (tg && tg.porChunk === 0.5) tg.porChunk = 0.8; }
   // v156: con el casco T4 a 12.000 m, en cuanto el estrés pasaba del 16 % la profundidad segura caía por debajo de Cocito
-  // (11.414 m) y el casco se rompía en segundos. A 13.500 m aguanta allí hasta con un 50 % de estrés.
+  // (11.412 m) y el casco se rompía en segundos. A 13.500 m aguanta allí hasta con un 50 % de estrés.
+  if (BAL.cocito && BAL.cocito.suelo === 11414) BAL.cocito.suelo = 11412;   // v158: la profundidad de Cocito en la novela
+  if (BAL.materiales.escama && BAL.materiales.escama.hasta === 11414) BAL.materiales.escama.hasta = 11412;
   { const c4 = BAL.ramas.casco && BAL.ramas.casco.niveles.find(n => n.et === 'T4'); if (c4 && c4.profSegura === 12000) c4.profSegura = 13500; }
   const delf = BAL.fauna && BAL.fauna.find(f => f.id === 'delfin'); if (delf && (delf.tam === 2.7 || delf.tam === 3.6)) delf.tam = 4;   // más grandes, para no confundirlos con peces   // con el sonar, el halo en cuevas ya no necesita ser tan grande
 }
@@ -2766,6 +2774,7 @@ function crearInmersion() {
   const bengalasStock = AB.bengalas; kgInicial += bengalasStock * BAL.bengalas.peso;   // bengalas a bordo
   // Un módulo de energía de estación baja a bordo si hay alguno fabricado (pesa: se nota en la bodega)
   const moduloABordo = !usandoBase ? AB.modulo : 0; kgInicial += moduloABordo * BAL.estaciones.modulo.kg;
+  const fondeoABordo = !usandoBase ? AB.fondeo | 0 : 0; kgInicial += fondeoABordo * BAL.fondeo.kg;   // v160
   for (const e of G.encargosActivos) if (e.tipo === 'logistica') { balizas[e.id] = 'cargada'; kgInicial += BAL.encargos.pesoBaliza; }
   // Recolectores: bajan los que elegiste en «A bordo» (cada tier pesa lo suyo)
   const recolABordo = {}; for (const id of idsRecol()) { const n = AB['recol_' + id] | 0; if (n > 0) { recolABordo[id] = n; kgInicial += n * pesoRecol(id); } }
@@ -2779,7 +2788,7 @@ function crearInmersion() {
     fallo: { luces: 0, motor: 0, aviso: 0 }, sobrecarga: 0, minado: null, recogiendo: null, cercano: null,
     fauna: [], chunksFauna: new Set(), burbujas: [], tinta: [], tDelfines: 20 + Math.random() * 30, flags: {}, muestreo: {}, alarmas: {}, relojAlarma: 0,
     balizasStock, bengalasStock, bengalas: [], recolABordo, objRecol: null, enCueva: false, cuevasFauna: new Set(),
-    sacudida: 0, crujido: 0, causa: null, sinMuerteUsado: false, moduloABordo, acople: null,
+    sacudida: 0, crujido: 0, causa: null, sinMuerteUsado: false, moduloABordo, fondeoABordo, acople: null,
     jefe: null, jefesHoy: [], biomasHoy: {}, pdiHoy: {}, piezasABordo: [], humo: [], tFumAviso: 0, fumProx: 0, fumPan: 0, fumDanio: 0, nieve: [], ondasSal: [], tSalAviso: 0, enSalmuera: false
   };
 }
@@ -2801,10 +2810,11 @@ function actualizar(dt) {
   I.enCueva = dentroDeCueva(s.x, s.y);
   vigilarConsejos(I, s);
   vigilarSilencio(dt);
+  actualizarRoce(dt);
   if (I.enCueva && !antesEnCueva) { const cv = cuevaCerca(s.x, s.y, 5); if (cv && I.ultimaCueva !== cv.i) { I.ultimaCueva = cv.i; const N = nombreCueva(cv); toast(`Entras en la ${N.nombre} (${N.codigo})`, 'oro'); }
     if (!G.opciones.sonar) toast(`Sonar apagado: actívalo con ${esTactil() ? 'el botón Sonar del panel' : 'Z o el botón Sonar'}`, 'mal'); }   // se apaga a mano y queda guardado: avisar
   if (flanco('girar')) s.derecha = !s.derecha;
-  if (flanco('baliza')) { if (modoBotonB() === 'baliza') colocarBaliza(); else pulsoManual(); }   // botón contextual (B / táctil)
+  if (flanco('baliza')) { const mb = modoBotonB(); if (mb === 'baliza') colocarBaliza(); else if (mb === 'fondeo') { const q = sitioFondeo(s); if (q) anclarFondeo(q); } else pulsoManual(); }   // botón contextual (B / táctil)
   if (flanco('pulso')) pulsoManual();
   if (flanco('bengala')) lanzarBengala();
   // Luces en tres estados: apagadas → frontal → frontal y ventral → apagadas
@@ -3102,6 +3112,7 @@ function amenazaCerca() {
 function modoBotonB() {
   const I = inm, conPulso = I.eq.tienePulso;
   if (I.enCueva && !(conPulso && amenazaCerca())) return 'baliza';
+  if (I.fondeoABordo && !fondeoG().anclado && !(conPulso && amenazaCerca()) && sitioFondeo(I.sub)) return 'fondeo';   // v160: sobre una repisa, el botón ancla el fondeo
   return conPulso ? 'pulso' : 'sinPulso';
 }
 // Disparo manual del pulso (ya no salta solo): decides tú cuándo gastar la recarga
@@ -3895,32 +3906,84 @@ function puntosBrazoKraken(j, b, t) {   // del cuerpo al codo y del codo a la pu
     pts.push({ x: c.x + dx * f + nx * o, y: c.y + dy * f + ny * o }); }
   return pts;
 }
+// v159 (rehecho a petición del autor: las mecánicas bien, el aspecto poco impresionante). Magnapinna de verdad: un manto
+// estrecho y largo, dos aletas enormes como orejas que baten despacio, ojos grandes y brazos larguísimos que salen en
+// ángulo recto y doblan en el «codo». Coordenadas del cuerpo en metros, con el origen en la corona de los brazos.
+const KRAKEN_FOTOFOROS = (() => {   // puntos de luz del manto y del borde de las aletas (los dibuja brillosKraken)
+  const out = [];
+  for (let k = 0; k < 9; k++) out.push({ x: (k % 2 ? 1 : -1) * (0.55 + 0.25 * Math.sin(k * 1.3)), y: -1.8 - k * 0.95, aleta: 0 });
+  for (const s of [-1, 1]) for (let k = 0; k < 9; k++) { const a = -1.35 + k / 8 * 2.7; out.push({ x: s * (4.0 + Math.cos(a) * 4.0), y: -7.4 + Math.sin(a) * 3.05, aleta: s }); }
+  return out;
+})();
+function krakenAleta(c, s, bat) {   // transforma el contexto como la aleta del lado s (−1 izquierda, 1 derecha) mientras bate
+  c.translate(s * 1.1, -7.8); c.rotate(-s * bat); c.translate(-s * 1.1, 7.8);
+}
 function dibujarKraken(j, sx, sy, E, yTop, yBot) {
-  const J = j.J, t = inm.t;
-  ctx.save(); ctx.globalAlpha = j.alfa; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  // brazos: de grueso a hilo; los cuatro que atacan y cuatro más que solo cuelgan
-  const extra = [0.55, 1.25, 1.9, 2.6].map((a, k) => ({ a: Math.PI / 2 + (a - 1.55) * 1.05, estado: 'reposo', fase: 3 + k * 1.3 }));
-  for (const b of j.brazos.concat(extra)) {
+  const J = j.J, t = inm.t, c = ctx, crownY = j.y + J.tam * 0.22;
+  c.save(); c.globalAlpha = j.alfa; c.lineCap = 'round'; c.lineJoin = 'round';
+  // --- Brazos: cintas que se afinan del cuerpo a la punta (los cuatro que atacan y seis más que solo cuelgan)
+  const extra = [0.35, 0.8, 1.25, 1.85, 2.3, 2.75].map((a, k) => ({ a: Math.PI / 2 + (a - 1.55) * 1.05, estado: 'reposo', fase: 3 + k * 1.3, fino: k % 2 }));
+  for (const b of extra.concat(j.brazos)) {
     const pts = puntosBrazoKraken(j, b, t); if (pts.every(p => p.y < yTop - 5 || p.y > yBot + 5)) continue;
-    for (let k = 1; k < pts.length; k++) {
-      const f = k / pts.length; ctx.strokeStyle = `rgba(${b.brillo > 0.1 ? '215,200,220' : '196,160,150'},${0.85 - f * 0.35})`;
-      ctx.lineWidth = Math.max(1, (k === 1 ? 0.5 : 0.42 * (1 - f * 0.85)) * E);
-      ctx.beginPath(); ctx.moveTo(sx(pts[k - 1].x), sy(pts[k - 1].y)); ctx.lineTo(sx(pts[k].x), sy(pts[k].y)); ctx.stroke();
+    const n = pts.length, izq = [], der = [], w0 = b.fino ? 0.32 : 0.48;
+    for (let k = 0; k < n; k++) {
+      const a = pts[Math.max(0, k - 1)], z = pts[Math.min(n - 1, k + 1)], dx = z.x - a.x, dy = z.y - a.y, L = Math.hypot(dx, dy) || 1;
+      const f = k / (n - 1), w = (w0 * Math.pow(1 - f, 0.8) + 0.05) * (k === 1 ? 1.35 : 1);   // el codo, algo más grueso
+      izq.push([pts[k].x - dy / L * w, pts[k].y + dx / L * w]); der.push([pts[k].x + dy / L * w, pts[k].y - dx / L * w]);
     }
+    const act = b.brillo > 0.1;
+    c.fillStyle = act ? 'rgba(222,196,226,.88)' : 'rgba(205,160,148,.82)';
+    c.beginPath(); izq.forEach(([x, y], k) => k ? c.lineTo(sx(x), sy(y)) : c.moveTo(sx(x), sy(y))); for (let k = n - 1; k >= 0; k--) c.lineTo(sx(der[k][0]), sy(der[k][1])); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(110,60,58,.45)'; c.lineWidth = Math.max(0.6, 0.06 * E); c.beginPath(); der.forEach(([x, y], k) => k ? c.lineTo(sx(x), sy(y)) : c.moveTo(sx(x), sy(y))); c.stroke();   // lado en sombra
+    c.strokeStyle = 'rgba(255,238,228,.35)'; c.lineWidth = Math.max(0.6, 0.07 * E); c.beginPath();   // brillo húmedo por el centro
+    pts.slice(0, Math.ceil(n * 0.7)).forEach((q, k) => k ? c.lineTo(sx(q.x), sy(q.y)) : c.moveTo(sx(q.x), sy(q.y))); c.stroke();
+    c.fillStyle = 'rgba(140,80,78,.55)';   // ventosas diminutas en el primer tramo
+    for (let k = 2; k < Math.min(n, 8); k++) { const [x, y] = izq[k], [x2, y2] = der[k]; c.beginPath(); c.arc(sx((x * 2 + x2) / 3), sy((y * 2 + y2) / 3), Math.max(0.6, 0.07 * E), 0, 6.283); c.fill(); }
   }
-  // cuerpo: manto hacia arriba y dos aletas grandes y redondas que baten despacio
-  if (j.y > yTop - 15 && j.y < yBot + 15) {
-    ctx.save(); ctx.translate(sx(j.x), sy(j.y)); ctx.scale(E * J.tam / 8, E * J.tam / 8);
-    const bat = Math.sin(t * 1.4) * 0.18;
-    ctx.fillStyle = 'rgba(188,132,118,.82)';
-    for (const sgn of [-1, 1]) { ctx.save(); ctx.scale(sgn, 1); ctx.rotate(-bat); ctx.beginPath(); ctx.ellipse(2.6, -1.4, 2.6, 1.9, -0.25, 0, 6.283); ctx.fill(); ctx.restore(); }
-    const g = ctx.createLinearGradient(-1, -4, 1, 2); g.addColorStop(0, 'rgba(214,170,150,.95)'); g.addColorStop(1, 'rgba(150,96,90,.95)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, -4.6); ctx.quadraticCurveTo(1.5, -2.8, 1.3, 0.8); ctx.quadraticCurveTo(0, 1.8, -1.3, 0.8); ctx.quadraticCurveTo(-1.5, -2.8, 0, -4.6); ctx.fill();
-    ctx.fillStyle = 'rgba(120,70,66,.5)'; for (const [x, y] of [[-0.4, -2.5], [0.5, -1.4], [-0.3, -0.4], [0.2, -3.3]]) { ctx.beginPath(); ctx.arc(x, y, 0.18, 0, 6.283); ctx.fill(); }   // cromatóforos
-    ctx.fillStyle = '#0a0d10'; for (const x of [-0.75, 0.75]) { ctx.beginPath(); ctx.ellipse(x, 0.9, 0.32, 0.4, 0, 0, 6.283); ctx.fill(); }   // ojos
-    ctx.restore();
+  // --- Cuerpo
+  if (j.y > yTop - 25 && j.y < yBot + 15) {
+    c.save(); c.translate(sx(j.x), sy(crownY)); c.scale(E, E);
+    const bat = Math.sin(t * 1.15) * 0.16, ond = t * 1.6;
+    // aletas: enormes, translúcidas, con venas y el borde ondulado
+    for (const s of [-1, 1]) {
+      c.save(); krakenAleta(c, s, bat);
+      const ale = new Path2D();
+      for (let k = 0; k <= 40; k++) { const a = k / 40 * 6.283, r = 1 + 0.035 * Math.sin(k * 1.9 + ond + s), x = s * (4.0 + Math.cos(a) * 4.2 * r), y = -7.4 + Math.sin(a) * 3.2 * r; k ? ale.lineTo(x, y) : ale.moveTo(x, y); }
+      ale.closePath();
+      const ga = c.createRadialGradient(s * 1.0, -7.4, 0.3, s * 3.4, -7.4, 6.8); ga.addColorStop(0, 'rgba(214,158,142,.9)'); ga.addColorStop(0.6, 'rgba(196,138,128,.55)'); ga.addColorStop(1, 'rgba(190,130,125,.2)');
+      c.fillStyle = ga; c.fill(ale);
+      c.save(); c.clip(ale); c.strokeStyle = 'rgba(120,64,60,.28)'; c.lineWidth = 0.06;
+      for (let k = 0; k < 9; k++) { const a = -1.45 + k / 8 * 2.9; c.beginPath(); c.moveTo(s * 0.9, -7.4); c.quadraticCurveTo(s * (2.4 + Math.cos(a) * 2), -7.4 + Math.sin(a) * 1.6, s * (4.0 + Math.cos(a) * 4.1), -7.4 + Math.sin(a) * 3.1); c.stroke(); }   // venas
+      c.fillStyle = 'rgba(110,55,52,.3)'; for (let k = 0; k < 14; k++) { const a = k * 2.39, r = 1.2 + (k * 0.618 % 1) * 3.2; c.beginPath(); c.arc(s * (3.4 + Math.cos(a) * r * 0.8), -7.6 + Math.sin(a) * r * 0.55, 0.1 + (k % 3) * 0.05, 0, 6.283); c.fill(); }
+      c.restore();
+      c.strokeStyle = 'rgba(255,226,214,.4)'; c.lineWidth = 0.08; c.stroke(ale);
+      c.restore();
+    }
+    // manto: largo y estrecho, con la punta arriba
+    const manto = new Path2D(); manto.moveTo(0, -11.2); manto.bezierCurveTo(1.25, -10.2, 1.7, -6.5, 1.55, -3.2); manto.quadraticCurveTo(1.45, -1.5, 1.05, -1.1);
+    manto.lineTo(-1.05, -1.1); manto.quadraticCurveTo(-1.45, -1.5, -1.55, -3.2); manto.bezierCurveTo(-1.7, -6.5, -1.25, -10.2, 0, -11.2); manto.closePath();
+    const gm = c.createLinearGradient(-1.6, 0, 1.6, 0); gm.addColorStop(0, 'rgba(150,92,86,.96)'); gm.addColorStop(0.35, 'rgba(226,182,162,.97)'); gm.addColorStop(0.7, 'rgba(196,138,124,.96)'); gm.addColorStop(1, 'rgba(120,70,66,.96)');
+    c.fillStyle = gm; c.fill(manto);
+    c.save(); c.clip(manto);
+    const gv = c.createLinearGradient(0, -11, 0, -1); gv.addColorStop(0, 'rgba(255,240,230,.2)'); gv.addColorStop(1, 'rgba(60,20,20,.25)'); c.fillStyle = gv; c.fillRect(-2, -11.5, 4, 11);
+    c.fillStyle = 'rgba(150,200,255,.1)'; c.beginPath(); c.ellipse(-0.45, -6, 0.35, 4, 0.05, 0, 6.283); c.fill();   // reflejo iridiscente
+    for (let k = 0; k < 46; k++) { const x = -1.5 + (k * 0.7548777 % 1) * 3, y = -10.5 + (k * 0.5698403 % 1) * 9.2, r = 0.07 + (k % 4) * 0.045, pul = 0.75 + 0.25 * Math.sin(t * 2.2 + k);
+      c.fillStyle = `rgba(${k % 3 ? '120,56,50' : '90,36,40'},${0.55 * pul})`; c.beginPath(); c.arc(x, y, r * pul, 0, 6.283); c.fill(); }   // cromatóforos que laten
+    c.restore();
+    c.strokeStyle = 'rgba(70,32,30,.6)'; c.lineWidth = 0.07; c.stroke(manto);
+    c.strokeStyle = 'rgba(255,236,226,.45)'; c.lineWidth = 0.08; c.beginPath(); c.moveTo(-0.55, -10.6); c.bezierCurveTo(-1.2, -8.5, -1.35, -5.5, -1.25, -3); c.stroke();   // luz en el filo
+    // cabeza y ojos
+    const gc = c.createLinearGradient(0, -1.6, 0, 0.3); gc.addColorStop(0, 'rgba(176,118,108,.97)'); gc.addColorStop(1, 'rgba(128,74,70,.97)');
+    c.fillStyle = gc; c.beginPath(); c.ellipse(0, -0.55, 1.35, 0.95, 0, 0, 6.283); c.fill();
+    for (const s of [-1, 1]) {
+      c.fillStyle = 'rgba(60,24,26,.7)'; c.beginPath(); c.ellipse(s * 0.78, -0.6, 0.52, 0.6, 0, 0, 6.283); c.fill();
+      const go = c.createRadialGradient(s * 0.72, -0.72, 0.05, s * 0.78, -0.6, 0.48); go.addColorStop(0, '#20302c'); go.addColorStop(0.6, '#07090b'); go.addColorStop(1, '#020304');
+      c.fillStyle = go; c.beginPath(); c.ellipse(s * 0.78, -0.6, 0.44, 0.5, 0, 0, 6.283); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.arc(s * 0.78 - 0.14, -0.78, 0.08, 0, 6.283); c.fill();
+    }
+    c.restore();
   }
-  ctx.restore();
+  c.restore();
 }
 // En la capa de oscuridad: el destello del señuelo alumbra un poco a su alrededor; el latido oscurece todo un instante
 function luzKraken(c, j, sx, sy, E) {
@@ -3928,6 +3991,14 @@ function luzKraken(c, j, sx, sy, E) {
 }
 function brillosKraken(j, sx, sy, E, t) {
   const sB = spriteRadial('brBlanco', [[0, 'rgba(250,252,255,1)'], [1, 'rgba(250,252,255,0)']]), sV = spriteRadial('brVioleta', [[0, 'rgba(200,140,255,1)'], [1, 'rgba(200,140,255,0)']]);
+  { // v159: fotóforos tenues del manto y del borde de las aletas; así se intuye su tamaño a oscuras. Laten despacio y,
+    // con el latido, se encienden todos a la vez
+    const crownY = j.y + j.J.tam * 0.22, bat = Math.sin(t * 1.15) * 0.16, lat = Math.max(j.latidoFx || 0, 0.35 + 0.2 * Math.sin(t * 0.9));
+    KRAKEN_FOTOFOROS.forEach((p, k) => { let x = p.x, y = p.y;
+      if (p.aleta) { const px = p.aleta * 1.1, py = -7.8, a = -p.aleta * bat, dx = x - px, dy = y - py; x = px + dx * Math.cos(a) - dy * Math.sin(a); y = py + dx * Math.sin(a) + dy * Math.cos(a); }
+      const tw = 0.6 + 0.4 * Math.sin(t * 2.3 + k * 1.7);
+      pintarSprite(ctx, sV, sx(j.x + x), sy(crownY + y), 0.55 * E, 0.55 * E, 0.55 * lat * tw * j.alfa); });
+  }
   const X = sx(j.senuelo.x), Y = sy(j.senuelo.y);
   pintarSprite(ctx, sB, X, Y, 0.5 * E, 0.5 * E, 0.4 * j.alfa);
   if (j.flash > 0) { pintarSprite(ctx, sB, X, Y, 8 * E, 8 * E, 0.32 * j.flash * j.alfa); pintarSprite(ctx, sB, X, Y, 1.7 * E, 1.7 * E, j.flash * j.alfa); }
@@ -4827,6 +4898,7 @@ function buscarCercano() {
     if (d < BAL.estaciones.radioAcople && d < md) { md = d; mejor = { tipo: 'estacion', id, m, d }; }
     if (id === 'estigia' && estadoEst(id).t1 > 0) { const p = posT1(m), d2 = Math.hypot(p.x - s.x, p.y - s.y); if (d2 < 10 && d2 < md) { md = d2; mejor = { tipo: 't1', m, d: d2 }; } }
   }
+  { const A = fondeoG().anclado; if (A) { const d = Math.hypot(A.x - s.x, A.y - 1.5 - s.y); if (d < BAL.fondeo.radio && d < md) { md = d; mejor = { tipo: 'fondeo', d }; } } }   // v160
   for (const o of persefonePendientes()) {   // lo que Perséfone se llevó (Cocito)
     const q = posObjPersefone(o), d = Math.hypot(q.x - s.x, q.y - s.y);
     if (d < R0 + 3 && d * 0.6 < md) { md = d * 0.6; mejor = { tipo: 'persefone', o, x: q.x, y: q.y, d }; }
@@ -4849,6 +4921,7 @@ function delante(n) { const s = inm.sub; return (n.x - s.x) * (s.derecha ? 1 : -
 function accionPrimaria() {
   const I = inm, c = I.cercano, s = I.sub;
   if (I.minado || I.recogiendo) return;
+  if (modoBotonB() === 'fondeo') { const q = sitioFondeo(s); if (q) { anclarFondeo(q); return; } }   // v160: sobre una repisa, lo primero es anclar el fondeo
   if (!c) {
     const b = balizaPendiente(); if (b) { desplegarBaliza(b); return; }
     if (s.y < 6) terminarInmersion('vuelta'); return;
@@ -4856,6 +4929,7 @@ function accionPrimaria() {
   if (Math.hypot(s.vx, s.vy) > BAL.recoleccion.velMaxParaRecoger) { toast('Frena para recoger', 'mal'); return; }
   if (c.tipo === 'pecio') { saquearPecio(c.p); return; }
   if (c.tipo === 'estacion') { iniciarAcople(c); return; }
+  if (c.tipo === 'fondeo') { repostarFondeo(); return; }
   if (c.tipo === 't1') { rebuscarT1(); return; }
   if (c.tipo === 'balizaCueva') { recogerBaliza(c.b); return; }
   if (c.tipo === 'pieza') { recogerPieza(c.p); return; }
@@ -5180,6 +5254,41 @@ function dibujarObjPersefone(sx, sy, E, yTop, yBot) {
   }
 }
 // Silencio para el registro de voz: luces apagadas, sin propulsión y casi quieto, cerca de Perséfone
+/* v160: «El roce» (novela, cap. 16: a los 9.100 m Kaori oye «algo muy pesado que se arrastra sobre un suelo de grava»,
+   ven pasar los pliegues con el cristal y Lucía lo apaga todo). Entre 9.000 y 9.400 m, la primera vez siempre y luego
+   el 40 % de las inmersiones: aviso (4 s) → pasa algo enorme por detrás de las paredes (una pasada del Guardián del
+   Abismo, de lejos). En silencio (luces apagadas, motor parado) pasa de largo: nota del Cuaderno y logro. Con ruido,
+   el golpe: blindaje, estrés y un fallo de luces y motor, como el de Perséfone a los 9.700. */
+function actualizarRoce(dt) {
+  const I = inm, s = I.sub, R = I.roce;
+  if (!R) {
+    if (I.roceTirado || s.y < 9000 || s.y > 9400 || I.jefe) return;
+    I.roceTirado = true;
+    if (notaVista('roce') && Math.random() >= 0.4) return;
+    I.roce = { fase: 'aviso', t: 4, alarma: 0, avisado: false };
+    toast('Los pulsos del fondo se aceleran. Algo enorme se acerca: apaga las luces, para el motor y no hagas ruido', 'mal');
+    Sonido.alertaFauna(30, 0);
+    return;
+  }
+  if (I.pasadas && I.pasadas.length && !I.jefe) actualizarPasadas(dt);
+  if (R.fase === 'aviso') { R.t -= dt; if (R.t <= 0) { R.fase = 'pasa'; pasadaAbismo({ p: 0.55, v: 11, oy: -4, H: 32 }); R.P = I.pasadas[I.pasadas.length - 1]; } return; }
+  if (R.fase !== 'pasa') return;
+  const ruido = ruidoSubmarino(I).r + (I.luces ? 0.4 : 0);
+  if (ruido > 0.2) R.alarma += dt * ruido; else R.alarma = Math.max(0, R.alarma - dt * 0.15);
+  if (R.alarma > 0.5 && !R.avisado) { R.avisado = true; toast('El roce se detiene un instante… Te ha oído', 'mal'); }
+  if (R.alarma >= 1.3) {   // el golpe: «como si alguien hubiera dado una patada a la esfera desde abajo»
+    R.fase = 'golpe';
+    const lado = s.x < (Fosa.izq(s.y) + Fosa.der(s.y)) / 2 ? -1 : 1;
+    s.vx += lado * 9; s.vy += 3; recibirEmbestida(60, -lado); I.estres += 10; I.sacudida = 1;
+    I.fallo.luces = 4; I.fallo.motor = 3; I.fallo.aviso = 3;
+    toast('¡El golpe! Una patada desde abajo, sin aviso: −60 de blindaje, +10 % de estrés, y luces y motor fuera unos segundos', 'mal');
+    return;
+  }
+  if (!I.pasadas.includes(R.P)) {   // pasó de largo
+    R.fase = 'fin'; const nuevo = !notaVista('roce'); anotarNota('roce'); logro('como-lucia');
+    toast(`Se aleja. Lo has dejado pasar en silencio, como Lucía${nuevo ? ' (Anotado en el Cuaderno de campo.)' : ''}`, 'oro');
+  }
+}
 function vigilarSilencio(dt) {
   const I = inm, s = I.sub; if (!G.cocito || novG().voz || (I.persefone && I.persefone.voz)) return;
   const q = posObjPersefone(OBJ_PERSEFONE[1]), cerca = Math.hypot(q.x - s.x, q.y - s.y) < 14;
@@ -5739,9 +5848,11 @@ function render(dt) {
   for (let c = Math.floor(y0 / tam); c <= Math.floor(y1 / tam); c++) for (const n of nodosChunk(c)) if (nodoVivo(n) && n.y > yTop - 4 && n.y < yBot + 4) visibles.push(n);
   for (const m of Fosa.mesetas()) if (m.barco && m.y > yTop - 20 && m.y < yBot + 20) dibujarBarco(m, sx, sy, E);
   for (const n of visibles) dibujarNodo(n, sx, sy, E, I.t);
+  dibujarGolpe(sx, sy, E, yTop, yBot);   // v160: las marcas del golpe de los 9.700
   dibujarPiezasMundo(sx, sy, E, yTop, yBot);   // piezas de colección
   const recolVis = G.recolectores.instalados.filter(r => r.y > yTop - 6 && r.y < yBot + 6);
   for (const r of recolVis) dibujarRecol(r, sx, sy, E, I.t);
+  dibujarFondeo(sx, sy, E, yTop, yBot, I.t);   // v160
 
   // Pecios
   for (const p of todosLosPecios()) if (p.y > yTop - 10 && p.y < yBot + 10) dibujarPecio(p, sx, sy, E);
@@ -5966,6 +6077,7 @@ function render(dt) {
     if (Math.sin(I.t * 1.3) > 0.6) { const g = GEO_ESTACION[id], q = enMundo(m, g.modem[0] + 0.05, g.modem[1] - 0.9); brillo(sx(q.x), sy(q.y), 2.4 * E, 'rgb(90,230,220)', 0.7); }
   }
   brillosEstaciones(brillo, sx, sy, E, yTop, yBot, I.t);
+  brillosFondeo(brillo, sx, sy, E, I.t);
   if (expMontadas().estrobos && (I.t % BAL.expedicion.estrobos.periodo) < 0.28)   // destello de las balizas estroboscópicas
     for (const b of G.balizasColocadas) if (b.y > yTop - 10 && b.y < yBot + 10) { brillo(sx(b.x), sy(b.y - 1.7), 5 * E, 'rgb(250,250,240)', 0.9); brillo(sx(b.x), sy(b.y - 1.7), 1.2 * E, 'rgb(255,255,255)', 1); }
   for (const e of G.encargosActivos) {   // luces de las misiones: contenedor (ámbar) y balizas desplegadas (verde)
@@ -7157,6 +7269,58 @@ function senalLucia(d) {
    energia = el jugador ha «levantado» la estación con un módulo de energía (epílogo: «levantar Caronte,
    Estigia y Leteo sobre lo que quedaba de ellas»). res = reservas que se reponen con el reloj real.
    t1 = unidades de titanio que quedan en los restos de la T-1 (solo Estigia). */
+// ---- Fondeo (v160) ----
+function fondeoG() { if (!G.fondeo) G.fondeo = { stock: 0, anclado: null }; return G.fondeo; }
+function reservaFondeo(tipo) {   // como las estaciones: se repone una cada «reponerHoras» con el reloj real (se calcula al mirar)
+  const A = fondeoG().anclado; if (!A) return { n: 0, ms: null };
+  const r = A.res[tipo], per = BAL.fondeo.reponerHoras * 3600000;
+  if (r.n >= 1) return { n: 1, ms: null };
+  const pasado = Date.now() - r.t; if (pasado >= per) { r.n = 1; r.t = Date.now(); return { n: 1, ms: null }; }
+  return { n: 0, ms: per - pasado };
+}
+// ¿Dónde se puede anclar? Sobre el techo de una repisa (no la de una estación) por debajo de 6.000 m, casi parado
+function sitioFondeo(s) {
+  if (s.y < BAL.fondeo.desde) return null;
+  for (const m of Fosa.mesetas()) {
+    if (estacionDe(m) || s.y > m.y || s.y < m.y - 7) continue;
+    const xw = m.lado < 0 ? Fosa.izqBase(m.y) : Fosa.derBase(m.y), a = Math.min(xw, xw - m.lado * m.W), b = Math.max(xw, xw - m.lado * m.W);
+    if (s.x > a + 2 && s.x < b - 2) return { m, x: s.x, y: m.y };
+  }
+  return null;
+}
+function anclarFondeo(q) {
+  const I = inm, F = fondeoG(), ahora = Date.now();
+  F.anclado = { x: q.x, y: q.y, lado: q.m.lado, res: { o2: { n: 1, t: ahora }, bat: { n: 1, t: ahora } } };
+  F.stock = Math.max(0, F.stock - 1); I.fondeoABordo = 0; I.kg = Math.max(0, I.kg - BAL.fondeo.kg); guardar();
+  toast(`Fondeo anclado a ${fmt(q.y)} m: una botella de O2 y una carga de batería, que se reponen cada ${BAL.fondeo.reponerHoras} h`, 'oro');
+  Sonido.tono(140, 0.5, 'sawtooth', 0.03); Sonido.tono(420, 0.3, 'triangle', 0.05, 0.35);
+}
+function repostarFondeo() {
+  const I = inm, R = BAL.estaciones, A = fondeoG().anclado; if (!A) return;
+  const o = reservaFondeo('o2'), b = reservaFondeo('bat'), hecho = [];
+  if (o.n > 0) { A.res.o2 = { n: 0, t: Date.now() }; I.o2 = Math.min(100, I.o2 + R.o2PorBotella); I.co2 = Math.max(0, I.co2 - R.co2PorBotella); hecho.push('O2'); }
+  if (b.n > 0) { A.res.bat = { n: 0, t: Date.now() }; I.bateria = Math.min(I.eq.capacidad, I.bateria + I.eq.capacidad * R.batPorCarga); hecho.push('batería'); }
+  if (hecho.length) { guardar(); toast(`Fondeo: ${hecho.join(' y ')} repuestos`, 'oro'); Sonido.tono(520, 0.12, 'triangle', 0.05); }
+  else toast(`El fondeo está vacío: la próxima cesta llega en ${durLarga(Math.min(o.ms || 1e12, b.ms || 1e12))}`, 'mal');
+}
+function dibujarFondeo(sx, sy, E, yTop, yBot, t) {   // un bastidor con dos botellas y la caja de la batería, el mástil de la baliza y el cabo que sube
+  const A = fondeoG().anclado; if (!A || A.y < yTop - 30 || A.y > yBot + 10) return;
+  ctx.save(); ctx.translate(sx(A.x), sy(A.y)); ctx.scale(E * 1.3, E * 1.3); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(200,205,195,.35)'; ctx.lineWidth = 0.06; ctx.beginPath(); ctx.moveTo(0, -4.2); for (let k = 1; k <= 12; k++) ctx.lineTo(Math.sin(t * 0.4 + k * 0.7) * 0.25 * k / 12, -4.2 - k * 3); ctx.stroke();   // el cabo
+  ctx.fillStyle = '#d9a21c'; ctx.beginPath(); ctx.ellipse(0, -4.6, 0.55, 0.42, 0, 0, 6.283); ctx.fill();   // flotador
+  ctx.strokeStyle = '#3d4246'; ctx.lineWidth = 0.14; ctx.strokeRect(-1.9, -2.1, 3.8, 2.1); ctx.beginPath(); ctx.moveTo(-1.9, -2.1); ctx.lineTo(1.9, 0); ctx.moveTo(1.9, -2.1); ctx.lineTo(-1.9, 0); ctx.stroke();   // bastidor
+  for (const x of [-1.25, -0.45]) { const g = ctx.createLinearGradient(x - 0.32, 0, x + 0.32, 0); g.addColorStop(0, '#7a5f12'); g.addColorStop(0.45, '#f0c84a'); g.addColorStop(1, '#8a6a14'); ctx.fillStyle = g; ctx.fillRect(x - 0.3, -1.9, 0.6, 1.8); }   // botellas de O2
+  ctx.fillStyle = '#2b3236'; ctx.fillRect(0.2, -1.4, 1.5, 1.3); ctx.fillStyle = '#56c7b8'; ctx.fillRect(0.4, -1.15, 0.3, 0.3);   // caja de la batería
+  ctx.strokeStyle = '#aab1b4'; ctx.lineWidth = 0.1; ctx.beginPath(); ctx.moveTo(0, -2.1); ctx.lineTo(0, -4.2); ctx.stroke();   // mástil
+  ctx.fillStyle = '#1d2326'; ctx.fillRect(-0.22, -4.4, 0.44, 0.35);
+  ctx.restore();
+}
+function brillosFondeo(brillo, sx, sy, E, t) {
+  const A = fondeoG().anclado; if (!A) return;
+  const X = sx(A.x), Y = sy(A.y - 4.25 * 1.3), f = (t % BAL.fondeo.destello) < 0.25;
+  brillo(X, Y, 0.5 * E, 'rgb(120,255,160)', 0.6);
+  if (f) { brillo(X, Y, 7 * E, 'rgb(90,255,150)', 0.5); brillo(X, Y, 1.4 * E, 'rgb(220,255,230)', 1); }
+}
 function estadoEst(id) {
   if (!G.estaciones) G.estaciones = {};
   if (!G.estaciones[id]) G.estaciones[id] = { energia: false, hallazgo: false, visitas: 0, res: { o2: { n: 0, t: 0 }, bat: { n: 0, t: 0 } }, t1: id === 'estigia' ? BAL.estaciones.t1Titanio : 0 };
@@ -8155,6 +8319,10 @@ const COLECCION = [
   { id: 'bolsa', pdi: 'camara4', zi: 4, n: 'Bolsa de plástico', zona: 'Cueva de la Fosa', kg: 0.1, pago: 0, quien: '',
     sub: 'Cámara de una cueva',
     texto: 'Una bolsa de supermercado, entera, a kilómetros de cualquier tienda. No es invento: en 2018 se publicó el hallazgo de una bolsa de plástico a 10.898 m en la fosa de las Marianas, el resto de basura más hondo registrado hasta entonces. La universidad se la queda: es un dato, no un trofeo.' },
+  // v160: el golpe de los 9.700 (novela, cap. 16). En la pared, no en una repisa
+  { id: 'foco', pdi: 'golpe', n: 'Foco de Perséfone', zona: 'Fosa', kg: 3, pago: 0, quien: '',
+    sub: 'El golpe de los 9.700',
+    texto: 'Uno de los focos exteriores de Perséfone: la carcasa aplastada, el cristal estrellado y un trozo de soporte doblado, encajado en una grieta a 9.700 m. Alrededor, en la roca, arañazos largos de titanio y pintura blanca y naranja. «Fue como si alguien hubiera dado una patada a la esfera desde abajo. No lo oyeron venir.» Kaori no volvió a abrir los ojos. Lo que las golpeó, la novela no lo dice.' },
   // Cocito: en la cesta de babor de Perséfone
   { id: 'placa', pdi: 'cocito', n: 'Placa del Trieste', zona: 'Cocito', kg: 1, pago: 0, quien: '',
     sub: 'Perséfone, cesta de babor',
@@ -8187,6 +8355,15 @@ function mesetasPdi(i0, ocupadas) {
   return out;
 }
 // Dónde está cada pieza de colección en el mundo
+// El golpe de los 9.700 (v160): fijo por semilla, en la pared desnuda, nunca en la boca de una cueva
+function posGolpe() {
+  if (Fosa._golpe && Fosa._golpeSem === G.semilla) return Fosa._golpe;
+  const rng = mulberry32(hash2(G.semilla + 9700, 1)); let r = null;
+  for (let k = 0; k < 14 && !r; k++) { const y = 9660 + rng() * 80, lado = rng() < 0.5 ? -1 : 1, xw = lado < 0 ? Fosa.izq(y) : Fosa.der(y);
+    if (!aguaCuevas(xw + lado * 2, y) && !aguaCuevas(xw + lado * 2, y - 6) && !aguaCuevas(xw + lado * 2, y + 6)) r = { y, lado, xw }; }
+  if (!r) r = { y: 9700, lado: -1, xw: Fosa.izq(9700) };
+  Fosa._golpe = r; Fosa._golpeSem = G.semilla; return r;
+}
 function piezasMundo() {
   if (Fosa._pz && Fosa._pzSem === G.semilla && Fosa._pzCo === !!G.cocito) return Fosa._pz;
   const out = [];
@@ -8202,6 +8379,7 @@ function piezasMundo() {
     const P = COLECCION.find(q => q.zi === c.zi), x = c.camara.cx + (c.fines[0].x < c.camara.cx ? 3 : -3), b = bordesSala(c, x);
     if (P && b) out.push({ id: P.id, x, y: b.suelo - 0.5, cueva: c });
   }
+  { const g = posGolpe(); out.push({ id: 'foco', x: g.xw - g.lado * 0.9, y: g.y + 1.2, golpe: true }); }   // encajado en la grieta
   if (G.cocito) { const D = cocitoDatos(); out.push({ id: 'placa', x: D.persX - D.lado * 2.3, y: BAL.cocito.suelo - 0.4, cocito: true }); }   // en la cesta de babor de Perséfone
   Fosa._pz = out; Fosa._pzSem = G.semilla; Fosa._pzCo = !!G.cocito; return out;
 }
@@ -8223,9 +8401,22 @@ function recogerPieza(p) {
   toast(`${P.n} a bordo. Súbela a la base para la Colección (si pierdes el submarino, se queda aquí)`, 'oro');
   Sonido.tono(520, 0.12, 'triangle', 0.05); Sonido.tono(780, 0.2, 'triangle', 0.05, 0.12);
 }
+// v160: la bajada de Perséfone por la Fosa. Notas del Cuaderno al vivir cada momento y el aviso del golpe de los 9.700.
+function vigilarFosaPersefone(I, s) {
+  if (!notaVista('ultimoPez')) for (const c of I.fauna) if (c.e.id === 'ultimoPez' && Math.hypot(c.x - s.x, c.y - s.y) < 14) {
+    anotarNota('ultimoPez'); toast('El último pez: un pez caracol pequeño y rosado, inmóvil en la luz. Por debajo de unos 8.400 m ya no vive ninguno (Anotado en el Cuaderno de campo.)', 'oro'); break; }
+  if (!notaVista('paredBrilla') && s.y >= 8700 && I.luces && Math.min(Math.abs(s.x - Fosa.izq(s.y)), Math.abs(Fosa.der(s.y) - s.x)) < 30) {
+    anotarNota('paredBrilla'); toast('La pared devuelve la luz en miles de puntos verdes: cristal en la roca, como la mica en el granito (Anotado en el Cuaderno de campo.)', 'oro'); }
+  const g = posGolpe();
+  if (!I.pdiHoy.golpe && Math.abs(g.y - s.y) < 30 && Math.hypot(g.xw - s.x, g.y - s.y) < 35) {
+    I.pdiHoy.golpe = true; const nuevo = !(G.pdiVistos || {}).golpe; (G.pdiVistos = G.pdiVistos || {}).golpe = Math.round(g.y);
+    if (nuevo) toast('9.700 m. Arañazos de titanio en la roca y pintura blanca y naranja: aquí fue el golpe de Perséfone. Algo brilla encajado en una grieta', 'oro');
+  }
+}
 // Aviso la primera vez que llegas a cada punto de interés
 function vigilarPdi() {
   const I = inm, s = I.sub;
+  if (s.y > 7500) vigilarFosaPersefone(I, s);
   if (I.enCueva) for (const c of Fosa.cuevas()) {   // al entrar en una cámara grande
     const K = c.camara; if (!K || K.R <= CUEVA.camara || I.pdiHoy['cam' + c.i] || Math.hypot(K.cx - s.x, K.cy - s.y) > K.R * 0.9) continue;
     I.pdiHoy['cam' + c.i] = true; const N = nombreCueva(c), conPieza = cuevasConPieza().includes(c);
@@ -8656,6 +8847,20 @@ function dibujarPdiRepisa(m, sx, sy, E, t) {
   }
 }
 // Las piezas en el mundo: su icono a escala, y un destello si estás cerca
+function dibujarGolpe(sx, sy, E, yTop, yBot) {   // arañazos largos de titanio y pintura de Perséfone en la roca
+  if (yBot < 9600 || yTop > 9800) return;
+  const g = posGolpe(); if (g.y < yTop - 12 || g.y > yBot + 12) return;
+  const D = -g.lado, f = y => (g.lado < 0 ? Fosa.izq(y) : Fosa.der(y)) + D * 0.15, rng = mulberry32(hash2(G.semilla + 9701, 2));
+  ctx.save(); ctx.lineCap = 'round';
+  for (let k = 0; k < 7; k++) {   // las marcas bajan por la pared, del choque hacia abajo
+    const y0 = g.y - 7 + rng() * 4, L = 6 + rng() * 7, prof = 0.2 + rng() * 0.9, col = k % 3 === 0 ? 'rgba(236,234,224,' : k % 3 === 1 ? 'rgba(199,90,31,' : 'rgba(170,176,180,';
+    ctx.strokeStyle = col + (0.3 + rng() * 0.25) + ')'; ctx.lineWidth = Math.max(1, (0.08 + rng() * 0.1) * E);
+    ctx.beginPath(); for (let q = 0; q <= 8; q++) { const y = y0 + L * q / 8, x = f(y) + D * (prof * Math.sin(q / 8 * Math.PI) + 0.05); q ? ctx.lineTo(sx(x), sy(y)) : ctx.moveTo(sx(x), sy(y)); } ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(20,18,16,.55)'; ctx.beginPath(); ctx.ellipse(sx(f(g.y + 1.2) + D * 0.5), sy(g.y + 1.2), 1.3 * E, 0.55 * E, 0.2, 0, 6.283); ctx.fill();   // la grieta
+  for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? 'rgba(236,234,224,.7)' : 'rgba(150,154,156,.8)'; const y = g.y + 2 + rng() * 6; ctx.fillRect(sx(f(y) + D * (0.4 + rng() * 2)), sy(y), (0.25 + rng() * 0.3) * E, (0.12 + rng() * 0.15) * E); }   // esquirlas
+  ctx.restore();
+}
 function dibujarPiezasMundo(sx, sy, E, yTop, yBot) {
   for (const p of piezasMundo()) {
     if (p.y < yTop - 5 || p.y > yBot + 5 || !piezaDisponible(p)) continue;
@@ -9047,6 +9252,48 @@ Object.assign(DIBUJO_PIEZA, {
     c.restore();
   }
 });
+// v160: el foco de Perséfone (el golpe de los 9.700): cabeza de foco de aluminio aplastada, cristal estrellado,
+// soporte doblado con la pintura blanca y naranja del carenado y el cable cortado
+DIBUJO_PIEZA.foco = function (c) {
+  c.save(); c.translate(36, 27); c.scale(1.3, 1.3); c.rotate(-0.38);
+  const rr = (p, x, y, w, h, r) => { p.moveTo(x + r, y); p.arcTo(x + w, y, x + w, y + h, r); p.arcTo(x + w, y + h, x, y + h, r); p.arcTo(x, y + h, x, y, r); p.arcTo(x, y, x + w, y, r); p.closePath(); return p; };
+  // cable cortado (detrás)
+  const cab = new Path2D(); cab.moveTo(-17, 2); cab.bezierCurveTo(-24, 4, -25, 12, -20, 17);
+  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 3; c.save(); c.translate(1.6, 2.2); c.stroke(cab); c.restore();
+  c.strokeStyle = '#1b1d1f'; c.lineWidth = 2.6; c.stroke(cab);
+  c.strokeStyle = '#b87333'; c.lineWidth = 0.6; for (const [dx, dy] of [[-1.2, 1.4], [0, 2], [1.1, 1.3]]) { c.beginPath(); c.moveTo(-20, 17); c.lineTo(-20 + dx, 17 + dy); c.stroke(); }   // hilos de cobre
+  // soporte doblado, con pintura blanca y una franja naranja
+  const sop = new Path2D(); sop.moveTo(-6, 7); sop.lineTo(-4, 15); sop.lineTo(3, 19); sop.lineTo(5.5, 16.5); sop.lineTo(-0.5, 13.6); sop.lineTo(-2, 7); sop.closePath();
+  c.save(); c.translate(1.6, 2.2); c.fillStyle = 'rgba(0,0,0,.4)'; c.fill(sop); c.restore();
+  const gs = c.createLinearGradient(-6, 7, 5, 19); gs.addColorStop(0, '#efeee6'); gs.addColorStop(1, '#a9a79d'); c.fillStyle = gs; c.fill(sop);
+  c.save(); c.clip(sop); c.fillStyle = '#c75a1f'; c.beginPath(); c.moveTo(-6, 11); c.lineTo(6, 16); c.lineTo(6, 18); c.lineTo(-6, 13); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(120,124,126,.9)'; for (const [x, y, w] of [[-3, 9, 2.2], [1, 16, 2.6], [-4.5, 12.5, 1.6]]) c.fillRect(x, y, w, 0.9); c.restore();   // pintura saltada
+  c.strokeStyle = 'rgba(40,40,36,.7)'; c.lineWidth = 0.7; c.stroke(sop);
+  // carcasa: cilindro de aluminio, aplastado por arriba
+  const cuerpo = new Path2D(); cuerpo.moveTo(-17, -6); cuerpo.lineTo(4, -7.5); cuerpo.quadraticCurveTo(8, -5.5, 9, -2); cuerpo.lineTo(9, 6.5); cuerpo.lineTo(-17, 7); cuerpo.quadraticCurveTo(-19, 0.5, -17, -6); cuerpo.closePath();
+  c.save(); c.translate(2, 2.8); c.fillStyle = 'rgba(0,0,0,.42)'; c.fill(cuerpo); c.restore();
+  const ga = c.createLinearGradient(0, -8, 0, 7); ga.addColorStop(0, '#d8dcdd'); ga.addColorStop(0.3, '#9aa1a4'); ga.addColorStop(0.65, '#5e666a'); ga.addColorStop(1, '#2f3538');
+  c.fillStyle = ga; c.fill(cuerpo);
+  c.save(); c.clip(cuerpo);
+  c.strokeStyle = 'rgba(30,34,36,.55)'; c.lineWidth = 0.6; for (let x = -14; x < 6; x += 2.6) { c.beginPath(); c.moveTo(x, -8); c.lineTo(x - 0.4, 8); c.stroke(); }   // aletas de disipación
+  c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 0.4; for (let x = -13.4; x < 6; x += 2.6) { c.beginPath(); c.moveTo(x, -8); c.lineTo(x - 0.4, 8); c.stroke(); }
+  c.fillStyle = 'rgba(25,22,20,.45)'; c.beginPath(); c.moveTo(-8, -9); c.quadraticCurveTo(-3, -3, 3, -9); c.closePath(); c.fill();   // la abolladura
+  c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(-8.5, -6.4); c.quadraticCurveTo(-3, -1.8, 2.6, -7); c.stroke();
+  c.fillStyle = 'rgba(236,234,224,.8)'; for (const [x, y] of [[-12, 3], [-6, 4.5], [0, 2]]) { c.beginPath(); c.ellipse(x, y, 1.2, 0.5, 0.3, 0, 6.283); c.fill(); }   // pintura blanca de Perséfone
+  c.restore();
+  c.strokeStyle = '#1d2124'; c.lineWidth = 0.8; c.stroke(cuerpo);
+  // tapa trasera
+  c.fillStyle = '#3a4043'; c.fill(rr(new Path2D(), -19.5, -4, 3.2, 9, 1.2)); c.strokeStyle = '#151819'; c.lineWidth = 0.6; c.stroke(rr(new Path2D(), -19.5, -4, 3.2, 9, 1.2));
+  // aro delantero y cristal estrellado
+  c.fillStyle = '#7d8487'; c.beginPath(); c.ellipse(9.5, 2.3, 2.6, 6.2, 0, 0, 6.283); c.fill(); c.strokeStyle = '#1b1e20'; c.lineWidth = 0.7; c.stroke();
+  const gl = c.createRadialGradient(10.4, 0.5, 0.3, 10, 2.3, 5); gl.addColorStop(0, '#eef6f8'); gl.addColorStop(0.5, '#9fb7bf'); gl.addColorStop(1, '#3e5258');
+  c.fillStyle = gl; c.beginPath(); c.ellipse(10, 2.3, 1.7, 5, 0, 0, 6.283); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 0.45; c.beginPath();   // grietas en estrella desde el impacto
+  const ix = 10.4, iy = 0.6; for (const [dx, dy] of [[1.2, -3.6], [-1.2, -3], [1.4, 1.5], [-1.4, 3.8], [0.3, 4.4], [-1.5, 0.2]]) { c.moveTo(ix, iy); c.lineTo(ix + dx * 0.6, iy + dy * 0.55); c.lineTo(ix + dx, iy + dy); }
+  c.stroke();
+  c.strokeStyle = 'rgba(30,40,44,.6)'; c.lineWidth = 0.35; c.beginPath(); c.ellipse(ix, iy, 1, 1.6, 0, 0, 6.283); c.stroke();
+  c.restore();
+};
 function iconoPiezaCanvas(id, tam, silueta = false) {
   const clave = id + tam + (silueta ? 's' : ''); if (cachePiezas.has(clave)) return cachePiezas.get(clave);
   const cv = document.createElement('canvas'); cv.width = cv.height = tam;
@@ -9803,6 +10050,7 @@ const FORMA_ABISAL = {
     ctx.fillStyle = '#2a1c22'; ctx.beginPath(); ctx.arc(...P(0.37, -0.05), T * 0.017, 0, 6.283); ctx.fill();
   }
 };
+FORMA_ABISAL.ultimoPez = FORMA_ABISAL.caracol;   // v160: el último pez, un pez caracol pequeño
 // Lo que brilla de la fauna a oscuras: ojo (donde lo tiene cada especie), fotóforos del pez víbora,
 // vientre del tiburón linterna y señuelo del rape
 function luzFauna(c, brillo, sx, sy, E, t) {
@@ -10581,7 +10829,7 @@ function actualizarHUD(dt) {
   txt('h-zona', d > BAL.fondo + 5 ? 'Cocito' : `${z.zona.nombre.replace('Zona ', '')} ${z.sub}/3${I.enCueva ? ' · cueva' : ''}`);
   {   // botón contextual: Baliza dentro de las cuevas, Pulso en la fosa (o si algo te persigue)
     const bg = document.getElementById('t-girar'), modoB = modoEmisor() ? 'emisor' : modoBotonB(), listo = I.pulsoCd <= 0 && I.bateria >= I.eq.pulso.consumo;
-    const t = modoB === 'emisor' ? 'Emitir' : modoB === 'baliza' ? `Baliza ${I.balizasStock | 0}` : modoB === 'sinPulso' ? 'Sin pulso' : listo ? 'Pulso' : `Pulso ${Math.ceil(I.pulsoCd)}`;
+    const t = modoB === 'emisor' ? 'Emitir' : modoB === 'fondeo' ? 'Fondeo' : modoB === 'baliza' ? `Baliza ${I.balizasStock | 0}` : modoB === 'sinPulso' ? 'Sin pulso' : listo ? 'Pulso' : `Pulso ${Math.ceil(I.pulsoCd)}`;
     if (bg.textContent !== t) bg.textContent = t;
     bg.classList.toggle('apagado', modoB === 'sinPulso' || (modoB === 'pulso' && !listo));
     bg.classList.toggle('alerta', modoB === 'pulso' && listo && amenazaCerca() || modoB === 'emisor' && !!I.jefe && I.jefe.estado === 'respuesta');
@@ -10614,6 +10862,7 @@ function actualizarHUD(dt) {
   const SBh = BAL.soplado || { tiempoPulsado: 1.5, costeO2: 15 };
   if (s.tSoplar > 0.3) msg = `Sigue pulsando: soplado de emergencia (−${SBh.costeO2} % de O2) · ${Math.round(s.tSoplar / SBh.tiempoPulsado * 100)} %`;
   else if (I.minado || I.recogiendo) msg = '';
+  else if (modoBotonB() === 'fondeo') msg = chipAccion(tecla, 'Anclar el fondeo aquí', `${fmt(s.y)} m · −${BAL.fondeo.kg} kg`);   // v160
   else if (I.cercano && I.cercano.tipo === 'nodo') {
     const n = I.cercano.n, M = BAL.materiales[n.mat];
     if (!delante(n)) msg = tecla ? `<b>Q/E</b>Gira la proa hacia ${M.n}` : `Toca para girar hacia ${M.n}`;
@@ -10646,6 +10895,8 @@ function actualizarHUD(dt) {
     if (I.kg + M.kg > I.eq.kgMax) { msg = `Recolector con ${e.u} u: bodega llena`; mal = true; }
     else { const T = tierRecol(r.tier); msg = chipAccion(tecla, `Vaciar ${T ? T.et : 'recolector'}`, `${fmt1(e.u * M.kg)} kg`, { ico: iconoMaterial(r.mat), barra: [e.u, e.cap] }); }
   }
+  else if (I.cercano && I.cercano.tipo === 'fondeo') { const o = reservaFondeo('o2'), b = reservaFondeo('bat');
+    msg = o.n || b.n ? chipAccion(tecla, 'Repostar en el fondeo', [o.n ? 'O2' : '', b.n ? 'batería' : ''].filter(Boolean).join(' · ')) : `Fondeo vacío · la próxima cesta en ${durLarga(Math.min(o.ms || 1e12, b.ms || 1e12))}`; }
   else if (I.acople) msg = `Acoplándose a ${ESTACIONES[I.acople.id].n}…`;
   else if (I.cercano && I.cercano.tipo === 'estacion') msg = `<b>${tecla}</b>${I.cercano.id === 'leteo' ? 'Conectarse a la bancada de Leteo' : `Acoplarse a ${ESTACIONES[I.cercano.id].n}`}`;
   else if (I.cercano && I.cercano.tipo === 't1') msg = `<b>${tecla}</b>Rebuscar en la T-1 del Consorcio · ${estadoEst('estigia').t1} × titanio`;
@@ -11618,6 +11869,7 @@ const CONSUMIBLES = [
   { id: 'balizas', n: 'Balizas', stock: () => G.balizas | 0, max: () => BAL.balizasCueva.maxABordo, kg: () => pesoBaliza() },
   { id: 'bengalas', n: 'Bengalas', stock: () => G.bengalas | 0, max: () => BAL.bengalas.maxABordo, kg: () => BAL.bengalas.peso },
   { id: 'modulo', n: 'Módulo de energía', stock: () => G.modulosEst | 0, max: () => 1, kg: () => BAL.estaciones.modulo.kg },
+  { id: 'fondeo', n: 'Fondeo', stock: () => fondeoG().stock | 0, max: () => 1, kg: () => BAL.fondeo.kg },
   // Un recolector por tier (id «recol_r1»…). Tope: los que caben instalados a la vez
   ...ORDEN_RECOL.map(t => ({ id: 'recol_' + t, n: () => (tierRecol(t) || { n: 'Recolector' }).n + ' (' + t.toUpperCase() + ')',
     stock: () => (G.recolectores.stock[t] | 0), max: () => BAL.recolectores.maxActivos, kg: () => pesoRecol(t) }))
@@ -11840,10 +12092,22 @@ function htmlExpTaller() {
           <p class="nota">Uno por estación. Si tienes alguno fabricado, baja uno a bordo en cada inmersión: <b class="num">${M.kg} kg</b> de bodega.</p>
           <div class="rt-receta">${recetaHTML(M.receta)}</div>
           <div class="rt-pie"><span class="num">En almacén: ${stock}</span><button class="boton peq" type="button" data-accion="fabricarModulo" ${puedeM ? '' : 'disabled'}>Fabricar · ${fmt(M.cr)} cr</button></div></div>
+        ${htmlFondeoTaller()}
         ${piezas}
       </div>
       <p class="nota">Piezas de expedición: cada estación guarda un plano. No son un tier más: añaden algo y cuestan algo. Montadas, suman a lo que cuesta reconstruir el submarino.</p>
     </section>`;
+}
+function htmlFondeoTaller() {   // v160
+  const F = BAL.fondeo, X = fondeoG(), A = X.anclado, tiene = (X.stock | 0) > 0 || !!A, puede = !tiene && hayMateriales(F.receta) && G.creditos >= F.cr;
+  const res = t => { const r = reservaFondeo(t); return r.n ? 'lista' : `en ${durLarga(r.ms)}`; };
+  const estado = A ? `Anclado a <b class="num">${fmt(A.y)} m</b> · O2 ${res('o2')} · batería ${res('bat')}` : (X.stock | 0) > 0 ? 'En el almacén: bájalo a bordo desde el Muelle y ánclalo con Acción sobre una repisa por debajo de 6.000 m' : '';
+  return `<div class="recol-tier"><div class="rt-cab"><span class="rt-chapa" style="--c:#5be08f">F</span><b>${escapar(F.n)}</b></div>
+    <p class="nota">Un depósito con baliza que anclas tú en una repisa por debajo de ${fmt(F.desde)} m: una botella de O2 y una carga de batería que el Anfitrite repone cada ${F.reponerHoras} h. Solo uno. Pesa <b class="num">${F.kg} kg</b> a bordo.</p>
+    ${estado ? `<p class="nota">${estado}</p>` : ''}
+    ${tiene ? '' : `<div class="rt-receta">${recetaHTML(F.receta)}</div>`}
+    <div class="rt-pie">${A ? `<span class="nota">Para cambiarlo de sitio, se iza desde aquí</span><button class="boton peq" type="button" data-accion="izarFondeo" ${G.creditos >= F.izar ? '' : 'disabled'}>Izarlo · ${fmt(F.izar)} cr</button>`
+      : tiene ? '<span class="nota">Fabricado</span>' : `<span></span><button class="boton peq" type="button" data-accion="fabricarFondeo" ${puede ? '' : 'disabled'}>Fabricar · ${fmt(F.cr)} cr</button>`}</div></div>`;
 }
 // Chasis (13.6): las tres tarjetas, con lo que dan y lo que cuestan, y el estado de cada uno (montado, fabricado,
 // plano recuperado o plano perdido). Se usa en el Taller y en la ventana que abre la tarjeta del Muelle.
@@ -12466,6 +12730,7 @@ const LOGROS = [
   { id: 'recolectores', n: 'Explotación a distancia', d: 'Ten tres recolectores produciendo a la vez.', fam: 'historia', med: 'plata', sim: 'recol', cond: () => G.recolectores.instalados.filter(r => !estadoRecol(r).lleno).length >= 3 },
   { id: 'encargos', n: 'De confianza', d: 'Cobra 10 encargos.', fam: 'historia', med: 'plata', sim: 'encargo', prog: () => [Math.min(10, G.stats.encargos | 0), 10], cond: () => (G.stats.encargos | 0) >= 10 },
   { id: 'firma', n: 'Escuchar con la piel', d: 'Oye la firma de Lucía bajo 4.000 m con los focos apagados y el motor parado, como hizo ella.', fam: 'oculto', med: 'oro', sim: 'firma' },
+  { id: 'como-lucia', n: 'Como Lucía', d: 'Deja pasar el roce de los 9.100 m en silencio.', fam: 'oculto', med: 'plata', sim: 'firma' },
   { id: 'en-silencio', n: 'En silencio', d: 'Trae el registro de voz de Perséfone.', fam: 'oculto', med: 'oro', sim: 'firma' },
   { id: 'sigo-aqui', n: 'Sigo aquí', d: 'Manda la firma desde Cocito y espera a que el Abismo te la devuelva.', fam: 'oculto', med: 'oro', sim: 'firma' },
   { id: 'delfines', n: 'Compañía', d: 'Acompaña un rato a los delfines.', fam: 'oculto', med: 'bronce', sim: 'delfin' },
@@ -12582,6 +12847,10 @@ document.addEventListener('toggle', e => { if (e.target.classList && e.target.cl
    con calma en la base. Biomas: los que ya has cruzado (G.biomasVistos guarda los tramos, cuyo id empieza por las tres
    primeras letras del tipo). Notas: cosas que te pasan con la fauna (G.notas). */
 const NOTAS_CAMPO = [
+  // v160: la bajada de Perséfone por la Fosa (novela, cap. 16)
+  { id: 'ultimoPez', n: 'El último pez', desde: 7600, hasta: 8400, texto: 'Un pez caracol pequeño, rosado y translúcido, con la cabeza ancha y una cola de gasa, inmóvil en la luz. «Por debajo de unos ocho mil cuatrocientos no puede vivir ningún pez. Para aguantar la presión necesitan llenarse las células de una molécula que las protege, y cuanto más bajan, más necesitan… A partir de aquí, nada con espinas» (Kaori). En 2022 se filmó uno a 8.336 m en la fosa de Izu-Ogasawara: el pez más hondo que se ha visto nunca.' },
+  { id: 'paredBrilla', n: 'La pared que brilla', desde: 8700, hasta: 11000, texto: '«La pared, que hasta entonces había sido roca negra, les devolvió la luz en miles de puntos verdes.» Cristal incrustado en la roca, en las grietas y en las repisas, como la mica en el granito. Cuando te mueves, se encienden unos y se apagan otros, y la pared entera parece moverse contigo.' },
+  { id: 'roce', n: 'El roce', desde: 9000, hasta: 9400, texto: 'Un sonido larguísimo, lento, áspero, «como algo muy pesado que se arrastra sobre un suelo de grava». Mientras suena, los pulsos del fondo se aceleran. En la novela, Lucía lo apagó todo y esperó los cuarenta minutos que tardó en alejarse. Veinte minutos después, a los 9.700, llegó el golpe.' },
   { id: 'sifonoforo', n: 'Sifonóforo', desde: 700, hasta: 3200, texto: 'Parece un solo animal y es una colonia de miles: individuos clonados que se reparten el trabajo (nadar, cazar, digerir) unidos en una cadena. Algunos pasan de 40 m, más largos que una ballena azul. Este mide unos 26. Si lo rozas, se ilumina entero: es su defensa, y todo lo que caza por aquí te ve durante unos segundos (te detecta casi el doble de lejos). Rodéalo.' },
 ];
 function notaVista(id) { return !!(G.notas && G.notas[id]); }
@@ -13113,15 +13382,18 @@ function htmlBalance() {
         <li>Dos chasis más con su rescate, uno por zona (v146; aprobado por el autor). Carguero (rescate del TS-9 «Doris», Abisal, 4.150–5.250 m, se ofrece desde 3.700 m de récord, 4.000 cr; 10 nódulos, 6 titanio, 5.000 cr): +90 kg de bodega, solo admite la Garra en la proa, −10 % de velocidad y, con la bodega llena, sube hasta un 45 % más despacio; reconstruirlo cuesta un 20 % más. Acorazado (rescate del TS-12 «Psámate», Fosa, 6.400–8.600 m, desde 6.000 m, 8.000 cr; 8 cristal, 6 sedimento, 9.000 cr): blindaje +60 % y −30 % de estrés del casco, pero −15 % de velocidad, más consumo de batería, sin turbo y reconstrucción un 50 % más cara. Dibujo: el Carguero con depósitos grandes y franja verde; el Acorazado con placas atornilladas y franja de acero. Rescates: dos tipos decididos con el autor; los del Consorcio dan chasis; los de la expedición de la novela (pendientes) darán historia.</li>
         <li>La expedición y el nombre del submarino (v147; propuestos a partir del epílogo de la novela y aprobados por el autor). El epílogo ya fija el plan del sumergible nuevo de Mikel, que es el del jugador: encontrar a Orfeo y «traer de vuelta lo que Perséfone se había llevado». Encargos especiales de Ruth y el Anfitrite: «Encontrar a Orfeo» (desde 6.000 m de récord; se cumple al encontrar el punto de interés de Orfeo y volver; 3.000 cr) y, tras llegar a Cocito, «Lo que Perséfone se llevó»: el registro de las cámaras y el registro de voz, sujetos al bastidor de Perséfone, se sueltan con la Garra; el de voz solo en silencio (luces apagadas, motor parado y casi quieto unos 4 s junto a ella), por la petición de Lucía («Que alguien baje a buscarlo. Pero que baje en silencio»). Los cuadernos de Kaori se quedan dentro de la esfera, con ella (decidido: no se abre). El registro de voz es el texto de la novela, palabra por palabra; el de las cámaras es un borrador para que el autor lo revise. Ambos se leen al volver y en el Diario de Lucía del Registro; logro oculto «En silencio». Nombre del submarino: «No tenía nombre. —El nombre se lo pondrá quien lo pilote»; se pide una vez en la base (se puede dejar para más tarde), sale en el Muelle, al iniciar la inmersión y en la pantalla de fin de partida, y se cambia en Opciones o en el Muelle. Encaja con el pilar 5 del GDD (el submarino es el protagonista).</li>
         <li>Taller en pestañas (v148; lo pidió el autor). El Taller ya ocupaba unas siete pantallas de scroll en el móvil. Ahora se reparte en cuatro pestañas fijas arriba: Submarino (plano y resumen del equipo), Chasis, Piezas (y expedición) y Recolectores y consumibles. Cada pestaña muestra un punto cian cuando hay algo que se puede fabricar o mejorar, y el juego recuerda la última pestaña abierta. Es un cambio solo de interfaz; no toca ninguna regla.</li>
-        <li>Registro sin destripes e iconos de la Colección (v149; lo pidió el autor). El Diario de Lucía ya no enseña las dos fichas de Perséfone hasta que llegas a Cocito, y la Colección oculta hasta entonces la placa del Trieste (decían «Perséfone · 11.414 m» y «Cocito» desde la primera partida, y eso destripaba el final). Cuando aparecen, cada ficha lleva su nombre: «Registro de las cámaras» y «Registro de voz». Además se rehacen seis iconos de la Colección con la calidad de la moneda y el diente: la vértebra de ballena (disco, arco neural, gusanos Osedax), la campana del destructor (bronce con verdín, letras en relieve, badajo), la pantalla de Orfeo con la cinta americana y su cámara, el hidrófono de Kaori con el cabo cortado, la carcasa naranja del Consorcio con sus medias lunas y la bolsa de plástico translúcida.</li>
+        <li>Registro sin destripes e iconos de la Colección (v149; lo pidió el autor). El Diario de Lucía ya no enseña las dos fichas de Perséfone hasta que llegas a Cocito, y la Colección oculta hasta entonces la placa del Trieste (decían «Perséfone · 11.412 m» y «Cocito» desde la primera partida, y eso destripaba el final). Cuando aparecen, cada ficha lleva su nombre: «Registro de las cámaras» y «Registro de voz». Además se rehacen seis iconos de la Colección con la calidad de la moneda y el diente: la vértebra de ballena (disco, arco neural, gusanos Osedax), la campana del destructor (bronce con verdín, letras en relieve, badajo), la pantalla de Orfeo con la cinta americana y su cámara, el hidrófono de Kaori con el cabo cortado, la carcasa naranja del Consorcio con sus medias lunas y la bolsa de plástico translúcida.</li>
         <li>Luz, sonar y Soporte vital T4 (v150; lo pidió el autor). Al llegar a la Abisal no veía casi nada y le costaba navegar: la oscuridad tiene que dar tensión, no impedir jugar. <b>Luces</b>: el halo del casco pasa de 7 / 8,5 / 10 m a 12 / 14 / 16 m (según los Focos), con un degradado más suave y un resplandor tenue en el agua; los Focos alumbran más lejos y más ancho (T1 52 m y 60°, T2 64 m y 69°, T3 76 m y 80°). El Sensor de sigilo pasa de 26 m a 44 m, con un haz más ancho y un halo de 11 m, y su rojo apaga menos lo que alumbra (sigue siendo peor que los focos: es el precio de que la fauna no te vea). La oscuridad máxima baja de 0,97 a 0,88, así que las paredes se intuyen aunque no las alumbres, y la luz enseña más franja de roca. Dentro de las cuevas el halo ya no crece ni se recorta: es el mismo que fuera (el autor había pedido reducirlo y, tras bajar más hondo, vio que no fue buena idea). El consumo y la detección de las luces no cambian. <b>Sonar</b>: en la fosa abierta, el botón (que ahí se llama «Ping») o la tecla Z lanzan un pulso a mano, de 70 m, cada 2 s como mucho; nunca emite solo fuera de las cuevas. Dentro de ellas sigue igual: emite solo cada 3 s y el botón lo enciende o lo apaga. <b>Soporte vital T4</b>: depuraba lo mismo que el T3 (2,0) y, con todo al máximo, el CO2 te paraba a unos 9.000 m; ahora depura 2,6, y el CO2 deja de subir hasta los 12.000 m, como el casco T4. Con los motores lentos el límite pasa a ser el O2.</li>
         <li>Trofeos del kraken y del Guardián del Abismo rehechos (v151; lo pidió el autor), con la calidad del diente y el pico. Farol del kraken: tarro cilíndrico de cristal con tapa de latón roscada, líquido con menisco y burbujas, la punta del brazo pálida y enroscada con un filamento, y el fotóforo como lo describe su texto (bolsa en forma de huevo, reflector blanco detrás, lente delante y un resto de luz dentro); etiqueta de papel «Magnapinna · 5.600 m». Cristal del latido: agujas talladas con luz que sube desde la base, fracturas internas, los hilos con gotas de luz, dos anillos tenues del latido y una base de basalto con caras y poros.</li>
         <li>Avisos, perlas y tortugas (v152; tras jugar bastante, el autor y un amigo que ya lo prueba desde GitHub). Los avisos de bioma salen enteros solo la primera vez (quedan en el Cuaderno de campo); en las siguientes inmersiones, solo el nombre y la franja. Lo mismo con el sifonóforo. En la semilla del autor no había ni una perla: salían al azar y con algunas semillas ninguna; ahora cada tramo de 50 m entre 60 y 200 m tiene un banco de perlas fijo, y las vetas al azar las eligen casi el doble (de 3 a 6 vetas de perla por partida, que vuelven a crecer como cualquier veta rara). Los encargos de suministro de materiales raros piden 1 o 2 unidades (antes de 3 a 8, imposible con las perlas). La fauna ya no es la misma en cada inmersión con la misma semilla (antes, si en tu semilla no salía una tortuga, no salía nunca), y las tortugas son algo más frecuentes.</li>
         <li>Número de versión al pie del menú principal (v153), para saber de un vistazo qué versión tiene cada probador.</li>
         <li>Recolectores por tier (v154; el autor vio que al fabricar el tier siguiente los anteriores se quedaban inservibles). El tope pasa de 3 instalados en total a 3 de cada tier (3 R1 + 3 R2 + 3 R3): cada tier es su propia red, y los de tier bajo siguen trabajando en las zonas altas, que es justo lo que pide el GDD (9.8: liberar al jugador de farmear lo ya dominado). Sustituye a la mejora de base «Centro de Control de Recolectores» que preveía el GDD para ampliar el límite: aquí cada tier nuevo es la ampliación. Al instalar se usa el tier más bajo que sirve para esa veta y que aún tiene hueco. Los que sobran en el almacén se pueden desmantelar en el Taller: devuelven la mitad de los materiales de la receta (no los créditos).</li>
         <li>Cancelar la extracción y vetas fuera del chorro (v155; el autor murió taladrando junto a una fumarola sin poder salir del minijuego). Mientras taladras, pulsar una dirección cancela la extracción y te devuelve el motor (si ya la tenías pulsada al empezar, hay que soltarla y volver a pulsarla; la pista del minijuego lo dice). En los campos de fumarolas, las vetas de pared que obligaban a taladrar dentro del chorro o pegado a una chimenea activa se colocan en otro punto del mismo tramo; si no hay sitio seguro, no salen. Las vetas de geotermal y helio siguen siendo cuatro veces más frecuentes en los campos.</li>
-        <li>Casco T4 a 13.500 m (v156; el autor murió en Cocito por colapso del casco con todo al máximo). Con 12.000 m, el estrés recortaba la profundidad segura (hasta un 30 % con el estrés al 100 %): a partir de un 16 % de estrés quedaba por debajo de Cocito (11.414 m), y allí el casco perdía varios puntos por segundo mientras el estrés seguía subiendo; las embestidas del Guardián (+8 % cada una) lo hacían casi inevitable. Con 13.500 m, Cocito es seguro hasta con un 50 % de estrés; con más, el casco sigue sufriendo, como en cualquier otra zona.</li>
+        <li>Casco T4 a 13.500 m (v156; el autor murió en Cocito por colapso del casco con todo al máximo). Con 12.000 m, el estrés recortaba la profundidad segura (hasta un 30 % con el estrés al 100 %): a partir de un 16 % de estrés quedaba por debajo de Cocito (11.412 m), y allí el casco perdía varios puntos por segundo mientras el estrés seguía subiendo; las embestidas del Guardián (+8 % cada una) lo hacían casi inevitable. Con 13.500 m, Cocito es seguro hasta con un 50 % de estrés; con más, el casco sigue sufriendo, como en cualquier otra zona.</li>
         <li>Sedimento hadal en la pared (v157; lo pidió el autor: se veía como un montículo de suelo plantado de lado, como una repisa). Ahora es una bolsa de sedimento en capas pegada a la pared y abombada hacia el agua, perpendicular a la pared aunque esté inclinada, con granos y algo de polvo que se desprende.</li>
+        <li>Cocito a 11.412 m en todo el juego (v158): el suelo estaba a 11.414 m y el trofeo, el logro y la pantalla final decían 11.412; se deja la cifra de la novela (el profundímetro de Perséfone y el registro de voz de Lucía: «once mil cuatrocientos doce»).</li>
+        <li>Kraken Abisal rehecho por fuera (v159; al autor le gustan sus mecánicas, pero no se veía impresionante). Ahora parece un Magnapinna de verdad y de su tamaño: manto largo y estrecho con cromatóforos que laten y un reflejo iridiscente, dos aletas enormes y translúcidas con venas que baten despacio, ojos grandes con brillo, y diez brazos que se afinan del cuerpo a la punta, con codo, ventosas diminutas y brillo húmedo (los cuatro que atacan, igual que antes). A oscuras se intuye por una hilera de fotóforos violeta en el manto y el borde de las aletas, que se encienden todos a la vez con el latido. Las mecánicas y las distancias no cambian.</li>
+        <li>El tramo de la Fosa (v160; el autor notó que de Leteo al jefe final había miles de metros de solo bajar). Tres cosas, aprobadas por el autor y sacadas del capítulo 16 de la novela. <b>La bajada de Perséfone</b>: un pez caracol pequeño y tranquilo entre 7.600 y 8.400 m («el último pez») y la pared que brilla a 8.700 m dejan notas en el Cuaderno de campo; a unos 9.700 m, fijo por semilla en la pared, el golpe de Perséfone: arañazos de titanio y pintura blanca y naranja en la roca, y uno de sus focos encajado en una grieta (pieza de Colección nueva, «Foco de Perséfone», con la Garra). <b>El roce</b>: entre 9.000 y 9.400 m (la primera vez siempre; luego, el 40 % de las inmersiones) los pulsos se aceleran y algo enorme pasa por detrás de las paredes (una pasada del Guardián del Abismo, de lejos). En silencio (luces apagadas, motor parado) pasa de largo: nota y logro oculto «Como Lucía». Con ruido llega el golpe: −60 de blindaje, +10 % de estrés y luces y motor fuera unos segundos. <b>Fondeo</b>: un depósito con baliza verde que se fabrica en el Taller (pestaña Piezas, junto a las estaciones; 6 nódulos, 4 cristales de presión, 4 de sedimento hadal y 6.000 cr; 25 kg), baja a bordo desde el Muelle y se ancla con Acción (o B) sobre cualquier repisa por debajo de 6.000 m. Tiene una botella de O2 y una carga de batería que el Anfitrite repone cada 6 h; se usa acercándose y pulsando Acción. Solo hay uno; para cambiarlo de sitio se iza desde el Taller (300 cr). Desarrolla los «encuentros opcionales» pendientes de la fase 3 y la logística de estaciones (13.5).</li>
         <li>Sensor de sigilo (13.3, la otra familia del punto Dorsal; diseño aprobado por el autor): una cámara de luz roja lejana (como la Eye-in-the-Sea de Edith Widder: casi toda la fauna profunda no ve el rojo) y un revestimiento anecoico (las losetas que absorben el sonido en los submarinos). Se fabrica una vez en Piezas de equipo (4 Aceite de fauna de aguas frías, 3 Aleación titanio-cobalto y 2 Geodas de cuarzo, 1.800 cr; 3 kg: todo de la Batial y sus cuevas, así que llega antes que el dormilón) y se monta o desmonta antes de bajar; montado, sustituye a los Focos fabricados: haz rojo de 26 m, más estrecho que el T1, sin foco ventral ni trasero y con halo de 6 m, pero con él encendido la fauna te detecta como si fueras a oscuras; motor y taladro hacen un 30 % menos de ruido. Cambia los jefes sin reglas nuevas: al calamar no se le puede deslumbrar (tampoco ve el rojo), el kraken no ataca más a menudo por tu luz (su latido sí la reinicia, como cualquier aparato eléctrico), el dormilón te oye menos y el Guardián del Abismo se inquieta menos por el ruido. Un solo nivel (el GDD da tiers a cada familia; aquí no hacen falta). En el panel, el botón de luces dice «Rojo» y en el plano del Taller el punto Dorsal dice «Sigilo». Pendiente de pasar al GDD.</li>
         <li>Hilo narrativo (sección 11): el juego ocurre tres años después de «Lo que queda debajo». Caronte (1.000 m), Estigia (4.000 m, con la T-1 del Consorcio al lado) y Leteo (6.000 m, sin esfera) están sobre cornisas fijas, apagadas, con páginas del diario de Lucía. Por debajo de 4.000 m se oye a veces su señal (tres cortos y uno largo). Las páginas son un borrador para que el autor las revise. Pendiente de pasar a 4.6bis y 11.2: la expedición ya no «desapareció»; su destino se conoce, pero su señal sigue llegando.</li>
         <li>Sonido (sección 15), fases 1 y 2 de 4: todo sintetizado por código en la demo (en Unity irán grabaciones y un AudioMixer). Tres canales: ambiente, submarino y efectos. Ambiente que cambia con la profundidad: oleaje cerca de la superficie, rumor del agua cada vez más grave, un dron desde los 500 m que late más inquieto en la Abisal y suma una nota disonante, gruñidos lejanos cada vez más frecuentes y agua más sorda dentro de las cuevas. Submarino: motor que sube de tono con el empuje (y se corta en un fallo de motor), hélice «troceada» al ritmo de las palas, agua rozando el casco según la velocidad y zumbido de cabina. Crujidos del casco desde el 80 % de la profundidad segura, más largos y graves al acercarte, casi continuos por debajo. En pausa o acoplado, el exterior se oye lejos. Primeras muestras grabadas, de prueba (hechas por el autor con Suno): la hélice de submarino suena de fondo en el menú principal, una copia tras otra alternando de lado; y un ambiente de la inmensidad del océano entra en las inmersiones desde los 700 m, cada vez más lento y grave. Tras escucharlo pidió el motor más grave y más bajo y el mar más de fondo (bus de ambiente a −6 dB). En el menú, por encima de las hélices y suena la firma de Lucía (la primera a los 2,5 s y luego cada 14–24 s, sin horario fijo) (tres cortos y uno largo, grave, ondulante y con un eco lejano); es la misma que se oye en las inmersiones por debajo de 4.000 m, más grave cuanto más hondo. Base (fase 3 adelantada): grabación de muelle tranquilo hecha por el autor con Suno, en bucle sin costura (parte central, golpes sueltos aplanados y dos voces desfasadas para que no se reconozca la repetición), muy baja; encima, sonidos sintetizados sueltos: crujidos de amarras, algún golpe metálico lejano del taller y alguna gaviota. Al bajar a la inmersión, el muelle se cruza con el agua. Clic de consola de latón al pulsar las pestañas de la base y los botones del menú (se descartó usar el pitido de la firma de Lucía para no gastar su significado). Volúmenes en Opciones (fase 4 adelantada): Ambiente, Efectos y Música, guardados con la partida. Primera música (GDD 15.2), hecha por el autor con Suno: una pista instrumental de 6 min que suena en bucle en el menú y en la zona Fótica, muy baja por defecto (se apaga entre los 140 y los 200 m y sigue donde iba al volver). Ping de sonar en las cuevas: tono limpio con cola larga y reverberación de roca, y tres ecos (pared más cercana, intermedia y más lejana) sincronizados con los ecos que se dibujan y del lado por el que vuelven. En el fondo del menú cruza de vez en cuando, lenta y difusa, la sombra del Guardián de la Plataforma (el tiburón jefe de la Fótica, 10.2), por detrás del submarino y de la nieve marina, con un rumor grave al pasar: la primera a los 10 s, siempre de derecha a izquierda, y luego cada 35–55 s en cualquier sentido. Silueta de tiburón blanco con proporciones reales (dorsal de un 12 % del largo, pectorales en hoz, cola en media luna), con el cuerpo ondulando hacia la cola y teñida del azul del agua honda en vez de negro. Pantalla de inicio en el menú («Pulsa cualquier tecla / Toca la pantalla para empezar»): el navegador no deja sonar nada hasta el primer toque, así el ambiente del menú se oye siempre; ese toque no pulsa ningún botón. En Unity no hace falta (una aplicación nativa puede sonar al abrirse), aunque la pantalla de «pulsa para empezar» es habitual. Fase 2, taladro y fauna: el taladro suena distinto en cada estado del minijuego de minería (9.11), como información de juego: con poca potencia, ahogado y a mordiscos; en la banda óptima, liso y con un zumbido afinado; en sobrecarga, más forzado y con chasquidos de roca cada vez más seguidos (todo en graves y lento, como una perforadora pesada: con agudos sonaba a motosierra) cuanto más cerca está la fractura. La fractura es un estallido con golpe grave, cascotes contra el casco y burbujas; al terminar la extracción, la roca se suelta y se cierra la escotilla de la bodega. Recoger orgánicos sorbe agua. Fauna: al detectarte, el agua que desplaza al girar hacia ti (del lado por el que viene y más grave cuanto más grande) y un aviso suave de contacto en cabina; mientras te persigue, su estela se oye crecer al acercarse; la embestida contra el blindaje suena a chapa que aguanta (golpe sordo, retumbo y placas sueltas) y contra el casco sin blindaje a algo que cede (más grave y largo, crujido de la estructura, siseo de agua y alarma de casco), para distinguirlas sin mirar las barras. También el choque contra la roca y el chorro de tinta del pulpo. Añade al GDD el ambiente de la base y de las estaciones, el sonido del taladro, el acoplamiento, el pulso y el sonar (fases siguientes).</li>
@@ -13253,6 +13525,19 @@ function accionBase(b) {
         G.creditos -= T.cr || 0; G.recolectores.stock[x] = (G.recolectores.stock[x] | 0) + 1;
         Sonido.tono(880, 0.1, 'triangle', 0.05); Sonido.tono(1175, 0.15, 'triangle', 0.05, 0.1);
       }
+      break;
+    }
+    case 'fabricarFondeo': {   // v160
+      const F = BAL.fondeo, X = fondeoG();
+      if (!(X.stock | 0) && !X.anclado && hayMateriales(F.receta) && G.creditos >= F.cr) {
+        for (const k in F.receta) G.almacen[k] -= F.receta[k];
+        G.creditos -= F.cr; X.stock = 1; Sonido.tono(880, 0.1, 'triangle', 0.05);
+      }
+      break;
+    }
+    case 'izarFondeo': {
+      const F = BAL.fondeo, X = fondeoG();
+      if (X.anclado && G.creditos >= F.izar) { G.creditos -= F.izar; X.anclado = null; X.stock = 1; toast('El Anfitrite iza el fondeo por su cabo: vuelve al almacén', 'oro'); }
       break;
     }
     case 'fabricarModulo': {
