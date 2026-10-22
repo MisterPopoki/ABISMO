@@ -471,7 +471,21 @@ td.num,th.num{text-align:right}
 .estres{background:#0a181b;border:1px solid var(--linea);border-radius:4px;padding:8px 10px;margin-bottom:12px}
 @media (max-width:699px){.base-in{gap:12px}.stats{margin:8px 0 10px;gap:6px}.stat{padding:6px 8px}.stat .v{font-size:16px}.estres{padding:6px 9px;margin-bottom:10px}.estres .barra-base{margin:4px 0}}
 .a-bordo{background:#0a181b;border:1px solid var(--linea);border-radius:4px;padding:7px 10px;margin-bottom:10px}
-.stat.boton-stat{cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column}
+.stat.boton-stat{cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;border-color:rgba(201,162,90,.55)}
+.stat.boton-stat .ab-boton{margin-top:6px;align-self:stretch;text-align:center;padding:4px 3px;border:1px solid var(--laton);border-radius:4px;background:#2a2216;color:#f3dcae;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat.boton-stat:active .ab-boton,.stat.boton-stat.abierto .ab-boton{background:#3a2e1c}
+.pz-lista{display:flex;flex-direction:column;gap:6px}
+.pz-fila{border:1px solid var(--linea);border-radius:4px;background:#0d1f23}
+.pz-fila.abierta{border-color:var(--laton)}
+.pz-cab{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;min-height:44px}
+.pz-cab.sin{cursor:default;opacity:.75}
+.pz-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+.pz-txt b{line-height:1.2}
+.pz-est{font-size:12px;color:var(--apagado)}
+.pz-est.ok{color:#7fe0b0}.pz-est.puede{color:#9ff0e2}.pz-est.apagada{opacity:.7}
+.pz-flecha{flex:0 0 auto;color:var(--apagado);transition:transform .15s}
+.pz-fila.abierta .pz-flecha{transform:rotate(180deg)}
+.pz-cuerpo{padding:0 10px 10px}
 .stat.boton-stat:hover,.stat.boton-stat:focus-visible{border-color:var(--laton)}.stat.boton-stat.abierto{border-color:var(--laton);background:#0d1f22}
 .stat .s .ab-ver{color:var(--laton)}
 .ab-cab{display:flex;flex-direction:column;gap:2px;font-size:14px}
@@ -783,7 +797,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie">Partida única · se guarda en este dispositivo · v160</p>
+      <p class="menu-pie">Partida única · se guarda en este dispositivo · v161</p>
     </div>
   </div>
 
@@ -11957,7 +11971,7 @@ function htmlMuelle() {
         ${stat('Llegas a', textoViable(viable).replace('el fondo de la fosa', 'al fondo'), viable.limita ? `te para ${NOMBRE_EJE[viable.limita]}` : 'sin límite')}
         ${stat('Segura', `${fmt(segura)} m`, listo && G.estres > 0 ? 'con el estrés actual' : 'del casco')}
         ${(() => { const kgM = listo ? eq.kgMax : nivelDe('carga', 0).kg;   // la ficha Bodega abre «A bordo»
-          return `<button class="stat boton-stat${aBordoAbierto ? ' abierto' : ''}" type="button" data-accion="verABordo" aria-expanded="${aBordoAbierto}"><span class="et">Bodega</span><span class="v">${kg1(Math.max(0, kgM - kgEquipoABordo()))} kg</span><span class="s">libres de ${fmt(kgM)} · <span class="ab-ver">A bordo ${aBordoAbierto ? '▴' : '▾'}</span></span></button>`; })()}
+          return `<button class="stat boton-stat${aBordoAbierto ? ' abierto' : ''}" type="button" data-accion="verABordo" aria-expanded="${aBordoAbierto}"><span class="et">Bodega</span><span class="v">${kg1(Math.max(0, kgM - kgEquipoABordo()))} kg</span><span class="s">libres de ${fmt(kgM)}</span><span class="ab-boton">${aBordoAbierto ? 'Cerrar' : `Cargar${(n => n ? ` · ${n}` : '')(CONSUMIBLES.filter(C => aBordoEfectivo()[C.id] > 0).length)}`} ${aBordoAbierto ? '▴' : '▾'}</span></button>`; })()}
       </div>
       ${listo ? bloqueEstres + htmlABordo(eq.kgMax) + `<button class="boton prim grande ancho" type="button" data-accion="iniciar">Iniciar inmersión</button>`
         : `<p>Tu submarino se perdió. El blueprint se conserva: reconstruirlo cuesta <b class="num">${fmt(coste)} cr</b> (tienes ${fmt(G.creditos)} cr).</p>
@@ -12048,66 +12062,71 @@ function efectoPieza(k) {
   if (P.dorsal) return `Sustituye a los Focos: haz rojo de ${P.alcance} m que la fauna no ve (te detectan como a oscuras), sin foco ventral ni trasero, halo de ${fmt1(P.halo)} m · motor y taladro −${pct(P.ruido)} % de ruido · −${P.kg} kg de bodega`;
   return '';
 }
+// v161: la pestaña Piezas en filas plegables (el autor la veía demasiado larga). Cada pieza es una fila con su chapa,
+// el nombre y el estado; al tocarla se despliega con el efecto, de dónde sale, la receta y los botones. Solo una abierta.
+let filaAbierta = null;
+function filaPieza(id, chapa, color, nombre, estado, cuerpo) {   // estado = [texto, clase de la pastilla]
+  const ab = filaAbierta === id;
+  return `<div class="pz-fila${ab ? ' abierta' : ''}"><button class="pz-cab" type="button" data-accion="piezaVer:${id}" aria-expanded="${ab}">
+      <span class="rt-chapa" style="--c:${color}">${escapar(chapa)}</span><span class="pz-txt"><b>${escapar(nombre)}</b><span class="pz-est ${estado[1]}">${estado[0]}</span></span><span class="pz-flecha" aria-hidden="true">▾</span></button>
+    ${ab ? `<div class="pz-cuerpo">${cuerpo}</div>` : ''}</div>`;
+}
+// Estado de una pieza que se fabrica una vez y se monta: montada · en el almacén · se puede fabricar · faltan materiales
+function estadoPiezaFab(fab, mont, puede) { return mont ? ['Montada', 'ok'] : fab ? ['En el almacén', ''] : puede ? ['Puedes fabricarla', 'puede'] : ['Faltan materiales', 'apagada']; }
 function htmlPiezasTaller() {
   const X = piezasG();
-  const tarjetas = Object.keys(BAL.piezas).map(k => {
+  const filas = Object.keys(BAL.piezas).map(k => {
     const P = BAL.piezas[k], fab = !!X.fabricadas[k], mont = fab && !!X.montadas[k], puede = hayMateriales(P.receta) && G.creditos >= (P.cr || 0);
-    return `<div class="recol-tier exp-tier"><div class="rt-cab"><span class="rt-chapa" style="--c:${BAL.materiales[Object.keys(P.receta)[0]].color}">${escapar(P.et)}</span><b>${escapar(P.n)}</b></div>
-      <p class="nota">${efectoPieza(k)}</p>
-      ${fab ? `<div class="rt-pie"><span>${mont ? '<span class="pill ok">Montada</span>' : '<span class="pill">En el almacén</span>'}</span>
-          <button class="boton peq" type="button" data-accion="montarPieza:${k}">${mont ? 'Desmontar' : 'Montar'}</button></div>`
+    const cuerpo = `<p class="nota">${efectoPieza(k)}</p>
+      ${fab ? `<div class="rt-pie"><span></span><button class="boton peq" type="button" data-accion="montarPieza:${k}">${mont ? 'Desmontar' : 'Montar'}</button></div>`
         : `<p class="nota">${escapar(ORIGEN_PIEZA[k] || '')}</p><div class="rt-receta">${recetaHTML(P.receta)}</div>
-          <div class="rt-pie"><span></span><button class="boton peq prim" type="button" data-accion="fabricarPieza:${k}" ${puede ? '' : 'disabled'}>Fabricar y montar · ${fmt(P.cr || 0)} cr</button></div>`}</div>`;
+          <div class="rt-pie"><span></span><button class="boton peq prim" type="button" data-accion="fabricarPieza:${k}" ${puede ? '' : 'disabled'}>Fabricar y montar · ${fmt(P.cr || 0)} cr</button></div>`}`;
+    return filaPieza('p-' + k, P.et, BAL.materiales[Object.keys(P.receta)[0]].color, P.n, estadoPiezaFab(fab, mont, puede), cuerpo);
   }).join('');
   return `<section class="placa">
       <div class="cab-placa"><h2>Piezas de equipo</h2></div>
-      <p class="nota">Cada material de la minería submarina alimenta una pieza. No son un tier más: dan algo y cuestan kilos de bodega. Se fabrican una vez y se montan o desmontan antes de bajar; montadas, suman a lo que cuesta reconstruir el submarino.</p>
-      <div class="recol-tiers">${tarjetas}</div>
+      <p class="nota">Dan algo y cuestan kilos de bodega. Se fabrican una vez y se montan o desmontan antes de bajar. Toca una para ver qué hace.</p>
+      <div class="pz-lista">${filas}</div>
     </section>`;
 }
-// Estaciones de la expedición en el Taller: el módulo de energía para levantarlas y los planos que guardan
+// Estaciones de la expedición en el Taller: el módulo de energía para levantarlas, el fondeo y los planos que guardan
 function htmlExpTaller() {
   const R = BAL.estaciones, M = R.modulo, X = expG(), stock = G.modulosEst | 0;
   const puedeM = hayMateriales(M.receta) && G.creditos >= (M.cr || 0);
   const estado = Object.keys(ESTACIONES).map(id => { const st = estadoEst(id), E = ESTACIONES[id];
     return `<span class="chip${st.energia ? ' ok' : ''}">${escapar(E.n)} · ${st.energia ? 'levantada' : st.visitas ? 'sin energía' : 'sin visitar'}</span>`; }).join(' ');
-  const piezas = Object.keys(BAL.expedicion).map(k => {
+  const modulo = filaPieza('modulo', 'M', '#c9a227', M.n, stock ? [`${stock} en el almacén`, ''] : puedeM ? ['Puedes fabricarlo', 'puede'] : ['Faltan materiales', 'apagada'],
+    `<p class="nota">Levanta una estación: vuelven los focos y unas reservas pequeñas de O2 y batería que la superficie repone cada ${R.reponerHoras} h. Uno por estación; baja a bordo desde el Muelle (<b class="num">${M.kg} kg</b>).</p>
+     <div class="rt-receta">${recetaHTML(M.receta)}</div>
+     <div class="rt-pie"><span class="num">En almacén: ${stock}</span><button class="boton peq" type="button" data-accion="fabricarModulo" ${puedeM ? '' : 'disabled'}>Fabricar · ${fmt(M.cr)} cr</button></div>`);
+  const planos = Object.keys(BAL.expedicion).map(k => {
     const P = BAL.expedicion[k], E = ESTACIONES[P.de];
-    if (!X.planos[k]) return `<div class="recol-tier exp-tier"><div class="rt-cab"><span class="rt-chapa" style="--c:#56666c">?</span><b>Plano sin encontrar</b></div>
-      <p class="nota">Algo de la expedición se quedó en ${escapar(E ? E.n : '?')} (${E ? fmt(E.y) : '?'} m).</p></div>`;
+    if (!X.planos[k]) return `<div class="pz-fila"><div class="pz-cab sin"><span class="rt-chapa" style="--c:#56666c">?</span><span class="pz-txt"><b>Plano sin encontrar</b><span class="pz-est apagada">Se quedó en ${escapar(E ? E.n : '?')} · ${E ? fmt(E.y) : '?'} m</span></span></div></div>`;
     const fab = !!X.fabricadas[k], mont = fab && !!X.montadas[k], puede = hayMateriales(P.receta) && G.creditos >= (P.cr || 0);
-    return `<div class="recol-tier exp-tier"><div class="rt-cab"><span class="rt-chapa" style="--c:#c9a25a">${escapar(E ? E.n.slice(0, 1) : '·')}</span><b>${escapar(P.n)}</b></div>
-      <p class="nota">${efectoExp(k)}</p>
-      ${fab ? `<div class="rt-pie"><span>${mont ? '<span class="pill ok">Montada</span>' : '<span class="pill">En el almacén</span>'}</span>
-          <button class="boton peq" type="button" data-accion="montarExp:${k}">${mont ? 'Desmontar' : 'Montar'}</button></div>`
+    const cuerpo = `<p class="nota">${efectoExp(k)}</p>
+      ${fab ? `<div class="rt-pie"><span></span><button class="boton peq" type="button" data-accion="montarExp:${k}">${mont ? 'Desmontar' : 'Montar'}</button></div>`
         : `<div class="rt-receta">${recetaHTML(P.receta)}</div><div class="rt-pie"><span class="nota">Plano de ${escapar(E ? E.n : '')}</span>
-          <button class="boton peq prim" type="button" data-accion="fabricarExp:${k}" ${puede ? '' : 'disabled'}>Fabricar y montar · ${fmt(P.cr || 0)} cr</button></div>`}</div>`;
+          <button class="boton peq prim" type="button" data-accion="fabricarExp:${k}" ${puede ? '' : 'disabled'}>Fabricar y montar · ${fmt(P.cr || 0)} cr</button></div>`}`;
+    return filaPieza('e-' + k, E ? E.n.slice(0, 1) : '·', '#c9a25a', P.n, estadoPiezaFab(fab, mont, puede), cuerpo);
   }).join('');
   return `<section class="placa">
-      <div class="cab-placa"><h2>Estaciones de la expedición</h2></div>
-      <p class="nota">Caronte, Estigia y Leteo siguen abajo. Acóplate con Acción para entrar. Con un módulo de energía las «levantas»: vuelven los focos y unas reservas pequeñas de O2 y batería que la superficie repone cada ${R.reponerHoras} h. Son refugios, no gasolineras.</p>
+      <div class="cab-placa"><h2>Expedición y logística</h2></div>
       <p>${estado}</p>
-      <div class="recol-tiers">
-        <div class="recol-tier"><div class="rt-cab"><span class="rt-chapa" style="--c:#c9a227">M</span><b>${escapar(M.n)}</b></div>
-          <p class="nota">Uno por estación. Si tienes alguno fabricado, baja uno a bordo en cada inmersión: <b class="num">${M.kg} kg</b> de bodega.</p>
-          <div class="rt-receta">${recetaHTML(M.receta)}</div>
-          <div class="rt-pie"><span class="num">En almacén: ${stock}</span><button class="boton peq" type="button" data-accion="fabricarModulo" ${puedeM ? '' : 'disabled'}>Fabricar · ${fmt(M.cr)} cr</button></div></div>
-        ${htmlFondeoTaller()}
-        ${piezas}
-      </div>
-      <p class="nota">Piezas de expedición: cada estación guarda un plano. No son un tier más: añaden algo y cuestan algo. Montadas, suman a lo que cuesta reconstruir el submarino.</p>
+      <div class="pz-lista">${modulo}${htmlFondeoTaller()}${planos}</div>
+      <p class="nota">Cada estación guarda un plano de la expedición. Montadas, sus piezas suman a lo que cuesta reconstruir el submarino.</p>
     </section>`;
 }
-function htmlFondeoTaller() {   // v160
+function htmlFondeoTaller() {   // v160 (fila plegable desde v161)
   const F = BAL.fondeo, X = fondeoG(), A = X.anclado, tiene = (X.stock | 0) > 0 || !!A, puede = !tiene && hayMateriales(F.receta) && G.creditos >= F.cr;
   const res = t => { const r = reservaFondeo(t); return r.n ? 'lista' : `en ${durLarga(r.ms)}`; };
-  const estado = A ? `Anclado a <b class="num">${fmt(A.y)} m</b> · O2 ${res('o2')} · batería ${res('bat')}` : (X.stock | 0) > 0 ? 'En el almacén: bájalo a bordo desde el Muelle y ánclalo con Acción sobre una repisa por debajo de 6.000 m' : '';
-  return `<div class="recol-tier"><div class="rt-cab"><span class="rt-chapa" style="--c:#5be08f">F</span><b>${escapar(F.n)}</b></div>
-    <p class="nota">Un depósito con baliza que anclas tú en una repisa por debajo de ${fmt(F.desde)} m: una botella de O2 y una carga de batería que el Anfitrite repone cada ${F.reponerHoras} h. Solo uno. Pesa <b class="num">${F.kg} kg</b> a bordo.</p>
+  const est = A ? [`Anclado · ${fmt(A.y)} m`, 'ok'] : (X.stock | 0) > 0 ? ['En el almacén', ''] : puede ? ['Puedes fabricarlo', 'puede'] : ['Faltan materiales', 'apagada'];
+  const estado = A ? `Anclado a <b class="num">${fmt(A.y)} m</b> · O2 ${res('o2')} · batería ${res('bat')}` : (X.stock | 0) > 0 ? 'Bájalo a bordo desde el Muelle y ánclalo con Acción sobre una repisa por debajo de 6.000 m.' : '';
+  return filaPieza('fondeo', 'F', '#5be08f', F.n, est,
+    `<p class="nota">Un depósito con baliza que anclas tú en una repisa por debajo de ${fmt(F.desde)} m: una botella de O2 y una carga de batería que el Anfitrite repone cada ${F.reponerHoras} h. Solo uno. Pesa <b class="num">${F.kg} kg</b> a bordo.</p>
     ${estado ? `<p class="nota">${estado}</p>` : ''}
     ${tiene ? '' : `<div class="rt-receta">${recetaHTML(F.receta)}</div>`}
     <div class="rt-pie">${A ? `<span class="nota">Para cambiarlo de sitio, se iza desde aquí</span><button class="boton peq" type="button" data-accion="izarFondeo" ${G.creditos >= F.izar ? '' : 'disabled'}>Izarlo · ${fmt(F.izar)} cr</button>`
-      : tiene ? '<span class="nota">Fabricado</span>' : `<span></span><button class="boton peq" type="button" data-accion="fabricarFondeo" ${puede ? '' : 'disabled'}>Fabricar · ${fmt(F.cr)} cr</button>`}</div></div>`;
+      : tiene ? '<span class="nota">Fabricado</span>' : `<span></span><button class="boton peq" type="button" data-accion="fabricarFondeo" ${puede ? '' : 'disabled'}>Fabricar · ${fmt(F.cr)} cr</button>`}</div>`);
 }
 // Chasis (13.6): las tres tarjetas, con lo que dan y lo que cuestan, y el estado de cada uno (montado, fabricado,
 // plano recuperado o plano perdido). Se usa en el Taller y en la ventana que abre la tarjeta del Muelle.
@@ -12148,7 +12167,7 @@ function htmlTaller() {
   }).join('');
   // Pestañas del Taller (v148, lo pidió el autor: con todo seguido eran casi siete pantallas en el móvil). Una sección
   // cada vez; la elegida se recuerda (G.tallerTab) y un punto cian marca las pestañas con algo que ya puedes fabricar.
-  const puedeFab = html => (html.match(/<button[^>]*data-accion="fab[^"]*"[^>]*>/g) || []).some(b => !/disabled/.test(b));
+  const puedeFab = html => /class="pz-est puede"/.test(html) || (html.match(/<button[^>]*data-accion="fab[^"]*"[^>]*>/g) || []).some(b => !/disabled/.test(b));
   const hChasis = htmlChasis(), hPiezas = htmlPiezasTaller() + htmlExpTaller(), hRecol = htmlRecolTaller();
   const TABS = [
     ['submarino', 'Submarino', PIEZAS.some(pz => estadoPieza(pz.id).mejorable)],
@@ -13394,6 +13413,7 @@ function htmlBalance() {
         <li>Cocito a 11.412 m en todo el juego (v158): el suelo estaba a 11.414 m y el trofeo, el logro y la pantalla final decían 11.412; se deja la cifra de la novela (el profundímetro de Perséfone y el registro de voz de Lucía: «once mil cuatrocientos doce»).</li>
         <li>Kraken Abisal rehecho por fuera (v159; al autor le gustan sus mecánicas, pero no se veía impresionante). Ahora parece un Magnapinna de verdad y de su tamaño: manto largo y estrecho con cromatóforos que laten y un reflejo iridiscente, dos aletas enormes y translúcidas con venas que baten despacio, ojos grandes con brillo, y diez brazos que se afinan del cuerpo a la punta, con codo, ventosas diminutas y brillo húmedo (los cuatro que atacan, igual que antes). A oscuras se intuye por una hilera de fotóforos violeta en el manto y el borde de las aletas, que se encienden todos a la vez con el latido. Las mecánicas y las distancias no cambian.</li>
         <li>El tramo de la Fosa (v160; el autor notó que de Leteo al jefe final había miles de metros de solo bajar). Tres cosas, aprobadas por el autor y sacadas del capítulo 16 de la novela. <b>La bajada de Perséfone</b>: un pez caracol pequeño y tranquilo entre 7.600 y 8.400 m («el último pez») y la pared que brilla a 8.700 m dejan notas en el Cuaderno de campo; a unos 9.700 m, fijo por semilla en la pared, el golpe de Perséfone: arañazos de titanio y pintura blanca y naranja en la roca, y uno de sus focos encajado en una grieta (pieza de Colección nueva, «Foco de Perséfone», con la Garra). <b>El roce</b>: entre 9.000 y 9.400 m (la primera vez siempre; luego, el 40 % de las inmersiones) los pulsos se aceleran y algo enorme pasa por detrás de las paredes (una pasada del Guardián del Abismo, de lejos). En silencio (luces apagadas, motor parado) pasa de largo: nota y logro oculto «Como Lucía». Con ruido llega el golpe: −60 de blindaje, +10 % de estrés y luces y motor fuera unos segundos. <b>Fondeo</b>: un depósito con baliza verde que se fabrica en el Taller (pestaña Piezas, junto a las estaciones; 6 nódulos, 4 cristales de presión, 4 de sedimento hadal y 6.000 cr; 25 kg), baja a bordo desde el Muelle y se ancla con Acción (o B) sobre cualquier repisa por debajo de 6.000 m. Tiene una botella de O2 y una carga de batería que el Anfitrite repone cada 6 h; se usa acercándose y pulsando Acción. Solo hay uno; para cambiarlo de sitio se iza desde el Taller (300 cr). Desarrolla los «encuentros opcionales» pendientes de la fase 3 y la logística de estaciones (13.5).</li>
+        <li>Bodega y pestaña Piezas (v161; lo pidió el autor). La ficha Bodega del Muelle no parecía tocable: ahora tiene el borde en latón y un botón «Cargar ▾» (con cuántas cosas llevas elegidas) que abre «A bordo». La pestaña Piezas del Taller era demasiado larga (unos 2.500 px en el móvil): cada pieza es ahora una fila plegable con su chapa, el nombre y el estado (montada, en el almacén, puedes fabricarla, faltan materiales); al tocarla se despliega con el efecto, de dónde sale, la receta y el botón (una abierta a la vez). La sección de estaciones pasa a llamarse «Expedición y logística» (módulo de energía, fondeo y planos). Queda en unos 890 px.</li>
         <li>Sensor de sigilo (13.3, la otra familia del punto Dorsal; diseño aprobado por el autor): una cámara de luz roja lejana (como la Eye-in-the-Sea de Edith Widder: casi toda la fauna profunda no ve el rojo) y un revestimiento anecoico (las losetas que absorben el sonido en los submarinos). Se fabrica una vez en Piezas de equipo (4 Aceite de fauna de aguas frías, 3 Aleación titanio-cobalto y 2 Geodas de cuarzo, 1.800 cr; 3 kg: todo de la Batial y sus cuevas, así que llega antes que el dormilón) y se monta o desmonta antes de bajar; montado, sustituye a los Focos fabricados: haz rojo de 26 m, más estrecho que el T1, sin foco ventral ni trasero y con halo de 6 m, pero con él encendido la fauna te detecta como si fueras a oscuras; motor y taladro hacen un 30 % menos de ruido. Cambia los jefes sin reglas nuevas: al calamar no se le puede deslumbrar (tampoco ve el rojo), el kraken no ataca más a menudo por tu luz (su latido sí la reinicia, como cualquier aparato eléctrico), el dormilón te oye menos y el Guardián del Abismo se inquieta menos por el ruido. Un solo nivel (el GDD da tiers a cada familia; aquí no hacen falta). En el panel, el botón de luces dice «Rojo» y en el plano del Taller el punto Dorsal dice «Sigilo». Pendiente de pasar al GDD.</li>
         <li>Hilo narrativo (sección 11): el juego ocurre tres años después de «Lo que queda debajo». Caronte (1.000 m), Estigia (4.000 m, con la T-1 del Consorcio al lado) y Leteo (6.000 m, sin esfera) están sobre cornisas fijas, apagadas, con páginas del diario de Lucía. Por debajo de 4.000 m se oye a veces su señal (tres cortos y uno largo). Las páginas son un borrador para que el autor las revise. Pendiente de pasar a 4.6bis y 11.2: la expedición ya no «desapareció»; su destino se conoce, pero su señal sigue llegando.</li>
         <li>Sonido (sección 15), fases 1 y 2 de 4: todo sintetizado por código en la demo (en Unity irán grabaciones y un AudioMixer). Tres canales: ambiente, submarino y efectos. Ambiente que cambia con la profundidad: oleaje cerca de la superficie, rumor del agua cada vez más grave, un dron desde los 500 m que late más inquieto en la Abisal y suma una nota disonante, gruñidos lejanos cada vez más frecuentes y agua más sorda dentro de las cuevas. Submarino: motor que sube de tono con el empuje (y se corta en un fallo de motor), hélice «troceada» al ritmo de las palas, agua rozando el casco según la velocidad y zumbido de cabina. Crujidos del casco desde el 80 % de la profundidad segura, más largos y graves al acercarte, casi continuos por debajo. En pausa o acoplado, el exterior se oye lejos. Primeras muestras grabadas, de prueba (hechas por el autor con Suno): la hélice de submarino suena de fondo en el menú principal, una copia tras otra alternando de lado; y un ambiente de la inmensidad del océano entra en las inmersiones desde los 700 m, cada vez más lento y grave. Tras escucharlo pidió el motor más grave y más bajo y el mar más de fondo (bus de ambiente a −6 dB). En el menú, por encima de las hélices y suena la firma de Lucía (la primera a los 2,5 s y luego cada 14–24 s, sin horario fijo) (tres cortos y uno largo, grave, ondulante y con un eco lejano); es la misma que se oye en las inmersiones por debajo de 4.000 m, más grave cuanto más hondo. Base (fase 3 adelantada): grabación de muelle tranquilo hecha por el autor con Suno, en bucle sin costura (parte central, golpes sueltos aplanados y dos voces desfasadas para que no se reconozca la repetición), muy baja; encima, sonidos sintetizados sueltos: crujidos de amarras, algún golpe metálico lejano del taller y alguna gaviota. Al bajar a la inmersión, el muelle se cruza con el agua. Clic de consola de latón al pulsar las pestañas de la base y los botones del menú (se descartó usar el pitido de la firma de Lucía para no gastar su significado). Volúmenes en Opciones (fase 4 adelantada): Ambiente, Efectos y Música, guardados con la partida. Primera música (GDD 15.2), hecha por el autor con Suno: una pista instrumental de 6 min que suena en bucle en el menú y en la zona Fótica, muy baja por defecto (se apaga entre los 140 y los 200 m y sigue donde iba al volver). Ping de sonar en las cuevas: tono limpio con cola larga y reverberación de roca, y tres ecos (pared más cercana, intermedia y más lejana) sincronizados con los ecos que se dibujan y del lado por el que vuelven. En el fondo del menú cruza de vez en cuando, lenta y difusa, la sombra del Guardián de la Plataforma (el tiburón jefe de la Fótica, 10.2), por detrás del submarino y de la nieve marina, con un rumor grave al pasar: la primera a los 10 s, siempre de derecha a izquierda, y luego cada 35–55 s en cualquier sentido. Silueta de tiburón blanco con proporciones reales (dorsal de un 12 % del largo, pectorales en hoz, cola en media luna), con el cuerpo ondulando hacia la cola y teñida del azul del agua honda en vez de negro. Pantalla de inicio en el menú («Pulsa cualquier tecla / Toca la pantalla para empezar»): el navegador no deja sonar nada hasta el primer toque, así el ambiente del menú se oye siempre; ese toque no pulsa ningún botón. En Unity no hace falta (una aplicación nativa puede sonar al abrirse), aunque la pantalla de «pulsa para empezar» es habitual. Fase 2, taladro y fauna: el taladro suena distinto en cada estado del minijuego de minería (9.11), como información de juego: con poca potencia, ahogado y a mordiscos; en la banda óptima, liso y con un zumbido afinado; en sobrecarga, más forzado y con chasquidos de roca cada vez más seguidos (todo en graves y lento, como una perforadora pesada: con agudos sonaba a motosierra) cuanto más cerca está la fractura. La fractura es un estallido con golpe grave, cascotes contra el casco y burbujas; al terminar la extracción, la roca se suelta y se cierra la escotilla de la bodega. Recoger orgánicos sorbe agua. Fauna: al detectarte, el agua que desplaza al girar hacia ti (del lado por el que viene y más grave cuanto más grande) y un aviso suave de contacto en cabina; mientras te persigue, su estela se oye crecer al acercarse; la embestida contra el blindaje suena a chapa que aguanta (golpe sordo, retumbo y placas sueltas) y contra el casco sin blindaje a algo que cede (más grave y largo, crujido de la estructura, siseo de agua y alarma de casco), para distinguirlas sin mirar las barras. También el choque contra la roca y el chorro de tinta del pulpo. Añade al GDD el ambiente de la base y de las estaciones, el sonido del taladro, el acoplamiento, el pulso y el sonar (fases siguientes).</li>
@@ -13468,6 +13488,7 @@ function accionBase(b) {
     case 'controles': mostrarControles(false); return;
     case 'reconstruir': { const c = costeReconstruccion(); if (G.creditos >= c) { G.creditos -= c; G.subConstruido = true; G.estres = 0; Sonido.tono(700, 0.15, 'triangle', 0.05); } break; }
     case 'verABordo': aBordoAbierto = !aBordoAbierto; break;
+    case 'piezaVer': filaAbierta = filaAbierta === x ? null : x; break;   // v161: filas plegables de la pestaña Piezas
     case 'aBordo': { const C = CONSUMIBLES.find(c => c.id === x); if (!C) break;
       const n = aBordoEfectivo()[x]; (G.aBordo = G.aBordo || {})[x] = clamp(n + (+y), 0, Math.min(C.stock(), C.max())); break; }
     case 'reparar': { const c = Math.ceil(G.estres * BAL.estres.costeReparacionPorPct); if (G.creditos >= c) { G.creditos -= c; G.estres = 0; } break; }
