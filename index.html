@@ -477,8 +477,8 @@ td.num,th.num{text-align:right}
 .pz-lista{display:flex;flex-direction:column;gap:6px}
 .pz-fila{border:1px solid var(--linea);border-radius:4px;background:#0d1f23}
 .pz-fila.abierta{border-color:var(--laton)}
-.pz-cab{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;min-height:44px}
-.pz-cab.sin{cursor:default;opacity:.75}
+.pzf-cab{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;min-height:44px}
+.pzf-cab.sin{cursor:default;opacity:.75}
 .pz-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
 .pz-txt b{line-height:1.2}
 .pz-est{font-size:12px;color:var(--apagado)}
@@ -501,13 +501,26 @@ td.num,th.num{text-align:right}
 .estres .nota{margin:2px 0 0!important}
 .boton.ancho{display:block;width:100%}
 .equipo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
-.pz{position:relative;text-align:left;background:#0d1f23;border:1px solid var(--linea);border-radius:4px;padding:8px 10px;color:var(--tinta);cursor:pointer;font:inherit;min-width:0}
+.pz{position:relative;display:flex;flex-direction:column;justify-content:flex-start;text-align:left;background:#0d1f23;border:1px solid var(--linea);border-radius:4px;padding:8px 10px;color:var(--tinta);cursor:pointer;font:inherit;min-width:0}
 .pz:hover,.pz:focus-visible{border-color:var(--laton)}
 .pz-cab{display:flex;justify-content:space-between;gap:6px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--apagado);font-weight:600}
 .pz-cab .et-tier{margin:0;letter-spacing:0}
 .pz .v{display:block;font:600 16px var(--f-datos);color:var(--cian);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pz .s{display:block;font-size:12px;color:var(--apagado);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .pz.mejorable{border-color:var(--cian)}
+.pz .pz-niv{display:flex;gap:2px;margin-top:6px}
+.pz .pz-niv i{flex:1;height:4px;border-radius:1px;background:#1d3238}
+.pz .pz-niv i.on{background:var(--cian);opacity:.75}
+.pz.tope .pz-niv i.on{background:var(--laton);opacity:.9}
+.pz.tope .et-tier{text-transform:uppercase;font-size:10px;letter-spacing:.08em}
+.pz-montadas{margin-top:10px;padding-top:10px;border-top:1px solid var(--linea)}
+.pz-montadas .et{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--apagado);font-weight:600;margin-bottom:6px}
+.pzm-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pzm{display:flex;align-items:center;gap:6px;min-width:0;padding:6px 8px;background:#0d1f23;border:1px solid var(--linea);border-radius:4px;color:var(--tinta);font:inherit;font-size:12px;text-align:left;cursor:pointer;min-height:40px}
+.pzm span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pzm .rt-chapa{flex:0 0 auto;text-transform:uppercase}
+.pz .pz-niv{margin-top:auto;padding-top:6px}
+@media (hover:hover){.pzm:hover{border-color:var(--laton)}}
 .pz.mejorable::after{content:'';position:absolute;top:-4px;right:-4px;width:9px;height:9px;border-radius:50%;background:var(--cian);box-shadow:0 0 6px var(--cian)}
 .lista-alm{list-style:none;margin:6px 0 0;padding:0}
 .lista-alm li{display:grid;grid-template-columns:30px minmax(0,1fr) auto 70px;gap:8px;align-items:center;padding:6px 2px;border-bottom:1px solid #1b3237;font-size:14px}
@@ -797,7 +810,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie">Partida única · se guarda en este dispositivo · v161</p>
+      <p class="menu-pie">Partida única · se guarda en este dispositivo · v162</p>
     </div>
   </div>
 
@@ -11944,8 +11957,11 @@ function htmlMuelle() {
         <p class="nota">${G.estres > 0 ? `Reparar te devuelve <b class="num">${fmt(recupera)} m</b> de profundidad segura (hasta ${fmt(sinEstres)} m).${G.creditos < reparar ? ` Te faltan ${fmt(reparar - G.creditos)} cr.` : ''}` : 'Casco como nuevo.'}</p>
       </div>` : '';
   // Equipo montado: una tarjeta por pieza; al tocarla se abre la misma ventana que en el plano del Taller
-  const kTarj = (id, valor, sub) => { const e = estadoPieza(id), tier = id === 'popa' ? '' : e.t;
-    return `<button class="pz${e.mejorable ? ' mejorable' : ''}" type="button" data-accion="pieza:${id}"><span class="pz-cab"><span>${escapar(e.n)}</span><span class="et-tier">${escapar(tier)}</span></span><span class="v">${valor}</span><span class="s">${escapar(sub)}</span></button>`; };
+  const kTarj = (id, valor, sub) => { const e = estadoPieza(id), tier = id === 'popa' ? '' : e.t, idR = id === 'frontal' ? eq.frontales[0] : id, R = BAL.ramas[idR];
+    // v162: en las ramas con tiers, una barra de segmentos dice cuánto queda hasta el tope (y «máx» al llegar)
+    const nv = R ? (G.niveles[idR] | 0) : -1, tope = R ? R.niveles.length - 1 : 0;
+    const barra = R && tope > 0 ? `<span class="pz-niv">${R.niveles.map((_, i) => `<i class="${i <= nv ? 'on' : ''}"></i>`).join('')}</span>` : '';
+    return `<button class="pz${e.mejorable ? ' mejorable' : ''}${R && nv >= tope ? ' tope' : ''}" type="button" data-accion="pieza:${id}"><span class="pz-cab"><span>${escapar(e.n)}</span><span class="et-tier">${R && nv >= tope ? 'máx' : escapar(tier)}</span></span><span class="v">${valor}</span><span class="s">${escapar(sub)}</span>${barra}</button>`; };
   const n = k => nivelDe(k, G.niveles[k]), k0 = nivelDe('calefaccion', 0).k, cal = n('calefaccion');
   const pul = n('pulso'), mot = BAL.motores[G.motorMontado] || BAL.motores.serie;
   const FT = { taladro: [`Dureza ${n('taladro').dureza}`, 'Taladro: mina'], garra: [`Garra ${n('garra').et}`, 'Recoge orgánicos'], pulso: [`Radio ${pul.radio} m`, 'Pulso disuasorio'] };
@@ -11988,8 +12004,12 @@ function htmlMuelle() {
       <div class="cab-placa"><h2>Equipo montado</h2>${G.nombreSub ? `<span class="nombre-sub">«${escapar(G.nombreSub)}»</span>` : `<button class="enlace" type="button" data-accion="nombreSub:pedir">Ponle nombre</button>`}<button class="boton peq" type="button" data-accion="tab:taller">Taller</button></div>
       <p class="nota">Toca una pieza para ver sus niveles y mejorarla.${listo ? '' : ' Es tu blueprint: lo recuperas al reconstruir.'}</p>
       <div class="equipo">${tarjetas}</div>
-      ${Object.keys(expMontadas()).length ? `<p class="nota" style="margin-top:8px">Piezas de expedición montadas: ${Object.keys(expMontadas()).map(k => `<span class="chip ok">${escapar(BAL.expedicion[k].n)}</span>`).join(' ')}</p>` : ''}
-      ${Object.keys(piezasMontadas()).length ? `<p class="nota" style="margin-top:8px">Piezas de equipo montadas: ${Object.keys(piezasMontadas()).map(k => `<span class="chip ok">${escapar(BAL.piezas[k].n)}</span>`).join(' ')}</p>` : ''}
+      ${(() => {   // v162: las piezas montadas, en fichas que abren su fila en Taller › Piezas
+        const fichas = Object.keys(piezasMontadas()).map(k => { const P = BAL.piezas[k]; return [`p-${k}`, P.et, BAL.materiales[Object.keys(P.receta)[0]].color, P.n]; })
+          .concat(Object.keys(expMontadas()).map(k => { const E = ESTACIONES[BAL.expedicion[k].de]; return [`e-${k}`, E ? E.n.slice(0, 1) : '·', '#c9a25a', BAL.expedicion[k].n]; }));
+        return fichas.length ? `<div class="pz-montadas"><span class="et">Piezas montadas · ${fichas.length}</span><div class="pzm-lista">${fichas.map(([id, et, col, nom]) =>
+          `<button class="pzm" type="button" data-accion="irPieza:${id}"><span class="rt-chapa" style="--c:${col}">${escapar(et)}</span><span>${escapar(nom)}</span></button>`).join('')}</div></div>` : '';
+      })()}
     </section>
     <section class="placa">
       <div class="cab-placa"><h2>Recolectores</h2><button class="boton peq" type="button" data-accion="tab:taller">Taller</button></div>
@@ -12067,7 +12087,7 @@ function efectoPieza(k) {
 let filaAbierta = null;
 function filaPieza(id, chapa, color, nombre, estado, cuerpo) {   // estado = [texto, clase de la pastilla]
   const ab = filaAbierta === id;
-  return `<div class="pz-fila${ab ? ' abierta' : ''}"><button class="pz-cab" type="button" data-accion="piezaVer:${id}" aria-expanded="${ab}">
+  return `<div class="pz-fila${ab ? ' abierta' : ''}"><button class="pzf-cab" type="button" data-accion="piezaVer:${id}" aria-expanded="${ab}">
       <span class="rt-chapa" style="--c:${color}">${escapar(chapa)}</span><span class="pz-txt"><b>${escapar(nombre)}</b><span class="pz-est ${estado[1]}">${estado[0]}</span></span><span class="pz-flecha" aria-hidden="true">▾</span></button>
     ${ab ? `<div class="pz-cuerpo">${cuerpo}</div>` : ''}</div>`;
 }
@@ -12101,7 +12121,7 @@ function htmlExpTaller() {
      <div class="rt-pie"><span class="num">En almacén: ${stock}</span><button class="boton peq" type="button" data-accion="fabricarModulo" ${puedeM ? '' : 'disabled'}>Fabricar · ${fmt(M.cr)} cr</button></div>`);
   const planos = Object.keys(BAL.expedicion).map(k => {
     const P = BAL.expedicion[k], E = ESTACIONES[P.de];
-    if (!X.planos[k]) return `<div class="pz-fila"><div class="pz-cab sin"><span class="rt-chapa" style="--c:#56666c">?</span><span class="pz-txt"><b>Plano sin encontrar</b><span class="pz-est apagada">Se quedó en ${escapar(E ? E.n : '?')} · ${E ? fmt(E.y) : '?'} m</span></span></div></div>`;
+    if (!X.planos[k]) return `<div class="pz-fila"><div class="pzf-cab sin"><span class="rt-chapa" style="--c:#56666c">?</span><span class="pz-txt"><b>Plano sin encontrar</b><span class="pz-est apagada">Se quedó en ${escapar(E ? E.n : '?')} · ${E ? fmt(E.y) : '?'} m</span></span></div></div>`;
     const fab = !!X.fabricadas[k], mont = fab && !!X.montadas[k], puede = hayMateriales(P.receta) && G.creditos >= (P.cr || 0);
     const cuerpo = `<p class="nota">${efectoExp(k)}</p>
       ${fab ? `<div class="rt-pie"><span></span><button class="boton peq" type="button" data-accion="montarExp:${k}">${mont ? 'Desmontar' : 'Montar'}</button></div>`
@@ -13414,6 +13434,7 @@ function htmlBalance() {
         <li>Kraken Abisal rehecho por fuera (v159; al autor le gustan sus mecánicas, pero no se veía impresionante). Ahora parece un Magnapinna de verdad y de su tamaño: manto largo y estrecho con cromatóforos que laten y un reflejo iridiscente, dos aletas enormes y translúcidas con venas que baten despacio, ojos grandes con brillo, y diez brazos que se afinan del cuerpo a la punta, con codo, ventosas diminutas y brillo húmedo (los cuatro que atacan, igual que antes). A oscuras se intuye por una hilera de fotóforos violeta en el manto y el borde de las aletas, que se encienden todos a la vez con el latido. Las mecánicas y las distancias no cambian.</li>
         <li>El tramo de la Fosa (v160; el autor notó que de Leteo al jefe final había miles de metros de solo bajar). Tres cosas, aprobadas por el autor y sacadas del capítulo 16 de la novela. <b>La bajada de Perséfone</b>: un pez caracol pequeño y tranquilo entre 7.600 y 8.400 m («el último pez») y la pared que brilla a 8.700 m dejan notas en el Cuaderno de campo; a unos 9.700 m, fijo por semilla en la pared, el golpe de Perséfone: arañazos de titanio y pintura blanca y naranja en la roca, y uno de sus focos encajado en una grieta (pieza de Colección nueva, «Foco de Perséfone», con la Garra). <b>El roce</b>: entre 9.000 y 9.400 m (la primera vez siempre; luego, el 40 % de las inmersiones) los pulsos se aceleran y algo enorme pasa por detrás de las paredes (una pasada del Guardián del Abismo, de lejos). En silencio (luces apagadas, motor parado) pasa de largo: nota y logro oculto «Como Lucía». Con ruido llega el golpe: −60 de blindaje, +10 % de estrés y luces y motor fuera unos segundos. <b>Fondeo</b>: un depósito con baliza verde que se fabrica en el Taller (pestaña Piezas, junto a las estaciones; 6 nódulos, 4 cristales de presión, 4 de sedimento hadal y 6.000 cr; 25 kg), baja a bordo desde el Muelle y se ancla con Acción (o B) sobre cualquier repisa por debajo de 6.000 m. Tiene una botella de O2 y una carga de batería que el Anfitrite repone cada 6 h; se usa acercándose y pulsando Acción. Solo hay uno; para cambiarlo de sitio se iza desde el Taller (300 cr). Desarrolla los «encuentros opcionales» pendientes de la fase 3 y la logística de estaciones (13.5).</li>
         <li>Bodega y pestaña Piezas (v161; lo pidió el autor). La ficha Bodega del Muelle no parecía tocable: ahora tiene el borde en latón y un botón «Cargar ▾» (con cuántas cosas llevas elegidas) que abre «A bordo». La pestaña Piezas del Taller era demasiado larga (unos 2.500 px en el móvil): cada pieza es ahora una fila plegable con su chapa, el nombre y el estado (montada, en el almacén, puedes fabricarla, faltan materiales); al tocarla se despliega con el efecto, de dónde sale, la receta y el botón (una abierta a la vez). La sección de estaciones pasa a llamarse «Expedición y logística» (módulo de energía, fondeo y planos). Queda en unos 890 px.</li>
+        <li>Equipo montado del Muelle (v162; el autor vio que la v161 lo había descolocado: una clase de estilo nueva chocaba con la de estas tarjetas, ya corregido). Además, cada tarjeta de una rama con tiers lleva una barra de segmentos con el nivel (en latón y «máx» al llegar al tope), también la de la herramienta frontal. Las piezas montadas (de equipo y de la expedición) pasan de dos listas de etiquetas a una cuadrícula de fichas con su chapa; al tocar una se abre su fila en Taller › Piezas.</li>
         <li>Sensor de sigilo (13.3, la otra familia del punto Dorsal; diseño aprobado por el autor): una cámara de luz roja lejana (como la Eye-in-the-Sea de Edith Widder: casi toda la fauna profunda no ve el rojo) y un revestimiento anecoico (las losetas que absorben el sonido en los submarinos). Se fabrica una vez en Piezas de equipo (4 Aceite de fauna de aguas frías, 3 Aleación titanio-cobalto y 2 Geodas de cuarzo, 1.800 cr; 3 kg: todo de la Batial y sus cuevas, así que llega antes que el dormilón) y se monta o desmonta antes de bajar; montado, sustituye a los Focos fabricados: haz rojo de 26 m, más estrecho que el T1, sin foco ventral ni trasero y con halo de 6 m, pero con él encendido la fauna te detecta como si fueras a oscuras; motor y taladro hacen un 30 % menos de ruido. Cambia los jefes sin reglas nuevas: al calamar no se le puede deslumbrar (tampoco ve el rojo), el kraken no ataca más a menudo por tu luz (su latido sí la reinicia, como cualquier aparato eléctrico), el dormilón te oye menos y el Guardián del Abismo se inquieta menos por el ruido. Un solo nivel (el GDD da tiers a cada familia; aquí no hacen falta). En el panel, el botón de luces dice «Rojo» y en el plano del Taller el punto Dorsal dice «Sigilo». Pendiente de pasar al GDD.</li>
         <li>Hilo narrativo (sección 11): el juego ocurre tres años después de «Lo que queda debajo». Caronte (1.000 m), Estigia (4.000 m, con la T-1 del Consorcio al lado) y Leteo (6.000 m, sin esfera) están sobre cornisas fijas, apagadas, con páginas del diario de Lucía. Por debajo de 4.000 m se oye a veces su señal (tres cortos y uno largo). Las páginas son un borrador para que el autor las revise. Pendiente de pasar a 4.6bis y 11.2: la expedición ya no «desapareció»; su destino se conoce, pero su señal sigue llegando.</li>
         <li>Sonido (sección 15), fases 1 y 2 de 4: todo sintetizado por código en la demo (en Unity irán grabaciones y un AudioMixer). Tres canales: ambiente, submarino y efectos. Ambiente que cambia con la profundidad: oleaje cerca de la superficie, rumor del agua cada vez más grave, un dron desde los 500 m que late más inquieto en la Abisal y suma una nota disonante, gruñidos lejanos cada vez más frecuentes y agua más sorda dentro de las cuevas. Submarino: motor que sube de tono con el empuje (y se corta en un fallo de motor), hélice «troceada» al ritmo de las palas, agua rozando el casco según la velocidad y zumbido de cabina. Crujidos del casco desde el 80 % de la profundidad segura, más largos y graves al acercarte, casi continuos por debajo. En pausa o acoplado, el exterior se oye lejos. Primeras muestras grabadas, de prueba (hechas por el autor con Suno): la hélice de submarino suena de fondo en el menú principal, una copia tras otra alternando de lado; y un ambiente de la inmensidad del océano entra en las inmersiones desde los 700 m, cada vez más lento y grave. Tras escucharlo pidió el motor más grave y más bajo y el mar más de fondo (bus de ambiente a −6 dB). En el menú, por encima de las hélices y suena la firma de Lucía (la primera a los 2,5 s y luego cada 14–24 s, sin horario fijo) (tres cortos y uno largo, grave, ondulante y con un eco lejano); es la misma que se oye en las inmersiones por debajo de 4.000 m, más grave cuanto más hondo. Base (fase 3 adelantada): grabación de muelle tranquilo hecha por el autor con Suno, en bucle sin costura (parte central, golpes sueltos aplanados y dos voces desfasadas para que no se reconozca la repetición), muy baja; encima, sonidos sintetizados sueltos: crujidos de amarras, algún golpe metálico lejano del taller y alguna gaviota. Al bajar a la inmersión, el muelle se cruza con el agua. Clic de consola de latón al pulsar las pestañas de la base y los botones del menú (se descartó usar el pitido de la firma de Lucía para no gastar su significado). Volúmenes en Opciones (fase 4 adelantada): Ambiente, Efectos y Música, guardados con la partida. Primera música (GDD 15.2), hecha por el autor con Suno: una pista instrumental de 6 min que suena en bucle en el menú y en la zona Fótica, muy baja por defecto (se apaga entre los 140 y los 200 m y sigue donde iba al volver). Ping de sonar en las cuevas: tono limpio con cola larga y reverberación de roca, y tres ecos (pared más cercana, intermedia y más lejana) sincronizados con los ecos que se dibujan y del lado por el que vuelven. En el fondo del menú cruza de vez en cuando, lenta y difusa, la sombra del Guardián de la Plataforma (el tiburón jefe de la Fótica, 10.2), por detrás del submarino y de la nieve marina, con un rumor grave al pasar: la primera a los 10 s, siempre de derecha a izquierda, y luego cada 35–55 s en cualquier sentido. Silueta de tiburón blanco con proporciones reales (dorsal de un 12 % del largo, pectorales en hoz, cola en media luna), con el cuerpo ondulando hacia la cola y teñida del azul del agua honda en vez de negro. Pantalla de inicio en el menú («Pulsa cualquier tecla / Toca la pantalla para empezar»): el navegador no deja sonar nada hasta el primer toque, así el ambiente del menú se oye siempre; ese toque no pulsa ningún botón. En Unity no hace falta (una aplicación nativa puede sonar al abrirse), aunque la pantalla de «pulsa para empezar» es habitual. Fase 2, taladro y fauna: el taladro suena distinto en cada estado del minijuego de minería (9.11), como información de juego: con poca potencia, ahogado y a mordiscos; en la banda óptima, liso y con un zumbido afinado; en sobrecarga, más forzado y con chasquidos de roca cada vez más seguidos (todo en graves y lento, como una perforadora pesada: con agudos sonaba a motosierra) cuanto más cerca está la fractura. La fractura es un estallido con golpe grave, cascotes contra el casco y burbujas; al terminar la extracción, la roca se suelta y se cierra la escotilla de la bodega. Recoger orgánicos sorbe agua. Fauna: al detectarte, el agua que desplaza al girar hacia ti (del lado por el que viene y más grave cuanto más grande) y un aviso suave de contacto en cabina; mientras te persigue, su estela se oye crecer al acercarse; la embestida contra el blindaje suena a chapa que aguanta (golpe sordo, retumbo y placas sueltas) y contra el casco sin blindaje a algo que cede (más grave y largo, crujido de la estructura, siseo de agua y alarma de casco), para distinguirlas sin mirar las barras. También el choque contra la roca y el chorro de tinta del pulpo. Añade al GDD el ambiente de la base y de las estaciones, el sonido del taladro, el acoplamiento, el pulso y el sonar (fases siguientes).</li>
@@ -13479,6 +13500,7 @@ function accionBase(b) {
   const [a, x, y] = b.dataset.accion.split(':');
   switch (a) {
     case 'pieza': abrirPieza(x); return;
+    case 'irPieza': G.tallerTab = 'piezas'; filaAbierta = x; pestana = 'taller'; break;   // v162: de la ficha del Muelle a su fila del Taller
     case 'menu': mostrarMenu(); return;
     case 'abrirBalance': document.getElementById('capa').hidden = true; if (modo === 'menu') salirDelMenu(); pestana = 'balance'; simNiv = null; errorBal = ''; renderBase(); document.getElementById('panel').scrollIntoView({ block: 'start' }); return;
     case 'tab': pestana = x; errorBal = ''; if (x === 'balance') simNiv = null; break;
