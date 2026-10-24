@@ -810,7 +810,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie">Partida única · se guarda en este dispositivo · v163</p>
+      <p class="menu-pie">Partida única · se guarda en este dispositivo · v165</p>
     </div>
   </div>
 
@@ -5653,34 +5653,52 @@ function zonaIluminable(sx, sy, E, yTop, yBot, cuevasVis) {
 // la pared apenas se mueve (menos de 5 px) se juntan en una sola tira, y la parte negra del todo se pinta de una vez.
 // No se nota: el degradado mide 35 m y empieza transparente, así que unos píxeles de escalón no se ven.
 function oscuridadRoca(g, sx, sy, E, wy, yBot) {
-  const R = ROCA_OSCURA, h = 4 * dpr, ancho = (R.hasta - R.desde) * E, fondo = fondoReal(), tol = 5 * dpr, hMax = 40 * dpr;
-  g.fillStyle = `rgba(1,4,8,${R.max})`;
+  const R = ROCA_OSCURA, k = hondura(wy(H / 2));   // 0 = cerca de la superficie, 1 = hondo
+  const nv = TIRA_ROCA.niveles[Math.round(k * (R.niveles - 1))];
+  tirasPared(g, sx, sy, E, wy, yBot, lerp(R.desde, R.desdeHondo, k), lerp(R.hasta - R.desde, R.anchoHondo, k), nv, R.max);
+}
+// 0 cerca de la superficie → 1 en lo hondo (v164: la cara de la pared se ve distinta según la luz que llega de arriba)
+function hondura(y) { const R = ROCA_OSCURA; return clamp((y - R.hondoDesde) / (R.hondoHasta - R.hondoDesde), 0, 1); }
+// v164: la cara iluminada de la pared se apaga en degradado hacia dentro de la roca. Antes la luz entraba 4 m en la
+// roca con la misma fuerza y se cortaba en seco en una línea paralela a la pared: parecía una lámina de cristal.
+// Solo en lo hondo (k): cerca de la superficie la roca recibe luz de arriba y se queda como estaba.
+// En la boca de las cuevas no se pinta (allí la pared está abierta y la tira cruzaría el túnel iluminado).
+function sombraCaraPared(g, sx, sy, E, wy, yBot, k, cuevas) {
+  const bocas = cuevas.map(c => ({ lado: c.lado, y0: c.entrada.y - CUEVA.entrada - 2, y1: c.entrada.y + CUEVA.entrada + 2 }));
+  const saltar = (y, lado) => bocas.some(b => b.lado === lado && y > b.y0 && y < b.y1);
+  g.globalAlpha = k; tirasPared(g, sx, sy, E, wy, yBot, ROCA_OSCURA.caraDesde, ROCA_OSCURA.caraAncho, TIRA_CARA, null, saltar, true); g.globalAlpha = 1;
+}
+// Pinta a cada lado una tira de degradado que empieza en la pared ('desde' m dentro de la roca) y mide 'ancho' m.
+// negro = opacidad con la que se rellena la roca más allá de la tira (null = no se rellena).
+// fino = tira estrecha (la cara iluminada): filas más cortas para que no se vean escalones en su borde
+function tirasPared(g, sx, sy, E, wy, yBot, desde, anchoM, tiras, negroA, saltar = null, fino = false) {
+  const h = (fino ? 2 : 4) * dpr, ancho = anchoM * E, fondo = fondoReal(), tol = (fino ? 1.2 : 5) * dpr, hMax = (fino ? 10 : 40) * dpr;
   const negro = new Path2D(); let hayNegro = false;
   let ti = null, td = null;   // tira abierta de cada lado: { x0 (primera fila), suma de x, filas, Y, alto }
   const cerrarIzq = () => { if (!ti) return; const x = ti.sx / ti.n;
-    if (x - ancho < W) g.drawImage(TIRA_ROCA.izq, x - ancho, ti.Y, ancho, ti.h);
-    if (x - ancho > 0) { negro.rect(0, ti.Y, Math.min(W, x - ancho), ti.h); hayNegro = true; } ti = null; };
+    if (x - ancho < W) g.drawImage(tiras.izq, x - ancho, ti.Y, ancho, ti.h);
+    if (negroA !== null && x - ancho > 0) { negro.rect(0, ti.Y, Math.min(W, x - ancho), ti.h); hayNegro = true; } ti = null; };
   const cerrarDer = () => { if (!td) return; const x = td.sx / td.n;
-    if (x + ancho > 0) g.drawImage(TIRA_ROCA.der, x, td.Y, ancho, td.h);
-    if (x + ancho < W) { const x0 = Math.max(0, x + ancho); negro.rect(x0, td.Y, W - x0, td.h); hayNegro = true; } td = null; };
+    if (x + ancho > 0) g.drawImage(tiras.der, x, td.Y, ancho, td.h);
+    if (negroA !== null && x + ancho < W) { const x0 = Math.max(0, x + ancho); negro.rect(x0, td.Y, W - x0, td.h); hayNegro = true; } td = null; };
   for (let Y = 0; Y < H; Y += h) {
     const y = wy(Y + h / 2);
     if (y < 0) { cerrarIzq(); cerrarDer(); continue; } if (y > fondo) break;
-    const xi = sx(Fosa.izqBase(y) - R.desde), xd = sx(Fosa.derBase(y) + R.desde);
-    if (xi > 0) {
+    const xi = sx(Fosa.izqBase(y) - desde), xd = sx(Fosa.derBase(y) + desde);
+    if (xi > 0 && !(saltar && saltar(y, -1))) {
       if (ti && Math.abs(xi - ti.x0) < tol && ti.h + h <= hMax) { ti.sx += xi; ti.n++; ti.h += h; }
       else { cerrarIzq(); ti = { x0: xi, sx: xi, n: 1, Y, h }; }
     } else cerrarIzq();
-    if (xd < W) {
+    if (xd < W && !(saltar && saltar(y, 1))) {
       if (td && Math.abs(xd - td.x0) < tol && td.h + h <= hMax) { td.sx += xd; td.n++; td.h += h; }
       else { cerrarDer(); td = { x0: xd, sx: xd, n: 1, Y, h }; }
     } else cerrarDer();
   }
   cerrarIzq(); cerrarDer();
-  if (hayNegro) g.fill(negro);
-  if (yBot > fondo) {   // bajo el fondo de la fosa, el mismo degradado hacia abajo
-    const Yf = sy(fondo + R.desde), gf = g.createLinearGradient(0, Yf, 0, Yf + ancho);
-    gf.addColorStop(0, 'rgba(1,4,8,0)'); gf.addColorStop(1, `rgba(1,4,8,${R.max})`);
+  if (hayNegro) { g.fillStyle = `rgba(1,4,8,${negroA})`; g.fill(negro); }
+  if (negroA !== null && yBot > fondo) {   // bajo el fondo de la fosa, el mismo degradado hacia abajo
+    const Yf = sy(fondo + desde), gf = g.createLinearGradient(0, Yf, 0, Yf + ancho);
+    gf.addColorStop(0, 'rgba(1,4,8,0)'); gf.addColorStop(1, `rgba(1,4,8,${negroA})`);
     g.fillStyle = gf; g.fillRect(0, Yf, W, H - Yf);
   }
 }
@@ -5985,6 +6003,9 @@ function render(dt) {
   // La luz solo toca agua y los primeros metros de pared: este recorte da el borde suave a lo largo de la roca
   const zonaLuz = zonaIluminable(sx, sy, E, yTop, yBot, cuevasVis);
   lctx.clip(zonaLuz);
+  // v164: el haz visible es luz que dispersa el agua: no entra en la roca (antes se pintaba también en los 4 m de pared)
+  const zonaAgua = new Path2D(); if (yTop < 0) zonaAgua.rect(-10, -10, W + 20, sy(0) + 10);
+  poligonoFosa(zonaAgua, sx, sy, E, yTop, yBot, 0.4); for (const c of cuevasVis) zonaAgua.addPath(aguaCueva.get(c));
   const px = sx(s.x), py = sy(s.y);
   const rc = radioHalo * E * vis, gc = lctx.createRadialGradient(px, py, 0, px, py, rc);
   gc.addColorStop(0, 'rgba(0,0,0,.97)'); gc.addColorStop(0.45, 'rgba(0,0,0,.82)'); gc.addColorStop(0.8, 'rgba(0,0,0,.35)'); gc.addColorStop(1, 'rgba(0,0,0,0)');
@@ -6030,6 +6051,9 @@ function render(dt) {
   // Estaciones levantadas: sus focos fijos alumbran la cornisa. Van fuera del recorte de visibilidad del submarino
   // (si no, junto a una cueva solo se verían dentro de tu propio haz), pero sí dentro de la zona iluminable.
   lctx.save(); lctx.clip(zonaLuz); luzEstaciones(lctx, sx, sy, E, yTop, yBot, I.t); luzFumarolas(lctx, sx, sy, E, yTop, yBot, I.t); luzPdi(lctx, sx, sy, E, yTop, yBot, I.t); luzRescates(lctx, sx, sy, E, yTop, yBot, I.t); if (I.jefe && I.jefe.J.tipo === 'kraken') luzKraken(lctx, I.jefe, sx, sy, E); lctx.restore();
+  { const kC = hondura(cam.y);   // v164: la luz sobre la pared se apaga en degradado hacia dentro de la roca
+    if (kC > 0) { lctx.save(); lctx.clip(zonaRoca(sx, sy, E, yTop, yBot), 'evenodd'); lctx.globalCompositeOperation = 'source-over';
+      sombraCaraPared(lctx, sx, sy, E, Y => (Y - cy - shy) / E + cam.y, yBot, kC, cuevasVis); lctx.restore(); } }
   ctx.imageSmoothingEnabled = true; ctx.drawImage(luzCv, 0, 0, W, H);
   if (luzOn && FL.rojo) {   // sensor de sigilo: lo que alumbra su haz se ve en rojo (el agua se come el resto del color)
     const L = FL.alcance * E * vis * 1.08, ang = s.derecha ? 0 : Math.PI, rL = FOCO.mitad * E / Math.sin(apF);
@@ -6117,7 +6141,7 @@ function render(dt) {
     // Varias capas de apertura decreciente y muy tenues: el centro del haz suma más luz que los bordes, sin cortes.
     const kHaz = alfa(s.y), L = FL.alcance * E * vis, ang = s.derecha ? 0 : Math.PI;
     if (kHaz > 0.05) {
-      ctx.save(); ctx.clip(zonaLuz); if (pvLuz) ctx.clip(pvLuz);
+      ctx.save(); ctx.clip(zonaAgua); if (pvLuz) ctx.clip(pvLuz);
       for (let i = 0; i < 6; i++) {
         const apC = apF * (1.02 - i * 0.13), aC = FL.rojo ? 0.045 : 0.036, largo = 1 - i * 0.05;
         const g = ctx.createRadialGradient(apexX, apexY, 0, apexX, apexY, L * largo);
@@ -6132,7 +6156,7 @@ function render(dt) {
     destelloFoco(ctx, lampX, lampY, dirF, E, 1, !!FL.rojo);
     if (traseroOn) {   // el foco trasero: haz visible más corto y tenue, y su destello
       if (kHaz > 0.05) {
-        ctx.save(); ctx.clip(zonaLuz); if (pvLuz) ctx.clip(pvLuz);
+        ctx.save(); ctx.clip(zonaAgua); if (pvLuz) ctx.clip(pvLuz);
         const Lt = BAL.luces.alcanceTrasero * E * vis, apT = BAL.luces.aperturaTrasero, angT = s.derecha ? Math.PI : 0;
         for (let i = 0; i < 3; i++) {
           const g = ctx.createRadialGradient(traX, traY, 0, traX, traY, Lt * (1 - i * 0.08)), a = 0.024 * kHaz;
@@ -6344,7 +6368,11 @@ function dibujarSub(x, y, E, s, I, c = ctx) {   // c: contexto donde dibujar (ju
   const vidrio = new Path2D();
   vidrio.moveTo(1.3, -1.38); vidrio.lineTo(3.1, -1.33); vidrio.quadraticCurveTo(3.8, -0.8, 4.2, 0.05); vidrio.lineTo(3.95, 0.62); vidrio.lineTo(1.3, 0.62); vidrio.closePath();
   c.save(); c.clip(vidrio);
-  dibujarCabina(c, I.t || 0);
+  { const n = v => typeof v === 'number' ? v : null;   // en la base y el menú no hay temperatura, CO2 ni golpes
+    dibujarCabina(c, I.t || 0, clamp((s.vy || 0) / 10, -1, 1), {   // la palanca va hacia delante al bajar
+      frio: n(I.temp) === null ? 0 : clamp((15 - I.temp) / 4, 0, 1),            // aliento visible desde 15 °C; del todo a 11 °C
+      sueno: n(I.co2) === null ? 0 : clamp((I.co2 - BAL.co2.inicioEfecto) / (BAL.co2.critico - BAL.co2.inicioEfecto), 0, 1),
+      golpe: clamp((I.sacudida || 0) / 0.3, 0, 1) }); }
   c.restore();
   c.strokeStyle = '#3d3424'; c.lineWidth = 0.2; c.stroke(vidrio);
   c.strokeStyle = '#3d3424'; c.lineWidth = 0.1; c.beginPath(); c.moveTo(2.75, -1.34); c.lineTo(2.75, 0.62); c.stroke();   // montante
@@ -6368,7 +6396,7 @@ function dibujarSub(x, y, E, s, I, c = ctx) {   // c: contexto donde dibujar (ju
 // Interior de la cabina visto a través del cristal (se dibuja ya recortado por la forma del cristal).
 // Piloto sentado mirando a proa, con cascos, una mano en la palanca; consola inclinada con pantallas que
 // le iluminan la cara de cian; plafón cálido en el techo; y encima, el cristal con su tinte y sus reflejos.
-function dibujarCabina(c, t) {
+function dibujarCabina(c, t, mando = 0, est = null) {
   // pared del fondo: penumbra azulada, más oscura abajo
   const gp = c.createLinearGradient(0, -1.4, 0, 0.65); gp.addColorStop(0, '#22343a'); gp.addColorStop(1, '#0d171a');
   c.fillStyle = gp; c.fillRect(1.2, -1.45, 3.2, 2.1);
@@ -6393,31 +6421,160 @@ function dibujarCabina(c, t) {
   c.fillStyle = '#6e4a2c'; rr(c, -0.08, -1.22, 0.15, 0.22, 0.06); c.fill();
   c.fillStyle = 'rgba(255,220,170,.12)'; c.fillRect(-0.06, -0.9, 0.04, 0.85);
   c.restore();
-  // piloto (de perfil, mira a proa): mono azul marino; un poco de vaivén al respirar
-  const resp = Math.sin(t * 1.4) * 0.012;
-  const traje = '#2c4554', trajeLuz = '#3f6172', piel = '#c4977a';
+  // piloto (v165, de perfil, mira a proa). Jersey de lana de pescador color crudo (la cabina es fría: el frío es uno de
+  // los ejes del juego), gorro de lana oscuro, cascos de comunicaciones con micrófono, arnés del asiento, pantalón de
+  // trabajo y botas. Dos luces le dan volumen: la cálida del plafón por arriba y la cian de las pantallas por delante.
+  // Pensado para leerse también pequeño: el jersey claro recorta la figura contra la cabina oscura.
+  // Se mueve poco: respira, parpadea, mira de vez en cuando a la consola y la palanca sigue al submarino (mando: −1…1).
+  // Y cuenta lo que pasa a bordo sin texto (est): con frío se le ve el aliento y tirita; con el CO2 alto le entra
+  // sueño (cabecea, como en la hipercapnia real); con una embestida, el golpe lo sacude en el asiento.
+  const E2 = est || {}, frio = E2.frio || 0, sueno = E2.sueno || 0, golpe = E2.golpe || 0;
+  const tirita = frio > 0.4 ? Math.sin(t * 47) * 0.004 * frio : 0, sac = golpe * Math.sin(t * 60) * 0.03;
+  const resp = Math.sin(t * (1.4 + 0.8 * frio)) * 0.012;
+  const ciclo = t % 9.5, mira = sueno > 0 ? 0 : ciclo > 7.2 && ciclo < 8.8 ? Math.sin((ciclo - 7.2) / 1.6 * Math.PI) : 0;   // vistazo a la consola
+  const cab = sueno > 0 ? sueno * Math.max(0, Math.sin(t * 0.55)) ** 3 : 0;   // cabeceo: la cabeza cae despacio y vuelve de golpe
+  const parpadeo = (t % 4.3) < 0.12 || cab > 0.45;
+  const lana = '#d9ccb0', lanaSom = '#a89a7e', lanaOsc = '#857a63', lanaLuz = '#efe4cb', pant = '#36403c', pantLuz = '#56635c';
+  const piel = '#c9987a', pielSom = '#9c6e55', gorro = '#26313a', gorroLuz = '#3a4854', negro = '#14191b', pelo = '#2a1d14';
+  const cian = 'rgba(120,240,228,', calida = 'rgba(255,214,160,';
+  c.save(); c.translate(tirita + sac, Math.abs(sac) * 0.3);
   c.lineCap = 'round'; c.lineJoin = 'round';
-  c.strokeStyle = traje; c.lineWidth = 0.17;   // pierna: muslo y espinilla
-  c.beginPath(); c.moveTo(1.95, 0.2); c.lineTo(2.42, 0.16); c.lineTo(2.55, 0.52); c.stroke();
-  c.fillStyle = '#1a1f22'; rr(c, 2.47, 0.48, 0.24, 0.1, 0.04); c.fill();   // bota
-  c.strokeStyle = traje; c.lineWidth = 0.3;     // torso
-  c.beginPath(); c.moveTo(1.92, 0.18); c.lineTo(1.84, -0.32 + resp); c.stroke();
-  c.strokeStyle = trajeLuz; c.lineWidth = 0.06; c.beginPath(); c.moveTo(1.98, 0.12); c.lineTo(1.92, -0.3 + resp); c.stroke();
-  // cabeza con cascos de comunicaciones
-  const hx = 1.9, hy = -0.56 + resp;
-  c.fillStyle = piel; c.beginPath(); c.arc(hx, hy, 0.135, 0, 6.283); c.fill();
-  c.beginPath(); c.moveTo(hx + 0.12, hy - 0.02); c.lineTo(hx + 0.17, hy + 0.03); c.lineTo(hx + 0.12, hy + 0.05); c.fill();   // nariz
-  c.fillStyle = '#2b2018'; c.beginPath(); c.arc(hx - 0.02, hy - 0.03, 0.14, Math.PI * 0.95, Math.PI * 1.9); c.fill();   // pelo
-  c.strokeStyle = '#1b2326'; c.lineWidth = 0.035; c.beginPath(); c.arc(hx - 0.01, hy, 0.16, Math.PI * 1.05, Math.PI * 1.95); c.stroke();   // diadema
-  c.fillStyle = '#1b2326'; rr(c, hx - 0.08, hy - 0.06, 0.1, 0.14, 0.04); c.fill();   // auricular
-  c.strokeStyle = '#1b2326'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(hx - 0.02, hy + 0.06); c.quadraticCurveTo(hx + 0.06, hy + 0.14, hx + 0.14, hy + 0.09); c.stroke();   // micrófono
-  // brazo hasta la palanca
-  c.strokeStyle = traje; c.lineWidth = 0.12;
-  c.beginPath(); c.moveTo(1.88, -0.24 + resp); c.lineTo(2.18, 0.0); c.lineTo(2.52, -0.06); c.stroke();
-  // palanca de mando
-  c.strokeStyle = '#2a2f31'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(2.6, 0.36); c.lineTo(2.56, -0.04); c.stroke();
-  c.fillStyle = '#1b2023'; c.fillRect(2.5, 0.34, 0.2, 0.08);
-  c.fillStyle = piel; c.beginPath(); c.arc(2.55, -0.06, 0.055, 0, 6.283); c.fill();   // mano
+  // sombra del cuerpo sobre el respaldo
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(1.78, -0.1, 0.09, 0.33, -0.2, 0, 6.283); c.fill();
+  // pierna: muslo (hasta la rodilla) y espinilla, con la bota sobre el pedal
+  const rod = [2.4, 0.1], tob = [2.53, 0.46];
+  c.strokeStyle = pant; c.lineWidth = 0.19; c.beginPath(); c.moveTo(1.96, 0.16); c.lineTo(rod[0], rod[1]); c.stroke();
+  c.lineWidth = 0.14; c.beginPath(); c.moveTo(rod[0], rod[1]); c.lineTo(tob[0], tob[1]); c.stroke();
+  c.strokeStyle = pantLuz; c.lineWidth = 0.035; c.beginPath(); c.moveTo(2.0, 0.07); c.lineTo(2.38, 0.03); c.stroke();   // luz del plafón sobre el muslo
+  c.strokeStyle = cian + '.22)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(2.48, 0.1); c.lineTo(2.59, 0.4); c.stroke();   // y la de las pantallas en la espinilla
+  c.fillStyle = '#2a322f'; c.beginPath(); c.ellipse(rod[0] + 0.02, rod[1] - 0.005, 0.07, 0.085, 0.3, 0, 6.283); c.fill();   // rodillera
+  c.fillStyle = negro; c.beginPath(); c.moveTo(2.45, 0.4); c.lineTo(2.6, 0.41); c.quadraticCurveTo(2.76, 0.46, 2.75, 0.57); c.lineTo(2.44, 0.57); c.closePath(); c.fill();   // bota
+  c.strokeStyle = '#3d4a4f'; c.lineWidth = 0.012; c.beginPath(); c.moveTo(2.5, 0.43); c.lineTo(2.58, 0.47); c.moveTo(2.52, 0.4); c.lineTo(2.6, 0.44); c.stroke();   // cordones
+  c.fillStyle = '#4a3a28'; c.fillRect(2.44, 0.55, 0.31, 0.03);   // suela
+  // torso con el jersey: espalda curvada contra el respaldo, pecho hacia la consola
+  const tor = new Path2D();
+  tor.moveTo(1.83, -0.38 + resp); tor.quadraticCurveTo(1.7, -0.12, 1.82, 0.19);   // espalda
+  tor.quadraticCurveTo(1.96, 0.23, 2.11, 0.19); tor.quadraticCurveTo(2.14, -0.02, 2.07, -0.22 + resp);    // bajo, vientre y pecho
+  tor.quadraticCurveTo(2.02, -0.36 + resp, 1.92, -0.4 + resp); tor.closePath();
+  const gt = c.createLinearGradient(1.72, 0, 2.12, 0); gt.addColorStop(0, lanaSom); gt.addColorStop(0.55, lana); gt.addColorStop(1, lanaLuz);
+  c.fillStyle = gt; c.fill(tor);
+  c.save(); c.clip(tor);
+  // punto de ochos del jersey de pescador: trenzas verticales (solo se ven de cerca)
+  c.strokeStyle = 'rgba(120,104,80,.27)'; c.lineWidth = 0.01;
+  for (const x of [1.87, 2.03]) { c.beginPath(); for (let y = -0.36; y < 0.16; y += 0.05) { c.moveTo(x - 0.02, y); c.bezierCurveTo(x - 0.02, y + 0.03, x + 0.02, y + 0.02, x + 0.02, y + 0.05); c.moveTo(x + 0.02, y); c.bezierCurveTo(x + 0.02, y + 0.03, x - 0.02, y + 0.02, x - 0.02, y + 0.05); } c.stroke(); }
+  c.strokeStyle = 'rgba(120,104,80,.22)'; c.beginPath(); for (let y = -0.34; y < 0.14; y += 0.04) { c.moveTo(1.94, y); c.lineTo(1.96, y + 0.02); c.lineTo(1.94, y + 0.04); } c.stroke();   // espiga central
+  c.fillStyle = lanaSom; c.fillRect(1.7, 0.12, 0.5, 0.12);   // elástico del bajo, en canalé
+  c.strokeStyle = 'rgba(80,70,55,.45)'; c.lineWidth = 0.01; c.beginPath(); for (let x = 1.75; x < 2.15; x += 0.025) { c.moveTo(x, 0.125); c.lineTo(x, 0.22); } c.stroke();
+  c.fillStyle = 'rgba(60,50,38,.16)'; c.beginPath(); c.ellipse(1.95, -0.08, 0.09, 0.16, 0.3, 0, 6.283); c.fill();   // sombra del brazo sobre el pecho
+  c.fillStyle = cian + '.14)'; c.fillRect(2.06, -0.3, 0.1, 0.5);   // luz de las pantallas en el pecho
+  c.restore();
+  // arnés del asiento en diagonal, con hebilla de latón
+  c.strokeStyle = '#1f2a2e'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(1.86, -0.34 + resp); c.lineTo(2.07, 0.1); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.1)'; c.lineWidth = 0.01; c.beginPath(); c.moveTo(1.875, -0.34 + resp); c.lineTo(2.085, 0.09); c.stroke();
+  c.fillStyle = '#b8904f'; rr(c, 1.98, -0.1 + resp * 0.5, 0.07, 0.05, 0.012); c.fill();
+  c.fillStyle = '#e0c48a'; c.fillRect(1.99, -0.095 + resp * 0.5, 0.05, 0.01);
+  // cuello y cuello vuelto del jersey
+  c.fillStyle = pielSom; c.fillRect(1.86, -0.47 + resp, 0.09, 0.09);
+  c.fillStyle = lana; rr(c, 1.82, -0.445 + resp, 0.17, 0.085, 0.035); c.fill();
+  c.strokeStyle = 'rgba(80,70,55,.4)'; c.lineWidth = 0.008; c.beginPath(); for (let x = 1.84; x < 1.98; x += 0.02) { c.moveTo(x, -0.44 + resp); c.lineTo(x, -0.365 + resp); } c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.14)'; c.fillRect(1.84, -0.435 + resp, 0.13, 0.014);
+  // cabeza de perfil (gira hacia abajo al mirar la consola, al cabecear o con el golpe)
+  const hx = 1.9, hy = -0.57 + resp;
+  c.save(); c.translate(hx, hy + 0.09); c.rotate(0.22 * mira + 0.45 * cab - sac * 4); c.translate(-hx, -(hy + 0.09));
+  const cara = new Path2D();
+  cara.moveTo(hx - 0.1, hy + 0.08);                               // nuca
+  cara.quadraticCurveTo(hx - 0.15, hy - 0.04, hx - 0.06, hy - 0.12);
+  cara.quadraticCurveTo(hx + 0.06, hy - 0.16, hx + 0.115, hy - 0.06);   // frente
+  cara.lineTo(hx + 0.125, hy - 0.03);                              // ceja
+  cara.quadraticCurveTo(hx + 0.13, hy - 0.01, hx + 0.168, hy + 0.025);   // dorso de la nariz
+  cara.quadraticCurveTo(hx + 0.155, hy + 0.045, hx + 0.132, hy + 0.045); // base de la nariz
+  cara.quadraticCurveTo(hx + 0.145, hy + 0.058, hx + 0.14, hy + 0.068);  // labio de arriba
+  cara.lineTo(hx + 0.128, hy + 0.076);
+  cara.quadraticCurveTo(hx + 0.14, hy + 0.083, hx + 0.13, hy + 0.092);   // labio de abajo
+  cara.quadraticCurveTo(hx + 0.142, hy + 0.11, hx + 0.115, hy + 0.125);   // barbilla
+  cara.quadraticCurveTo(hx + 0.05, hy + 0.14, hx + 0.0, hy + 0.11);      // mandíbula
+  cara.lineTo(hx - 0.04, hy + 0.13); cara.closePath();
+  const gc = c.createLinearGradient(hx - 0.12, 0, hx + 0.17, 0); gc.addColorStop(0, pielSom); gc.addColorStop(0.6, piel); gc.addColorStop(1, '#ddb293');
+  c.fillStyle = gc; c.fill(cara);
+  c.save(); c.clip(cara);
+  c.fillStyle = 'rgba(70,40,30,.22)'; c.beginPath(); c.ellipse(hx + 0.07, hy + 0.115, 0.075, 0.035, -0.2, 0, 6.283); c.fill();   // barba de unos días en la mandíbula
+  c.fillStyle = `rgba(200,90,70,${0.08 + 0.12 * frio})`; c.beginPath(); c.arc(hx + 0.07, hy + 0.04, 0.03, 0, 6.283); c.fill();   // mejilla (más roja con frío)
+  c.fillStyle = 'rgba(70,40,30,.25)'; c.beginPath(); c.ellipse(hx + 0.085, hy - 0.02, 0.035, 0.022, 0, 0, 6.283); c.fill();   // cuenca del ojo
+  c.fillStyle = pelo; c.beginPath(); c.moveTo(hx - 0.07, hy - 0.02); c.lineTo(hx - 0.03, hy - 0.03); c.lineTo(hx - 0.035, hy + 0.06); c.lineTo(hx - 0.06, hy + 0.06); c.closePath(); c.fill();   // patilla
+  c.restore();
+  c.fillStyle = pelo; c.beginPath(); c.moveTo(hx - 0.155, hy - 0.005); c.quadraticCurveTo(hx - 0.15, hy + 0.06, hx - 0.105, hy + 0.08); c.lineTo(hx - 0.115, hy + 0.04); c.lineTo(hx - 0.13, hy + 0.06); c.lineTo(hx - 0.135, hy + 0.02); c.closePath(); c.fill();   // mechones en la nuca
+  c.strokeStyle = cian + '.28)'; c.lineWidth = 0.01;   // luz de las pantallas en el perfil
+  c.beginPath(); c.moveTo(hx + 0.122, hy - 0.04); c.quadraticCurveTo(hx + 0.13, hy - 0.01, hx + 0.168, hy + 0.025); c.moveTo(hx + 0.14, hy + 0.1); c.quadraticCurveTo(hx + 0.142, hy + 0.11, hx + 0.115, hy + 0.125); c.stroke();
+  c.strokeStyle = 'rgba(110,60,45,.6)'; c.lineWidth = 0.008; c.beginPath(); c.moveTo(hx + 0.128, hy + 0.076); c.lineTo(hx + 0.112, hy + 0.077); c.stroke();   // comisura
+  c.strokeStyle = 'rgba(110,60,45,.45)'; c.beginPath(); c.moveTo(hx + 0.142, hy + 0.035); c.quadraticCurveTo(hx + 0.13, hy + 0.03, hx + 0.128, hy + 0.042); c.stroke();   // aleta de la nariz
+  // ojo: párpado, blanco, iris con el brillo cian de la pantalla
+  if (parpadeo) { c.strokeStyle = '#3a2418'; c.lineWidth = 0.011; c.beginPath(); c.moveTo(hx + 0.066, hy - 0.006); c.quadraticCurveTo(hx + 0.085, hy + 0.002, hx + 0.104, hy - 0.004); c.stroke(); }
+  else {
+    const mi = 0.01 * mira;
+    c.fillStyle = '#e9e1d3'; c.beginPath(); c.moveTo(hx + 0.068, hy - 0.005); c.quadraticCurveTo(hx + 0.088, hy - 0.022, hx + 0.106, hy - 0.006); c.quadraticCurveTo(hx + 0.088, hy + 0.008, hx + 0.068, hy - 0.005); c.fill();
+    c.fillStyle = '#3b2a1c'; c.beginPath(); c.arc(hx + 0.096, hy - 0.006 + mi, 0.0095, 0, 6.283); c.fill();
+    c.fillStyle = '#0d0907'; c.beginPath(); c.arc(hx + 0.098, hy - 0.006 + mi, 0.005, 0, 6.283); c.fill();
+    c.fillStyle = cian + '.95)'; c.fillRect(hx + 0.099, hy - 0.012 + mi, 0.005, 0.005);
+    c.strokeStyle = '#2a1a10'; c.lineWidth = 0.009; c.beginPath(); c.moveTo(hx + 0.066, hy - 0.006); c.quadraticCurveTo(hx + 0.088, hy - 0.024, hx + 0.108, hy - 0.007); c.stroke();   // párpado
+  }
+  c.strokeStyle = '#3a2a1e'; c.lineWidth = 0.016; c.beginPath(); c.moveTo(hx + 0.058, hy - 0.04); c.quadraticCurveTo(hx + 0.09, hy - 0.052 + 0.006 * frio, hx + 0.118, hy - 0.036); c.stroke();   // ceja (con frío, algo fruncida)
+  // gorro de lana con la vuelta doblada
+  const gor = new Path2D();
+  gor.moveTo(hx - 0.158, hy + 0.0); gor.quadraticCurveTo(hx - 0.175, hy - 0.2, hx - 0.01, hy - 0.218);
+  gor.quadraticCurveTo(hx + 0.115, hy - 0.215, hx + 0.127, hy - 0.072); gor.closePath();
+  const gg = c.createLinearGradient(0, hy - 0.22, 0, hy); gg.addColorStop(0, gorroLuz); gg.addColorStop(1, gorro);
+  c.fillStyle = gg; c.fill(gor);
+  c.save(); c.clip(gor); c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 0.012;   // canalé del gorro
+  for (let x = hx - 0.15; x < hx + 0.14; x += 0.035) { c.beginPath(); c.moveTo(x, hy - 0.22); c.lineTo(x + 0.02, hy); c.stroke(); } c.restore();
+  c.fillStyle = gorroLuz; c.beginPath(); c.moveTo(hx - 0.158, hy + 0.0); c.lineTo(hx + 0.127, hy - 0.072); c.lineTo(hx + 0.12, hy - 0.118); c.lineTo(hx - 0.162, hy - 0.048); c.closePath(); c.fill();   // vuelta
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 0.01; c.beginPath(); c.moveTo(hx - 0.162, hy - 0.048); c.lineTo(hx + 0.12, hy - 0.118); c.stroke();
+  c.fillStyle = '#b8904f'; rr(c, hx + 0.04, hy - 0.102, 0.05, 0.028, 0.006); c.fill();   // etiqueta de latón del taller
+  c.fillStyle = calida + '.35)'; c.beginPath(); c.ellipse(hx - 0.02, hy - 0.19, 0.08, 0.02, -0.1, 0, 6.283); c.fill();   // luz del plafón
+  // cascos: diadema sobre el gorro, auricular en la oreja y micrófono hacia la boca
+  c.strokeStyle = negro; c.lineWidth = 0.028; c.beginPath(); c.moveTo(hx - 0.03, hy - 0.01); c.quadraticCurveTo(hx - 0.045, hy - 0.12, hx - 0.035, hy - 0.19); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 0.008; c.beginPath(); c.moveTo(hx - 0.022, hy - 0.03); c.quadraticCurveTo(hx - 0.035, hy - 0.12, hx - 0.027, hy - 0.18); c.stroke();
+  c.fillStyle = negro; c.beginPath(); c.ellipse(hx - 0.025, hy + 0.035, 0.048, 0.062, 0.1, 0, 6.283); c.fill();
+  c.fillStyle = '#3d4a4f'; c.beginPath(); c.ellipse(hx - 0.02, hy + 0.035, 0.026, 0.04, 0.1, 0, 6.283); c.fill();
+  c.fillStyle = '#b8904f'; c.beginPath(); c.arc(hx - 0.02, hy + 0.035, 0.012, 0, 6.283); c.fill();
+  c.strokeStyle = negro; c.lineWidth = 0.016; c.beginPath(); c.moveTo(hx + 0.0, hy + 0.08); c.quadraticCurveTo(hx + 0.06, hy + 0.13, hx + 0.13, hy + 0.105); c.stroke();
+  c.fillStyle = '#2a3236'; c.beginPath(); c.ellipse(hx + 0.137, hy + 0.1, 0.02, 0.015, -0.3, 0, 6.283); c.fill();   // espuma del micrófono
+  // aliento con frío: una nube tenue sale de la boca a cada respiración y se deshace hacia la proa
+  if (frio > 0) {
+    const fase = (t * (1.4 + 0.8 * frio) / 6.283) % 1;
+    if (fase < 0.55) { const k = fase / 0.55;
+      for (let i = 0; i < 3; i++) { const kk = Math.max(0, k - i * 0.12); if (kk <= 0) continue;
+        const bx = hx + 0.16 + kk * 0.32, by = hy + 0.08 - kk * 0.1, br = 0.03 + kk * 0.08, gb = c.createRadialGradient(bx, by, 0, bx, by, br);
+        gb.addColorStop(0, `rgba(225,238,240,${0.3 * frio * (1 - kk)})`); gb.addColorStop(1, 'rgba(225,238,240,0)');
+        c.fillStyle = gb; c.beginPath(); c.arc(bx, by, br, 0, 6.283); c.fill(); } }
+  }
+  c.restore();
+  // palanca de mando: se inclina con el submarino
+  const inc = 0.22 * mando, pb = [2.62, 0.4], pt = [pb[0] + Math.sin(inc) * 0.42, pb[1] - Math.cos(inc) * 0.42];
+  c.fillStyle = '#1b2023'; rr(c, 2.5, 0.36, 0.24, 0.1, 0.03); c.fill();
+  c.fillStyle = '#2a2f31'; c.beginPath(); c.ellipse(pb[0], 0.37, 0.06, 0.025, 0, 0, 6.283); c.fill();   // fuelle
+  c.strokeStyle = '#3a4245'; c.lineWidth = 0.045; c.beginPath(); c.moveTo(pb[0], pb[1]); c.lineTo(pt[0], pt[1]); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.15)'; c.lineWidth = 0.01; c.beginPath(); c.moveTo(pb[0] - 0.012, pb[1]); c.lineTo(pt[0] - 0.012, pt[1]); c.stroke();
+  c.fillStyle = '#1b2023'; rr(c, pt[0] - 0.04, pt[1] - 0.07, 0.08, 0.13, 0.035); c.fill();   // empuñadura
+  c.fillStyle = '#ef5d45'; c.beginPath(); c.arc(pt[0] + 0.012, pt[1] - 0.075, 0.016, 0, 6.283); c.fill();   // botón rojo
+  // brazo: hombro, codo y antebrazo hasta la empuñadura (manga de lana con puño en canalé)
+  const hom = [1.95, -0.29 + resp], codo = [2.07, 0.05], mun = [pt[0] - 0.07, pt[1] + 0.0];
+  c.fillStyle = lana; c.beginPath(); c.ellipse(hom[0] + 0.01, hom[1] + 0.02, 0.085, 0.07, 0.6, 0, 6.283); c.fill();   // hombro
+  c.strokeStyle = lanaSom; c.lineWidth = 0.13; c.beginPath(); c.moveTo(hom[0], hom[1]); c.lineTo(codo[0], codo[1]); c.lineTo(mun[0], mun[1]); c.stroke();
+  c.strokeStyle = lana; c.lineWidth = 0.075; c.beginPath(); c.moveTo(hom[0] + 0.02, hom[1] - 0.02); c.lineTo(codo[0] + 0.015, codo[1] - 0.03); c.lineTo(mun[0], mun[1] - 0.03); c.stroke();
+  c.strokeStyle = lanaLuz; c.lineWidth = 0.022; c.beginPath(); c.moveTo(hom[0] + 0.035, hom[1] - 0.045); c.lineTo(codo[0] + 0.03, codo[1] - 0.06); c.stroke();   // luz en el brazo
+  c.strokeStyle = 'rgba(133,122,99,.6)'; c.lineWidth = 0.009; c.beginPath();   // pliegues del codo
+  c.moveTo(codo[0] + 0.04, codo[1] - 0.05); c.quadraticCurveTo(codo[0] + 0.07, codo[1] - 0.01, codo[0] + 0.1, codo[1] - 0.04);
+  c.moveTo(codo[0] + 0.0, codo[1] - 0.02); c.quadraticCurveTo(codo[0] + 0.04, codo[1] + 0.03, codo[0] + 0.08, codo[1] + 0.0); c.stroke();
+  c.strokeStyle = lanaOsc; c.lineWidth = 0.12; c.lineCap = 'butt'; c.beginPath(); c.moveTo(mun[0] - 0.06, mun[1] - 0.012); c.lineTo(mun[0], mun[1] - 0.012); c.stroke();   // puño
+  c.strokeStyle = 'rgba(60,50,38,.5)'; c.lineWidth = 0.008; c.beginPath(); for (let x = mun[0] - 0.055; x < mun[0]; x += 0.015) { c.moveTo(x, mun[1] - 0.07); c.lineTo(x, mun[1] + 0.045); } c.stroke(); c.lineCap = 'round';
+  // mano cerrada en la empuñadura: dorso, nudillos y el pulgar encima, junto al botón
+  const mx = pt[0] - 0.005, my = pt[1] + 0.0;
+  c.fillStyle = pielSom; rr(c, mx - 0.055, my - 0.045, 0.1, 0.09, 0.035); c.fill();
+  c.fillStyle = piel; rr(c, mx - 0.05, my - 0.05, 0.085, 0.075, 0.03); c.fill();
+  c.strokeStyle = pielSom; c.lineWidth = 0.008; c.beginPath(); for (const yy of [-0.022, 0.0, 0.02]) { c.moveTo(mx + 0.008, my + yy); c.lineTo(mx + 0.035, my + yy); } c.stroke();   // dedos
+  c.fillStyle = piel; c.beginPath(); c.ellipse(mx + 0.0, my - 0.055, 0.03, 0.016, -0.3, 0, 6.283); c.fill();   // pulgar
+  c.fillStyle = cian + '.25)'; c.fillRect(mx + 0.025, my - 0.045, 0.01, 0.07);   // luz de las pantallas en los nudillos
+  c.restore();
   // consola de proa, inclinada, con pantallas
   c.fillStyle = '#1a2427'; c.beginPath(); c.moveTo(2.95, 0.62); c.lineTo(3.05, 0.08); c.lineTo(3.55, -0.12); c.lineTo(4.05, 0.3); c.lineTo(4.0, 0.62); c.closePath(); c.fill();
   c.strokeStyle = 'rgba(150,200,205,.18)'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(3.05, 0.08); c.lineTo(3.55, -0.12); c.stroke();
@@ -7935,13 +8092,31 @@ const CELDA_CUEVA = 30;
 const ROCA_OSCURA = { desde: 5, hasta: 38, max: 0.95 };
 // Tiras de degradado precalculadas (una por pared) que se estiran para pintar la oscuridad de la roca:
 // dibujar una imagen es mucho más barato que crear un degradado nuevo por tira
+// v164: en lo hondo, lejos de las luces, la cara de la pared era una lámina clara y uniforme de 5 m que parecía cristal.
+// Ahora, según baja la cámara (de 'hondoDesde' a 'hondoHasta' m), la franja se estrecha ('desdeHondo') y el degradado
+// arranca ya algo oscuro ('baseHondo') y es más corto ('anchoHondo'): queda un perfil fino que marca el contorno.
+// Donde llegan tus luces no cambia nada (la luz borra la oscuridad igual). Hay 9 juegos de tiras precalculados.
+Object.assign(ROCA_OSCURA, { hondoDesde: 800, hondoHasta: 3000, desdeHondo: 1.2, anchoHondo: 14, baseHondo: 0.5, niveles: 9 });
 const TIRA_ROCA = (() => {
-  const hacer = invertir => {
+  const hacer = (invertir, k) => {
     const c = document.createElement('canvas'); c.width = 128; c.height = 1;
-    const g = c.getContext('2d'), gr = g.createLinearGradient(invertir ? 128 : 0, 0, invertir ? 0 : 128, 0);
+    const g = c.getContext('2d'), gr = g.createLinearGradient(invertir ? 128 : 0, 0, invertir ? 0 : 128, 0), b = ROCA_OSCURA.baseHondo * k, M = ROCA_OSCURA.max;
     // curva suave (lenta al principio y al final) para que no se note dónde empieza ni dónde acaba
-    [[0, 0], [0.2, 0.16], [0.45, 0.52], [0.7, 0.8], [1, ROCA_OSCURA.max]].forEach(([t, a]) => gr.addColorStop(t, `rgba(1,4,8,${a})`));
+    [[0, 0], [0.2, 0.16], [0.45, 0.52], [0.7, 0.8], [1, M]].forEach(([t, a]) => gr.addColorStop(t, `rgba(1,4,8,${b + (M - b) * a / M})`));
     g.fillStyle = gr; g.fillRect(0, 0, 128, 1); return c;
+  };
+  const N = ROCA_OSCURA.niveles, lv = [];
+  for (let i = 0; i < N; i++) lv.push({ der: hacer(false, i / (N - 1)), izq: hacer(true, i / (N - 1)) });
+  return { der: lv[0].der, izq: lv[0].izq, niveles: lv };
+})();
+// Tiras de la cara iluminada (v164): de transparente en la superficie de la pared a casi negro a 'caraAncho' m
+Object.assign(ROCA_OSCURA, { caraDesde: 0.3, caraAncho: 3.9 });
+const TIRA_CARA = (() => {
+  const hacer = invertir => {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 1;
+    const g = c.getContext('2d'), gr = g.createLinearGradient(invertir ? 64 : 0, 0, invertir ? 0 : 64, 0);
+    [[0, 0], [0.25, 0.12], [0.55, 0.45], [0.8, 0.75], [1, 0.9]].forEach(([t, a]) => gr.addColorStop(t, `rgba(1,4,8,${a})`));
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 1); return c;
   };
   return { der: hacer(false), izq: hacer(true) };
 })();
@@ -13437,6 +13612,8 @@ function htmlBalance() {
         <li>Bodega y pestaña Piezas (v161; lo pidió el autor). La ficha Bodega del Muelle no parecía tocable: ahora tiene el borde en latón y un botón «Cargar ▾» (con cuántas cosas llevas elegidas) que abre «A bordo». La pestaña Piezas del Taller era demasiado larga (unos 2.500 px en el móvil): cada pieza es ahora una fila plegable con su chapa, el nombre y el estado (montada, en el almacén, puedes fabricarla, faltan materiales); al tocarla se despliega con el efecto, de dónde sale, la receta y el botón (una abierta a la vez). La sección de estaciones pasa a llamarse «Expedición y logística» (módulo de energía, fondeo y planos). Queda en unos 890 px.</li>
         <li>Equipo montado del Muelle (v162; el autor vio que la v161 lo había descolocado: una clase de estilo nueva chocaba con la de estas tarjetas, ya corregido). Además, cada tarjeta de una rama con tiers lleva una barra de segmentos con el nivel (en latón y «máx» al llegar al tope), también la de la herramienta frontal. Las piezas montadas (de equipo y de la expedición) pasan de dos listas de etiquetas a una cuadrícula de fichas con su chapa; al tocar una se abre su fila en Taller › Piezas.</li>
         <li>Teclado (v163; lo pidió el autor al probarlo en PC): las flechas arriba y abajo (y también W y S) mueven el submarino con el motor; Espacio quita lastre y C lo añade (antes era al revés: W/S para el lastre y Espacio/C para el motor). El soplado de emergencia se hace manteniendo Espacio con el lastre a 0, o con X. En el móvil no cambia nada.</li>
+        <li>Pared en profundidad (v164; el autor veía la cara de la pared como una lámina de cristal en la Fosa): el haz visible de los focos ya no entra en la roca; la luz que da en la pared se apaga en degradado hacia dentro en unos 4 m (antes llegaba entera a 4 m y se cortaba en seco); y sin luces, la cara de la pared es más fina y oscura. Entra poco a poco entre 800 y 3.000 m; más arriba, con luz de sol, la pared se ve igual que antes.</li>
+        <li>Piloto de la cabina (v165; el autor pidió mejorarlo): jersey de lana de pescador color crudo, gorro de lana con etiqueta de latón, cascos con micrófono, arnés y botas; cara de perfil con ojo, luz cálida del plafón y cian de las pantallas. Se lee también a tamaño de juego (el jersey claro recorta la figura). Respira, parpadea, mira a la consola y la palanca se inclina al subir y bajar. Reacciona sin texto: con frío (bajo 15 °C) se le ve el aliento y tirita; con el CO2 alto cabecea de sueño (como en la hipercapnia real); con una embestida, el golpe lo sacude. En la base y el menú está siempre tranquilo. Para Unity: referencia del personaje y de sus animaciones de estado.</li>
         <li>Sensor de sigilo (13.3, la otra familia del punto Dorsal; diseño aprobado por el autor): una cámara de luz roja lejana (como la Eye-in-the-Sea de Edith Widder: casi toda la fauna profunda no ve el rojo) y un revestimiento anecoico (las losetas que absorben el sonido en los submarinos). Se fabrica una vez en Piezas de equipo (4 Aceite de fauna de aguas frías, 3 Aleación titanio-cobalto y 2 Geodas de cuarzo, 1.800 cr; 3 kg: todo de la Batial y sus cuevas, así que llega antes que el dormilón) y se monta o desmonta antes de bajar; montado, sustituye a los Focos fabricados: haz rojo de 26 m, más estrecho que el T1, sin foco ventral ni trasero y con halo de 6 m, pero con él encendido la fauna te detecta como si fueras a oscuras; motor y taladro hacen un 30 % menos de ruido. Cambia los jefes sin reglas nuevas: al calamar no se le puede deslumbrar (tampoco ve el rojo), el kraken no ataca más a menudo por tu luz (su latido sí la reinicia, como cualquier aparato eléctrico), el dormilón te oye menos y el Guardián del Abismo se inquieta menos por el ruido. Un solo nivel (el GDD da tiers a cada familia; aquí no hacen falta). En el panel, el botón de luces dice «Rojo» y en el plano del Taller el punto Dorsal dice «Sigilo». Pendiente de pasar al GDD.</li>
         <li>Hilo narrativo (sección 11): el juego ocurre tres años después de «Lo que queda debajo». Caronte (1.000 m), Estigia (4.000 m, con la T-1 del Consorcio al lado) y Leteo (6.000 m, sin esfera) están sobre cornisas fijas, apagadas, con páginas del diario de Lucía. Por debajo de 4.000 m se oye a veces su señal (tres cortos y uno largo). Las páginas son un borrador para que el autor las revise. Pendiente de pasar a 4.6bis y 11.2: la expedición ya no «desapareció»; su destino se conoce, pero su señal sigue llegando.</li>
         <li>Sonido (sección 15), fases 1 y 2 de 4: todo sintetizado por código en la demo (en Unity irán grabaciones y un AudioMixer). Tres canales: ambiente, submarino y efectos. Ambiente que cambia con la profundidad: oleaje cerca de la superficie, rumor del agua cada vez más grave, un dron desde los 500 m que late más inquieto en la Abisal y suma una nota disonante, gruñidos lejanos cada vez más frecuentes y agua más sorda dentro de las cuevas. Submarino: motor que sube de tono con el empuje (y se corta en un fallo de motor), hélice «troceada» al ritmo de las palas, agua rozando el casco según la velocidad y zumbido de cabina. Crujidos del casco desde el 80 % de la profundidad segura, más largos y graves al acercarte, casi continuos por debajo. En pausa o acoplado, el exterior se oye lejos. Primeras muestras grabadas, de prueba (hechas por el autor con Suno): la hélice de submarino suena de fondo en el menú principal, una copia tras otra alternando de lado; y un ambiente de la inmensidad del océano entra en las inmersiones desde los 700 m, cada vez más lento y grave. Tras escucharlo pidió el motor más grave y más bajo y el mar más de fondo (bus de ambiente a −6 dB). En el menú, por encima de las hélices y suena la firma de Lucía (la primera a los 2,5 s y luego cada 14–24 s, sin horario fijo) (tres cortos y uno largo, grave, ondulante y con un eco lejano); es la misma que se oye en las inmersiones por debajo de 4.000 m, más grave cuanto más hondo. Base (fase 3 adelantada): grabación de muelle tranquilo hecha por el autor con Suno, en bucle sin costura (parte central, golpes sueltos aplanados y dos voces desfasadas para que no se reconozca la repetición), muy baja; encima, sonidos sintetizados sueltos: crujidos de amarras, algún golpe metálico lejano del taller y alguna gaviota. Al bajar a la inmersión, el muelle se cruza con el agua. Clic de consola de latón al pulsar las pestañas de la base y los botones del menú (se descartó usar el pitido de la firma de Lucía para no gastar su significado). Volúmenes en Opciones (fase 4 adelantada): Ambiente, Efectos y Música, guardados con la partida. Primera música (GDD 15.2), hecha por el autor con Suno: una pista instrumental de 6 min que suena en bucle en el menú y en la zona Fótica, muy baja por defecto (se apaga entre los 140 y los 200 m y sigue donde iba al volver). Ping de sonar en las cuevas: tono limpio con cola larga y reverberación de roca, y tres ecos (pared más cercana, intermedia y más lejana) sincronizados con los ecos que se dibujan y del lado por el que vuelven. En el fondo del menú cruza de vez en cuando, lenta y difusa, la sombra del Guardián de la Plataforma (el tiburón jefe de la Fótica, 10.2), por detrás del submarino y de la nieve marina, con un rumor grave al pasar: la primera a los 10 s, siempre de derecha a izquierda, y luego cada 35–55 s en cualquier sentido. Silueta de tiburón blanco con proporciones reales (dorsal de un 12 % del largo, pectorales en hoz, cola en media luna), con el cuerpo ondulando hacia la cola y teñida del azul del agua honda en vez de negro. Pantalla de inicio en el menú («Pulsa cualquier tecla / Toca la pantalla para empezar»): el navegador no deja sonar nada hasta el primer toque, así el ambiente del menú se oye siempre; ese toque no pulsa ningún botón. En Unity no hace falta (una aplicación nativa puede sonar al abrirse), aunque la pantalla de «pulsa para empezar» es habitual. Fase 2, taladro y fauna: el taladro suena distinto en cada estado del minijuego de minería (9.11), como información de juego: con poca potencia, ahogado y a mordiscos; en la banda óptima, liso y con un zumbido afinado; en sobrecarga, más forzado y con chasquidos de roca cada vez más seguidos (todo en graves y lento, como una perforadora pesada: con agudos sonaba a motosierra) cuanto más cerca está la fractura. La fractura es un estallido con golpe grave, cascotes contra el casco y burbujas; al terminar la extracción, la roca se suelta y se cierra la escotilla de la bodega. Recoger orgánicos sorbe agua. Fauna: al detectarte, el agua que desplaza al girar hacia ti (del lado por el que viene y más grave cuanto más grande) y un aviso suave de contacto en cabina; mientras te persigue, su estela se oye crecer al acercarse; la embestida contra el blindaje suena a chapa que aguanta (golpe sordo, retumbo y placas sueltas) y contra el casco sin blindaje a algo que cede (más grave y largo, crujido de la estructura, siseo de agua y alarma de casco), para distinguirlas sin mirar las barras. También el choque contra la roca y el chorro de tinta del pulpo. Añade al GDD el ambiente de la base y de las estaciones, el sonido del taladro, el acoplamiento, el pulso y el sonar (fases siguientes).</li>
