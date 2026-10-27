@@ -810,7 +810,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie">Partida única · se guarda en este dispositivo · v167</p>
+      <p class="menu-pie">Partida única · se guarda en este dispositivo · v174</p>
     </div>
   </div>
 
@@ -2403,6 +2403,27 @@ const Sonido = {
   //  · trenes de clics de ecolocalización que se aceleran hasta un zumbido, como una puerta que cruje
   // Todo cruza de un lado al otro con el grupo y suena algo lejos (paso bajo y un eco corto en el agua).
   // dir = hacia dónde nadan (1 derecha, −1 izquierda) · n = cuántos son
+  // v171: chapuzón de un delfín al salir o entrar en el agua, oído desde abajo (apagado): ruido filtrado que cae
+  // de tono con un golpe grave al entrar
+  chapuzon(pan = 0, entra = true) {
+    if (!this.listo || !G || !G.opciones.sonido) return;
+    const c = this.ctx, t = c.currentTime + 0.02;
+    try {
+      const src = c.createBufferSource(), bp = this.filtro('bandpass', 1400, 0.8), lp = this.filtro('lowpass', 1800, 0.5), g = this.ganancia(0), p = c.createStereoPanner();
+      src.buffer = this.buf.blanco; p.pan.value = clamp(pan, -1, 1) * 0.8;
+      src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(p); p.connect(this.bus.sfx);
+      const d = entra ? 0.6 : 0.35, v = entra ? 0.45 : 0.25;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      bp.frequency.setValueAtTime(entra ? 1300 : 1700, t); bp.frequency.exponentialRampToValueAtTime(entra ? 320 : 800, t + d);
+      src.start(t, Math.random() * 5, d + 0.05);
+      if (entra) {   // el «plof» del cuerpo al entrar
+        const o = c.createOscillator(), og = this.ganancia(0); o.type = 'sine';
+        o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(60, t + 0.25);
+        og.gain.setValueAtTime(0.0001, t); og.gain.linearRampToValueAtTime(0.35, t + 0.01); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        o.connect(og); og.connect(p); o.start(t); o.stop(t + 0.32);
+      }
+    } catch (e) {}
+  },
   delfines(dir = 1, n = 3) {
     if (!this.listo || !G || !G.opciones.sonido) return;
     const c = this.ctx, t0 = c.currentTime + 0.25, dur = 6.5;
@@ -4864,10 +4885,40 @@ function actualizarPulpo(c, dt, d, dx, dy, detMult) {
 // Delfín de paso: cruza recto ondulando. Antes de llegar a la pared (o al alejarse mucho del submarino) no
 // desaparece de golpe: se aleja «hacia el azul», subiendo hacia la luz del sol mientras pierde velocidad
 // aparente, se hace más pequeño y se desvanece en el agua (2,2 s). Así parece que se va en profundidad.
+// v171: lo que hace distinto a cada delfín (se sortea al aparecer): tamaño, tono, marcas de dientes de otros delfines
+// en el costado y, en algunos, una muesca en la dorsal (es como los biólogos los reconocen uno a uno)
+const IND_DELFIN0 = { esc: 1, tono: 0, cic: null, muesca: 0 };
+function sortearDelfin(cria) {
+  if (cria) return { esc: 0.55, tono: -0.6, cic: null, muesca: 0 };
+  const cic = [];
+  for (let k = Math.floor(Math.random() * 4); k > 0; k--)
+    cic.push({ x: -0.25 + Math.random() * 0.55, y: -0.06 + Math.random() * 0.1, n: 3 + Math.floor(Math.random() * 3), a: -0.5 + Math.random(), l: 0.08 + Math.random() * 0.08 });
+  return { esc: 0.9 + Math.random() * 0.2, tono: Math.random() * 1.6 - 0.8, cic, muesca: Math.random() < 0.4 ? 0.25 + Math.random() * 0.5 : 0 };
+}
 function actualizarDelfin(c, dt, s) {
-  c.fase += dt * 4;
+  const I = inm;
+  if (dt <= 0) return;
+  c.fase += dt * (c.cria ? 5.6 : 4) * (c.curioso === 'mira' ? 0.6 : 1);   // la cría bate la cola más deprisa; el curioso, despacio
+  if (c.dirVis === undefined) c.dirVis = c.dir;
+  c.dirVis += clamp(c.dir - c.dirVis, -dt * 4, dt * 4);   // al cambiar de sentido se da la vuelta en medio segundo (no aparece de golpe del revés)
+  if (c.madre) return seguirMadre(c, dt);
+  // tonel: de vez en cuando gira sobre sí mismo (1,3 s). La madre con cría no lo hace
+  if (c.giro) { c.giro += dt / 1.3; if (c.giro >= 1) c.giro = 0; }
+  else if (!c.conCria && !c.salto && !c.salida && c.curioso !== 'va' && Math.random() < dt / 16) c.giro = 0.001;
+  // soplido: un chorro de burbujas por el espiráculo cada pocos segundos (lo hacen al silbar o cuando algo les llama la atención)
+  c.tSopla = (c.tSopla === undefined ? 4 : c.tSopla) - dt;
+  if (c.tSopla <= 0) { c.tSopla = 6 + Math.random() * 9; if (c.y > 1.5 && !c.salida) soplarDelfin(c, I, 6); }
   if (!c.salida) {
-    c.x += c.vx * dt; c.y = c.y0 + Math.sin(c.fase * 0.5 + c.gfase) * 1.6; c.vy = Math.cos(c.fase * 0.5 + c.gfase) * 1.6;
+    if (c.curioso === 'pendiente' && Math.abs(c.x - s.x) < 24 && Math.abs(c.y - s.y) < 18 && s.y < 70) { c.curioso = 'va'; c.tVa = 0; c.tCur = 4.5; c.dirOrig = c.dir; }
+    if (c.curioso === 'va' || c.curioso === 'mira') return curiosearDelfin(c, dt, s, I);
+    if (c.salto) return saltarDelfin(c, dt, I);
+    // nado normal: cruza de lado a lado subiendo y bajando suave
+    if (c.vObj !== undefined) c.vx += (c.vObj - c.vx) * Math.min(1, dt * 1.5);
+    c.x += c.vx * dt; c.dy = (c.dy || 0) * Math.exp(-dt * 0.8);   // dy: lo que le falta para volver a su profundidad tras un salto
+    const o = c.fase * 0.5 + c.gfase;
+    c.y = c.y0 + Math.sin(o) * 1.6 + c.dy; c.vy = Math.cos(o) * 1.6 - 0.8 * c.dy;
+    // salto: cerca de la superficie y con ella a la vista, a veces sale del agua
+    if (!c.conCria && !c.giro && c.y0 < 14 && s.y < 45 && Math.random() < dt / 12) c.salto = 1;
     const hueco = c.dir > 0 ? Fosa.der(c.y) - c.x : c.x - Fosa.izq(c.y);
     if (hueco < 18 || Math.abs(c.x - s.x) > 70) c.salida = 0.001;
     return;
@@ -4879,18 +4930,99 @@ function actualizarDelfin(c, dt, s) {
   c.alfa = 1 - c.salida; c.esc = 1 - 0.45 * c.salida;
   if (c.salida >= 1) c.fuera = true;
 }
-// Delfines: cada cierto tiempo, si estás cerca de la superficie, cruza un grupo de 2-4 de lado a lado
+// La cría nada «en escalón»: pegada al costado de la madre, a la altura de la dorsal, donde el agua la arrastra
+function seguirMadre(c, dt) {
+  const m = c.madre;
+  if (m.fuera) { c.fuera = true; return; }
+  const k = m.esc || 1, tx = m.x - m.dir * 0.9 * k, ty = m.y - 0.8 * k + Math.sin(c.fase * 0.3) * 0.12;
+  const nx = lerp(c.x, tx, Math.min(1, dt * 6)), ny = lerp(c.y, ty, Math.min(1, dt * 6));
+  c.vx = (nx - c.x) / dt; c.vy = (ny - c.y) / dt; c.x = nx; c.y = ny;
+  c.dir = m.dir; c.salida = m.salida; c.alfa = m.alfa; c.esc = m.esc;
+  c.tSopla = (c.tSopla === undefined ? 3 : c.tSopla) - dt;
+  if (c.tSopla <= 0) { c.tSopla = 5 + Math.random() * 8; if (c.y > 1.5 && !c.salida) soplarDelfin(c, inm, 3); }
+}
+// El curioso: se separa del grupo, se pone delante de la cabina mirando al submarino unos segundos y vuelve con los suyos
+function curiosearDelfin(c, dt, s, I) {
+  const lado = s.derecha ? 1 : -1, ty = Math.max(1.5, s.y - 1.8 + Math.sin(c.fase * 0.4) * 0.5);
+  const tx = clamp(s.x + lado * 9.5, Fosa.izq(ty) + 3, Fosa.der(ty) - 3);
+  const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy) || 0.001;
+  const k = Math.min(c.curioso === 'mira' ? 3 : 10, d * 1.4) / d;
+  c.vx = lerp(c.vx, dx * k, Math.min(1, dt * 2.2)); c.vy = lerp(c.vy, dy * k, Math.min(1, dt * 2.2));
+  c.x += c.vx * dt; c.y = Math.max(1, c.y + c.vy * dt);
+  if (c.curioso === 'va') {
+    if (Math.abs(c.vx) > 1.5) c.dir = Math.sign(c.vx);
+    c.tVa += dt;
+    if (d < 3) { c.curioso = 'mira'; soplarDelfin(c, I, 10); Sonido.delfines(0, 1); }
+  } else { c.dir = Math.sign(s.x - c.x) || c.dir; c.tCur -= dt; }   // mira el submarino (y a quien va dentro)
+  if (c.tCur <= 0 || c.tVa > 6 || s.y > 75) {   // se cansa y vuelve con los suyos
+    c.curioso = 'hecho'; c.dir = c.dirOrig; c.vObj = c.dirOrig * c.e.velPatrulla; c.dy = 0;
+    c.y0 = c.y - Math.sin(c.fase * 0.5 + c.gfase) * 1.6;
+  }
+}
+// Salto: coge carrerilla hacia arriba, sale del agua (tiro parabólico) y vuelve a su profundidad frenando
+function saltarDelfin(c, dt, I) {
+  if (c.salto < 3) c.vx = lerp(c.vx, (c.vObj === undefined ? c.vx : c.vObj) * 0.55, Math.min(1, dt * 1.5));   // frena para subir: el arco sale más alto que largo
+  c.x += c.vx * dt;
+  if (c.salto === 1) {
+    c.vy = lerp(c.vy, -9.5, Math.min(1, dt * 2.5)); c.y += c.vy * dt;
+    if (c.y <= 0) { c.salto = 2; chapuzon(c, I, false); }
+  } else if (c.salto === 2) {
+    c.vy += 9.8 * dt; c.y += c.vy * dt;
+    if (c.y > 0 && c.vy > 0) { c.salto = 3; chapuzon(c, I, true); }
+  } else {
+    c.vy = lerp(c.vy, 2.5, Math.min(1, dt * 1.6)); c.y += c.vy * dt;   // frena y baja planeando hasta su profundidad
+    const base = c.y0 + Math.sin(c.fase * 0.5 + c.gfase) * 1.6;
+    if (c.y > base - 0.3) { c.salto = 0; c.dy = c.y - base; }
+  }
+}
+function soplarDelfin(c, I, n) {   // chorro de burbujas por el espiráculo
+  const k = (c.ind || IND_DELFIN0).esc * c.e.tam, hx = c.x + c.dir * 0.34 * k, hy = c.y - 0.11 * k;
+  for (let i = 0; i < n; i++) I.burbujas.push({ x: hx + (Math.random() - 0.5) * 0.3, y: hy - Math.random() * 0.5, vy: -1.2 - Math.random() * 1.6, r: 0.06 + Math.random() * 0.12, vida: 1.4 + Math.random() });
+}
+// Salpicadura al salir y al entrar: gotas en el aire, un corro de espuma en la superficie y, al entrar, burbujas debajo
+function chapuzon(c, I, entra) {
+  const S = I.salpicas || (I.salpicas = []), k = (c.ind || IND_DELFIN0).esc;
+  S.push({ espuma: true, x: c.x, r: 0.8 * k, vida: 1.8, max: 1.8 });
+  for (let i = 0; i < 22; i++) S.push({ x: c.x + (Math.random() - 0.5) * 1.6 * k, y: -0.05, vx: c.vx * (entra ? 0.12 : 0.3) + (Math.random() - 0.5) * 3, vy: -(1.5 + Math.random() * (entra ? 5.5 : 3.5)), r: 0.08 + Math.random() * 0.14, vida: 1.2 });
+  if (entra) for (let i = 0; i < 14; i++) I.burbujas.push({ x: c.x - c.dir * Math.random() * 2, y: 0.4 + Math.random() * 2.2, vy: -0.6 - Math.random() * 1.5, r: 0.08 + Math.random() * 0.2, vida: 1 + Math.random() });
+  if (Math.abs(c.x - I.sub.x) < 60 && Sonido.chapuzon) Sonido.chapuzon(clamp((c.x - I.sub.x) / 40, -1, 1), entra);
+}
+function dibujarSalpicas(sx, sy, E) {
+  const S = inm.salpicas; if (!S || !S.length) return;
+  ctx.fillStyle = '#e6f2f4';
+  for (const p of S) {
+    if (p.espuma) { ctx.globalAlpha = 0.7 * p.vida / p.max; ctx.beginPath(); ctx.ellipse(sx(p.x), sy(0), p.r * 1.4 * E, Math.max(1.5 * dpr, 0.25 * E), 0, 0, 6.283); ctx.fill(); }
+    else { ctx.globalAlpha = Math.min(1, p.vida * 1.5) * 0.85; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), Math.max(0.8 * dpr, p.r * E), 0, 6.283); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+}
+// Delfines: cada cierto tiempo, si estás cerca de la superficie, cruza un grupo de 2-4 de lado a lado.
+// v171: en los grupos de 3 o más puede ir una cría con su madre, y uno puede acercarse a curiosear
 function lanzarDelfines(dt) {
   const I = inm, s = I.sub, e = BAL.fauna.find(f => f.id === 'delfin'); if (!e) return;
+  if (I.salpicas && I.salpicas.length) {
+    for (const p of I.salpicas) { p.vida -= dt; if (p.espuma) p.r += dt * 1.2; else { p.vy += 9.8 * dt; p.x += p.vx * dt; p.y += p.vy * dt; } }
+    I.salpicas = I.salpicas.filter(p => p.vida > 0 && (p.espuma || p.y < 0.05));
+  }
   I.tDelfines -= dt;
   if (I.tDelfines > 0 || s.y > e.hasta + 25 || I.fauna.some(c => c.e.paso)) return;
   I.tDelfines = 50 + Math.random() * 70;
   const dir = Math.random() < 0.5 ? 1 : -1, n = e.grupo[0] + Math.floor(Math.random() * (e.grupo[1] - e.grupo[0] + 1));
   const y0 = clamp(s.y + (Math.random() - 0.5) * 20, 4, e.hasta), x0 = clamp(s.x - dir * 40, Fosa.izq(y0) + 3, Fosa.der(y0) - 3);
+  const grupo = [];
   for (let k = 0; k < n; k++) {
-    const yy = clamp(y0 + (Math.random() - 0.5) * 6, 3, e.hasta + 5);
-    I.fauna.push({ e, x: x0 + dir * k * (2 + Math.random() * 2), y: yy, y0: yy, vx: dir * e.velPatrulla * (0.9 + Math.random() * 0.2), vy: 0, dir, estado: 'paso', cd: 0, fase: Math.random() * 6, gfase: k * 0.9, ancla: { x: x0, y: yy }, off: { x: 0, y: 0 } });
+    const yy = clamp(y0 + (Math.random() - 0.5) * 6, 3, e.hasta + 5), vx = dir * e.velPatrulla * (0.9 + Math.random() * 0.2);
+    grupo.push({ e, x: x0 + dir * k * (2 + Math.random() * 2), y: yy, y0: yy, vx, vObj: vx, vy: 0, dir, dirVis: dir, estado: 'paso', cd: 0, fase: Math.random() * 6, gfase: k * 0.9,
+      ancla: { x: x0, y: yy }, off: { x: 0, y: 0 }, ind: sortearDelfin(false), tSopla: 2 + Math.random() * 8 });
   }
+  if (n >= 3 && Math.random() < 0.5) {   // cría: va detrás de su madre en la lista para que se dibuje por detrás de ella
+    const m = grupo[1 + Math.floor(Math.random() * (n - 1))]; m.conCria = true;
+    grupo.splice(grupo.indexOf(m), 0, { e, x: m.x - dir * 0.9, y: m.y - 0.8, y0: m.y0, vx: m.vx, vy: 0, dir, dirVis: dir, estado: 'paso', cd: 0, fase: Math.random() * 6, gfase: 0,
+      ancla: m.ancla, off: { x: 0, y: 0 }, cria: true, madre: m, ind: sortearDelfin(true) });
+  }
+  const libres = grupo.filter(c => !c.cria && !c.conCria);
+  if (libres.length && Math.random() < 0.6) libres[Math.floor(Math.random() * libres.length)].curioso = 'pendiente';
+  for (const c of grupo) I.fauna.push(c);
   Sonido.delfines(dir, n);   // silbidos de cada uno y clics de ecolocalización
 }
 
@@ -5928,6 +6060,7 @@ function render(dt) {
   }
   for (const b of I.bengalas) if (b.y > yTop - 5 && b.y < yBot + 5) dibujarBengala(b, sx, sy, E);
   for (const c of I.fauna) if (c.y > yTop - 8 && c.y < yBot + 8) dibujarCriatura(c, sx, sy, E);
+  if (yTop < 3) dibujarSalpicas(sx, sy, E);   // v171: los saltos de los delfines
   const jefeVisible = I.jefe && I.jefe.y > yTop - 25 && I.jefe.y < yBot + 25, calamarAgarra = jefeVisible && I.jefe.J.tipo === 'calamar' && (I.jefe.estado === 'agarre' || I.jefe.estado === 'bloqueo');
   if (I.jefe && I.jefe.J.tipo === 'kraken') dibujarKraken(I.jefe, sx, sy, E, yTop, yBot);   // sus brazos llegan lejos: se dibuja aunque el cuerpo quede fuera
   else if (I.jefe && I.jefe.J.tipo === 'abismo') dibujarAbismo(I.jefe, sx, sy, E, yTop, yBot);   // su cuerpo, solo cuando pasa por delante
@@ -6317,6 +6450,10 @@ function brillosSub(s, px, py, E, I, k) {
   const [ox, oy] = P(-0.75, -0.95); pintarSprite(ctx, spriteRadial('subOjo', [[0, 'rgba(255,190,110,.9)'], [0.35, 'rgba(255,170,90,.35)'], [1, 'rgba(255,150,70,0)']]), ox, oy, 1.1 * E, 1.1 * E, 0.55 * k);
   const [cx, cy] = P(2.7, -0.4); pintarSprite(ctx, spriteRadial('subCab', [[0, 'rgba(130,220,215,.5)'], [0.5, 'rgba(255,214,160,.18)'], [1, 'rgba(255,214,160,0)']]), cx, cy, 2.6 * E, 2.0 * E, 0.45 * k);
   if (Math.sin((I.t || 0) * 2.6) > 0.55) { const [mx, my] = P(-1.75, -3.08); pintarSprite(ctx, spriteRadial('subMastil', [[0, 'rgba(255,90,70,.9)'], [1, 'rgba(255,60,40,0)']]), mx, my, 1.4 * E, 1.4 * E, 0.7 * k); }
+  if (I.minado && I.eq && I.eq.tieneTaladro) {   // v174: las chispas del taladro alumbran un poco alrededor de la punta (más en sobrecarga)
+    const e = I.minado.estado, a = e === 'sobre' ? 0.8 : e === 'optima' ? 0.45 : 0.2, [tx, ty] = P(TALADRO.punta, TALADRO.y);
+    pintarSprite(ctx, spriteRadial('subChispas', [[0, 'rgba(255,205,130,.9)'], [0.4, 'rgba(255,150,70,.35)'], [1, 'rgba(255,120,50,0)']]), tx, ty, 1.25 * E, 1.25 * E, a * k * (0.8 + 0.2 * Math.random()));
+  }
 }
 // v166: casco estático del submarino en caché. Se guarda una imagen por resolución (píxeles por metro), chasis, foco
 // ventral, nombre y sentido (el nombre se pinta ya volteado para que se lea mirando a la izquierda).
@@ -6813,15 +6950,46 @@ function dibujarHelice(c, ang, w) {
   for (const p of palas) if (p.z >= 0) pala(p);
   c.restore();
 }
-// Taladro bajo la proa: soporte, caja de engranajes con aletas, portabrocas y broca cónica con estrías en
-// espiral. El tier se nota en el aspecto (GDD 13.3): T1 acero gris con franja amarilla; T2 broca pavonada
-// con collarín de latón; T3 broca oscura con punta de diamante que brilla. Al extraer, las estrías avanzan
-// (la broca gira), todo vibra un poco y saltan chispas y polvo en la punta.
+// Taladro bajo la proa: soporte, caja de engranajes, portabrocas y broca cónica con estrías en espiral.
+// El tier se nota en el aspecto (GDD 13.3). v174: más detalle y la broca cuenta lo que pasa en el minijuego.
+//  T1: acero claro, caja con aletas de refrigeración y franja amarilla, broca lisa.
+//  T2: broca pavonada con dientes de carburo en los filos, collarín de latón y motor hidráulico encima de la caja.
+//  T3: caja de titanio sellada con anillo cian (se enciende al taladrar), broca oscura con grano de diamante que
+//      destella y punta de diamante que brilla.
+// Al extraer, la broca gira más deprisa cuanta más potencia (9.11), vibra más, y las chispas y el polvo dicen en qué
+// franja estás: pocas con poca potencia, un chorro constante en la banda y, en sobrecarga, la punta se pone al rojo y
+// saltan muchas más chispas y esquirlas. Parado, todo se dibuja una vez en una imagen y se pega (como el casco).
+// Las medidas y el punto de anclaje no cambian (la garra del chasis Polivalente se pliega por debajo).
 const TALADRO = { y: 1.18, x0: 4.85, punta: 6.25, r: 0.25 };   // más bajo: sale de debajo del casco, no de la proa
+const CACHE_TALADRO = new Map(), TALADRO_CAJA = { x: 2.9, y: 0.78, w: 3.55, h: 0.9 };
 function dibujarTaladro(c, I) {
-  const t = I.t || 0, tier = clamp((I.niv && I.niv.taladro) | 0, 0, 2), activo = !!I.minado, y0 = TALADRO.y;
-  const vib = activo ? (Math.random() - 0.5) * 0.025 : 0, y = y0 + vib;
-  // carenado: una barquilla que nace de la panza del casco y envuelve la caja de engranajes
+  const tier = clamp((I.niv && I.niv.taladro) | 0, 0, 2), mi = I.minado;
+  if (mi) { figuraTaladro(c, tier, I, mi); return; }
+  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b))), clave = `${px}|${tier}`;
+  let spr = CACHE_TALADRO.get(clave);
+  if (!spr) {
+    if (CACHE_TALADRO.size > 8) CACHE_TALADRO.clear();
+    const K = TALADRO_CAJA; spr = document.createElement('canvas'); spr.width = Math.ceil(K.w * px); spr.height = Math.ceil(K.h * px);
+    const g = spr.getContext('2d'); g.scale(px, px); g.translate(-K.x, -K.y);
+    figuraTaladro(g, tier, I, null);
+    CACHE_TALADRO.set(clave, spr);
+  }
+  const K = TALADRO_CAJA; c.drawImage(spr, K.x, K.y, K.w, K.h);
+  if (tier === 2) { const a = 0.5 + 0.4 * Math.sin((I.t || 0) * 3); c.fillStyle = `rgba(200,245,255,${a})`; c.beginPath(); c.arc(TALADRO.punta - 0.06, TALADRO.y - 0.01, 0.035, 0, 6.283); c.fill(); }   // la punta de diamante late
+}
+// Giro acumulado de la broca: va más deprisa cuanta más potencia (se guarda en el propio minado)
+function giroBroca(I, mi) {
+  const t = I.t || 0;
+  if (mi._tf === undefined) { mi._tf = t; mi._fb = 0; }
+  const dt = clamp(t - mi._tf, 0, 0.1); mi._tf = t;
+  mi._fb += dt * (0.5 + 4.5 * (mi.potencia || 0)) * (mi.estado === 'sobre' ? 1.25 : 1);
+  return mi._fb;
+}
+function figuraTaladro(c, tier, I, mi) {
+  const t = I.t || 0, activo = !!mi, y0 = TALADRO.y, est = mi ? mi.estado : null, pot = mi ? (mi.potencia || 0) : 0;
+  const vib = activo ? (Math.random() - 0.5) * (0.012 + 0.03 * pot + (est === 'sobre' ? 0.025 : 0)) : 0, y = y0 + vib;
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  // --- carenado: una barquilla que nace de la panza del casco y envuelve la caja de engranajes ---
   const car = new Path2D();
   car.moveTo(3.0, 1.2); car.quadraticCurveTo(3.6, 1.2, 4.2, 1.0); car.lineTo(4.32, 0.97);
   car.quadraticCurveTo(4.5, y0 - 0.3, 4.62, y0 - 0.22); car.lineTo(4.62, y0 + 0.25);
@@ -6831,46 +6999,84 @@ function dibujarTaladro(c, I) {
   c.strokeStyle = 'rgba(150,205,212,.25)'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(3.3, y0 - 0.02); c.quadraticCurveTo(3.9, y0 - 0.12, 4.45, y0 - 0.2); c.stroke();   // brillo del carenado
   c.fillStyle = '#9c7a45'; for (let rx = 3.45; rx < 4.5; rx += 0.25) { c.beginPath(); c.arc(rx, y0 + 0.14, 0.035, 0, 6.283); c.fill(); }   // remaches
   c.fillStyle = '#0c1a1e'; rr(c, 3.6, y0 - 0.06, 0.4, 0.12, 0.05); c.fill();   // rejilla de refrigeración
-  // caja de engranajes (asoma del carenado)
+  c.strokeStyle = 'rgba(120,170,178,.35)'; c.lineWidth = 0.015; c.beginPath(); for (let k = 0; k < 4; k++) { c.moveTo(3.66 + k * 0.09, y0 - 0.04); c.lineTo(3.66 + k * 0.09, y0 + 0.04); } c.stroke();
+  // --- caja de engranajes ---
   const gx0 = 4.35, gx1 = 4.7, gh = 0.23;
-  const gb = c.createLinearGradient(0, y - gh, 0, y + gh); gb.addColorStop(0, '#8b8f86'); gb.addColorStop(0.3, '#585d57'); gb.addColorStop(1, '#22272a');
+  const cajaCol = tier === 2 ? ['#7d8a92', '#46525a', '#1a2126'] : ['#8b8f86', '#585d57', '#22272a'];
+  const gb = c.createLinearGradient(0, y - gh, 0, y + gh); gb.addColorStop(0, cajaCol[0]); gb.addColorStop(0.3, cajaCol[1]); gb.addColorStop(1, cajaCol[2]);
   c.fillStyle = gb; rr(c, gx0, y - gh, gx1 - gx0, 2 * gh, 0.1); c.fill(); c.strokeStyle = '#0e1416'; c.lineWidth = 0.04; c.stroke();
-  c.fillStyle = tier === 0 ? '#d9a82e' : '#b8904f'; c.fillRect(4.47, y - gh, 0.1, 2 * gh);   // franja (amarilla en T1, latón después)
-  c.fillStyle = '#9c7a45'; for (const yy of [y - 0.15, y + 0.15]) { c.beginPath(); c.arc(4.64, yy, 0.025, 0, 6.283); c.fill(); }
-  // portabrocas
+  if (tier < 2) {   // aletas de refrigeración
+    c.strokeStyle = 'rgba(15,18,18,.55)'; c.lineWidth = 0.022; c.beginPath(); for (const xx of [4.4, 4.44, 4.6, 4.64]) { c.moveTo(xx, y - gh + 0.05); c.lineTo(xx, y + gh - 0.05); } c.stroke();
+    c.fillStyle = tier === 0 ? '#d9a82e' : '#b8904f'; c.fillRect(4.48, y - gh, 0.09, 2 * gh);   // franja (amarilla en T1, latón en T2)
+    if (tier === 0) { c.strokeStyle = '#1a1a14'; c.lineWidth = 0.025; c.save(); c.beginPath(); c.rect(4.48, y - gh, 0.09, 2 * gh); c.clip(); c.beginPath(); for (let k = -3; k <= 3; k++) { c.moveTo(4.46, y + k * 0.09); c.lineTo(4.6, y + k * 0.09 - 0.1); } c.stroke(); c.restore(); }
+  } else {   // T3: sellada, con un anillo cian que se enciende al taladrar
+    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(4.52, y - gh + 0.02); c.lineTo(4.52, y + gh - 0.02); c.stroke();
+    c.fillStyle = activo ? '#7ff0ff' : '#2a8a96'; c.fillRect(4.56, y - gh + 0.03, 0.035, 2 * gh - 0.06);
+  }
+  c.fillStyle = '#9c7a45'; for (const yy of [y - 0.15, y + 0.15]) { c.beginPath(); c.arc(4.66, yy, 0.025, 0, 6.283); c.fill(); }
+  if (tier === 1) {   // motor hidráulico encima de la caja, con sus racores de latón y el latiguillo al carenado
+    c.fillStyle = '#4b555a'; rr(c, 4.36, y - gh - 0.12, 0.26, 0.14, 0.05); c.fill(); c.strokeStyle = '#0e1416'; c.lineWidth = 0.025; c.stroke();
+    c.fillStyle = '#c79a52'; for (const xx of [4.4, 4.58]) { c.beginPath(); c.arc(xx, y - gh - 0.05, 0.025, 0, 6.283); c.fill(); }
+    c.strokeStyle = '#121618'; c.lineWidth = 0.035; c.beginPath(); c.moveTo(4.4, y - gh - 0.08); c.quadraticCurveTo(4.25, y - gh - 0.14, 4.18, y - gh + 0.02); c.stroke();
+  }
+  // --- portabrocas: cuerpo estriado y las garras que muerden la broca ---
   const gp = c.createLinearGradient(0, y - 0.2, 0, y + 0.2); gp.addColorStop(0, '#c9ccc6'); gp.addColorStop(0.4, '#7c8079'); gp.addColorStop(1, '#3a3e3b');
-  c.fillStyle = gp; rr(c, gx1 - 0.02, y - 0.19, 0.2, 0.38, 0.05); c.fill();
-  c.strokeStyle = 'rgba(20,24,24,.6)'; c.lineWidth = 0.02; c.beginPath(); for (const xx of [gx1 + 0.05, gx1 + 0.11]) { c.moveTo(xx, y - 0.19); c.lineTo(xx, y + 0.19); } c.stroke();
-  if (tier >= 1) { c.fillStyle = '#b8904f'; rr(c, TALADRO.x0 - 0.04, y - 0.23, 0.06, 0.46, 0.02); c.fill(); }   // collarín de latón
-  // broca cónica
-  const X0 = TALADRO.x0, X1 = TALADRO.punta, R = TALADRO.r, L = X1 - X0;
-  const col = [['#c3c6c2', '#7d817d', '#3f4341'], ['#8e9aa3', '#56616a', '#262d33'], ['#5b6168', '#33383e', '#16191c']][tier];
-  const gd = c.createLinearGradient(0, y - R, 0, y + R); gd.addColorStop(0, col[0]); gd.addColorStop(0.45, col[1]); gd.addColorStop(1, col[2]);
-  const cono = new Path2D(); cono.moveTo(X0, y - R); cono.lineTo(X1, y); cono.lineTo(X0, y + R); cono.closePath();
+  c.fillStyle = gp; rr(c, gx1 - 0.02, y - 0.19, 0.2, 0.38, 0.05); c.fill(); c.strokeStyle = '#0e1416'; c.lineWidth = 0.02; c.stroke();
+  c.strokeStyle = 'rgba(20,24,24,.6)'; c.lineWidth = 0.018; c.beginPath(); for (const xx of [gx1 + 0.03, gx1 + 0.07, gx1 + 0.11]) { c.moveTo(xx, y - 0.19); c.lineTo(xx, y + 0.19); } c.stroke();
+  c.fillStyle = '#2a2f31'; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(gx1 + 0.16, y + s * 0.17); c.lineTo(TALADRO.x0 + 0.04, y + s * 0.13); c.lineTo(TALADRO.x0 + 0.04, y + s * 0.07); c.lineTo(gx1 + 0.16, y + s * 0.05); c.closePath(); c.fill(); }
+  if (tier >= 1) { c.fillStyle = tier === 1 ? '#b8904f' : '#7d888e'; rr(c, TALADRO.x0 - 0.04, y - 0.23, 0.06, 0.46, 0.02); c.fill(); c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 0.015; c.stroke(); }   // collarín
+  // --- broca: vástago corto y cono ---
+  const X0 = TALADRO.x0, Xs = X0 + 0.1, X1 = TALADRO.punta, R = TALADRO.r, Lc = X1 - Xs;
+  const col = [['#d3d6d1', '#868a86', '#3f4341'], ['#93a0aa', '#56616a', '#232a30'], ['#5f666d', '#33383e', '#14171a']][tier];
+  const gd = c.createLinearGradient(0, y - R, 0, y + R); gd.addColorStop(0, col[0]); gd.addColorStop(0.42, col[1]); gd.addColorStop(1, col[2]);
+  const cono = new Path2D(); cono.moveTo(X0, y - R); cono.lineTo(Xs, y - R); cono.lineTo(X1, y); cono.lineTo(Xs, y + R); cono.lineTo(X0, y + R); cono.closePath();
   c.fillStyle = gd; c.fill(cono);
-  // estrías en espiral: se desplazan hacia la punta cuando gira
-  const giro = activo ? t * 3.2 : 0.15;
+  // estrías helicoidales: bandas oscuras inclinadas que avanzan hacia la punta al girar
+  const fase = activo ? giroBroca(I, mi) : 0.15, N = 6;
+  const xu = u => Xs + clamp(u, 0, 1) * Lc, ru = u => R * (1 - clamp(u, 0, 1));
   c.save(); c.clip(cono);
-  for (let i = 0; i < 7; i++) {
-    const f = ((i / 7 + giro) % 1 + 1) % 1, xx = X0 + f * L, r = R * (1 - f), inc = 0.28 * (1 - f * 0.5);
-    c.strokeStyle = 'rgba(10,12,14,.65)'; c.lineWidth = 0.06; c.beginPath(); c.moveTo(xx - inc * 0.5, y - r); c.lineTo(xx + inc * 0.5, y + r); c.stroke();
-    c.strokeStyle = 'rgba(255,255,255,.28)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(xx - inc * 0.5 - 0.035, y - r); c.lineTo(xx + inc * 0.5 - 0.035, y + r); c.stroke();
+  for (let i = -1; i < N; i++) {
+    const u0 = ((i + fase) / N % 1 + 1) % 1 - 0.18, w = 0.075, s = 0.16;   // u0: dónde corta el filo de arriba; s: inclinación de la hélice
+    const fu = clamp((0.82 - u0) / 0.22, 0, 1); if (fu <= 0) continue;   // hacia la punta la estría se estrecha y se desvanece
+    const a = [xu(u0), y - ru(u0)], b = [xu(u0 + w), y - ru(u0 + w)];
+    const d = [xu(u0 + s), y + ru(u0 + s)], e = [xu(u0 + s + w), y + ru(u0 + s + w)];
+    const mx = (a[0] + d[0]) / 2 - 0.05, mw = (b[0] + e[0]) / 2 - 0.05;   // la hélice se curva un poco hacia atrás en el centro
+    c.fillStyle = `rgba(8,10,12,${0.62 * fu})`; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(mx, y, d[0], d[1]); c.lineTo(e[0], e[1]); c.quadraticCurveTo(mw, y, b[0], b[1]); c.closePath(); c.fill();
+    c.strokeStyle = `rgba(255,255,255,${0.3 * fu})`; c.lineWidth = 0.02; c.beginPath(); c.moveTo(a[0] - 0.03, a[1]); c.quadraticCurveTo(mx - 0.03, y, d[0] - 0.03, d[1]); c.stroke();   // filo iluminado
+    if (tier === 2) {   // grano de diamante en el lomo entre estrías: puntos que destellan
+      for (let k = 0; k < 3; k++) { const v = -0.55 + k * 0.5, uu = u0 - 0.07 + v * 0.06; if (uu < 0.02 || uu > 0.9) continue;
+        c.fillStyle = `rgba(210,250,255,${0.35 + 0.35 * Math.sin(t * 5 + i * 1.7 + k * 2.3)})`; c.beginPath(); c.arc(xu(uu) + v * 0.04, y + v * ru(uu) * 0.8, 0.014, 0, 6.283); c.fill(); }
+    }
   }
   c.restore();
+  if (tier === 1) {   // dientes de carburo en los filos, donde la hélice asoma por arriba y por abajo
+    c.fillStyle = '#e4e8ea';
+    for (let i = 0; i < N; i++) { const u0 = ((i + fase) / N % 1 + 1) % 1 - 0.18;
+      for (const [uu, sg] of [[u0, -1], [u0 + 0.16, 1]]) { if (uu < 0.04 || uu > 0.85) continue; const xx = xu(uu), yy = y + sg * ru(uu);
+        c.beginPath(); c.moveTo(xx - 0.03, yy); c.lineTo(xx + 0.015, yy + sg * 0.032); c.lineTo(xx + 0.04, yy); c.closePath(); c.fill(); } }
+  }
+  // al rojo en sobrecarga (y un poco templada trabajando en la banda)
+  const calor = est === 'sobre' ? 0.85 + 0.15 * Math.sin(t * 20) : est === 'optima' ? 0.25 : 0;
+  if (calor > 0) { c.save(); c.clip(cono); const gc = c.createRadialGradient(X1, y, 0, X1, y, Lc * 0.7);
+    gc.addColorStop(0, `rgba(255,190,90,${0.85 * calor})`); gc.addColorStop(0.4, `rgba(255,110,40,${0.5 * calor})`); gc.addColorStop(1, 'rgba(255,80,30,0)');
+    c.globalCompositeOperation = 'lighter'; c.fillStyle = gc; c.fillRect(X1 - Lc, y - R, Lc + 0.05, 2 * R); c.restore(); }
   c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 0.03; c.stroke(cono);
   // punta: acero (T1), carburo (T2), diamante (T3)
-  c.fillStyle = ['#d8dad6', '#a8b0b6', '#e6fbff'][tier];
+  c.fillStyle = ['#e2e4e0', '#b3bbc1', '#e6fbff'][tier];
   c.beginPath(); c.moveTo(X1 - 0.28, y - 0.05); c.lineTo(X1 + 0.02, y); c.lineTo(X1 - 0.28, y + 0.05); c.closePath(); c.fill();
-  if (tier === 2) { const a = 0.5 + 0.4 * Math.sin(t * 3); c.fillStyle = `rgba(200,245,255,${a})`; c.beginPath(); c.arc(X1 - 0.06, y - 0.01, 0.035, 0, 6.283); c.fill(); }
-  if (activo) {   // chispas y polvo de roca en la punta
-    for (let k = 0; k < 6; k++) {
-      const a = Math.PI + (Math.random() - 0.5) * 2.4, l = 0.15 + Math.random() * 0.35;
-      c.strokeStyle = Math.random() < 0.5 ? 'rgba(255,214,140,.95)' : 'rgba(255,170,90,.85)'; c.lineWidth = 0.025;
+  if (tier === 2 && activo) { const a = 0.5 + 0.4 * Math.sin(t * 3); c.fillStyle = `rgba(200,245,255,${a})`; c.beginPath(); c.arc(X1 - 0.06, y - 0.01, 0.035, 0, 6.283); c.fill(); }
+  if (activo) {   // chispas, polvo y (en sobrecarga) esquirlas en la punta: cuántas dice en qué franja de potencia vas
+    const nCh = est === 'sobre' ? 12 : est === 'optima' ? 7 : 2, lCh = est === 'sobre' ? 1.5 : 1;
+    for (let k = 0; k < nCh; k++) {
+      const a = Math.PI + (Math.random() - 0.5) * 2.6, l = (0.15 + Math.random() * 0.35) * lCh;
+      c.strokeStyle = est === 'optima' && Math.random() < 0.4 ? 'rgba(255,240,200,.95)' : Math.random() < 0.5 ? 'rgba(255,214,140,.95)' : 'rgba(255,160,80,.85)'; c.lineWidth = 0.025;
       c.beginPath(); c.moveTo(X1, y); c.lineTo(X1 + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke();   // rebotan hacia atrás y a los lados
     }
     c.fillStyle = 'rgba(160,150,135,.35)';
-    for (let k = 0; k < 4; k++) { c.beginPath(); c.arc(X1 - 0.1 - Math.random() * 0.4, y + (Math.random() - 0.5) * 0.5, 0.06 + Math.random() * 0.08, 0, 6.283); c.fill(); }
+    for (let k = 0; k < (est === 'baja' ? 2 : 4); k++) { c.beginPath(); c.arc(X1 - 0.1 - Math.random() * 0.4, y + (Math.random() - 0.5) * 0.5, 0.06 + Math.random() * 0.08, 0, 6.283); c.fill(); }
+    if (est === 'sobre') { c.fillStyle = '#3a3532'; for (let k = 0; k < 5; k++) { const a = Math.PI + (Math.random() - 0.5) * 2.2, l = 0.2 + Math.random() * 0.5; c.fillRect(X1 + Math.cos(a) * l, y + Math.sin(a) * l, 0.045, 0.035); } }   // esquirlas de roca
   }
+  c.lineJoin = 'miter';
 }
 // Emisor del pulso disuasorio bajo la proa: un banco de condensadores blindado (con franja de peligro y un
 // indicador de carga), una columna de aisladores cerámicos y, delante, la bobina de cobre con el electrodo
@@ -6879,50 +7085,154 @@ function dibujarTaladro(c, I) {
 const EMISOR = { x: 5.38, y: 0.74 };   // centro de la bobina, respecto al centro del submarino (mirando a la derecha)
 function cargaPulso(I) { const P = I.eq && I.eq.pulso; return !P || !P.recarga ? 1 : clamp(1 - (I.pulsoCd || 0) / P.recarga, 0, 1); }
 // Garra de recuperación (v143). Brazo hidráulico de dos tramos que cuelga de la panza, por detrás del taladro (así
-// caben los dos en el chasis Polivalente): plegado hacia proa; al recoger se estira hacia delante y abajo, la pinza de
-// tres dedos se cierra y vuelve. Colores por tier: amarillo de seguridad (de serie), acero con latón, titanio oscuro.
+// caben los dos en el chasis Polivalente): plegado hacia proa; al recoger se estira hacia delante y abajo, la pinza
+// se cierra y vuelve.
+// v172: cada tier se distingue por algo más que el color (el movimiento y las medidas no cambian):
+//  T1 de serie: amarillo de seguridad gastado (desconchones y arañazos), un solo pistón al aire, manguera negra y
+//     pinza de dos dedos lisos con un tercero detrás; franjas de peligro en el soporte.
+//  T2 articulada: acero con racores de latón, pistón también en el codo, muñeca giratoria (anillo con pernos) y
+//     dedos con almohadillas de goma en las puntas.
+//  T3 de presión: titanio oscuro, pistones carenados, compensador de presión con su piloto, dedos con el canto
+//     dentado y tres testigos cian en la muñeca que se encienden según aprieta la pinza.
 const GARRA = { px: 2.6, py: 1.28, L1: 1.6, L2: 1.3 };
+const ESTILO_GARRA = [
+  { claro: '#f2d36a', medio: '#dcb23a', oscuro: '#8a6a17', borde: '#2a2412', dedo: '#d9b13a', dedoOsc: '#6e5412' },
+  { claro: '#d7ddda', medio: '#a3aca9', oscuro: '#4f5755', borde: '#1a2022', dedo: '#b9c1be', dedoOsc: '#59625f' },
+  { claro: '#8f9aa1', medio: '#59636b', oscuro: '#242a2f', borde: '#0c1013', dedo: '#6b767d', dedoOsc: '#2b3237' } ];
+// Plegada no se mueve: se dibuja una vez en una imagen por tier y tamaño y luego se pega (como el casco, v166)
+// v173: con el taladro también montado (chasis Polivalente), plegada no sube hacia la proa (se enredaba con el taladro):
+// el primer tramo baja hacia popa y el segundo vuelve hacia proa por debajo del taladro, con la pinza cerrada. Sin
+// taladro se pliega como siempre. El brazo estirado es el mismo en los dos casos.
+const CACHE_GARRA = new Map(), GARRA_CAJA = { x: 1.7, y: 0.45, w: 4.5, h: 2.65 }, GARRA_CAJA_POPA = { x: 1.3, y: 0.45, w: 3.6, h: 2.8 };
 function dibujarGarra(c, I) {
-  const G0 = GARRA, tier = clamp((I.niv && I.niv.garra) | 0, 0, 2), rc = I.recogiendo;
+  const tier = clamp((I.niv && I.niv.garra) | 0, 0, 2), rc = I.recogiendo, popa = !!(I.eq && I.eq.tieneTaladro);
+  if (rc) { figuraGarra(c, tier, clamp(rc.t / (BAL.recoleccion.tiempoOrganico / ((I.eq && I.eq.garra && I.eq.garra.rapidez) || 1)), 0, 1), popa); return; }
+  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b))), clave = `${px}|${tier}|${popa ? 1 : 0}`, K = popa ? GARRA_CAJA_POPA : GARRA_CAJA;
+  let spr = CACHE_GARRA.get(clave);
+  if (!spr) {
+    if (CACHE_GARRA.size > 8) CACHE_GARRA.clear();
+    spr = document.createElement('canvas'); spr.width = Math.ceil(K.w * px); spr.height = Math.ceil(K.h * px);
+    const g = spr.getContext('2d'); g.scale(px, px); g.translate(-K.x, -K.y);
+    figuraGarra(g, tier, null, popa);
+    CACHE_GARRA.set(clave, spr);
+  }
+  c.drawImage(spr, K.x, K.y, K.w, K.h);
+}
+// f: avance de la recogida (0-1), o null si está plegada; popa: plegada bajo el taladro (cuando también va montado)
+function figuraGarra(c, tier, f, popa) {
+  const G0 = GARRA, rc = f !== null, S = ESTILO_GARRA[tier];
   let ext = 0, cierre = 0;
   if (rc) {
-    const f = clamp(rc.t / (BAL.recoleccion.tiempoOrganico / ((I.eq && I.eq.garra && I.eq.garra.rapidez) || 1)), 0, 1);
     ext = f < 0.7 ? Math.sin(Math.min(1, f / 0.45) * Math.PI / 2) : 1 - (f - 0.7) / 0.3 * 0.7;   // sale, agarra, vuelve
     cierre = f > 0.45 ? 1 : f / 0.45 * 0.3;
-  }
-  const a1 = lerp(0.9, 0.3, ext), a2 = lerp(-1.6, 0, ext);   // ángulos de los dos tramos (radianes, 0 = hacia proa): plegada en «V» bajo la proa, estirada hacia delante
+    if (popa && f < 0.2) cierre = lerp(1, cierre, f / 0.2);   // recogida hacia popa va con la pinza cerrada: la abre al salir
+  } else if (popa) cierre = 1;
+  const a1 = lerp(popa ? 1.95 : 0.9, 0.3, ext), a2 = lerp(popa ? -1.99 : -1.6, 0, ext);   // ángulos de los dos tramos (radianes, 0 = hacia proa): plegada en «V» bajo la proa, estirada hacia delante
   const jx = G0.px + Math.cos(a1) * G0.L1, jy = G0.py + Math.sin(a1) * G0.L1;
   const wx = jx + Math.cos(a1 + a2) * G0.L2, wy = jy + Math.sin(a1 + a2) * G0.L2;
-  const col = [['#d9b13a', '#8a6a17'], ['#9aa3a0', '#545c5a'], ['#4d555c', '#23292e']][tier];
-  const tramo = (x0, y0, x1, y1, r) => {   // tramo del brazo: barra redondeada con borde oscuro
-    const g = c.createLinearGradient(x0, y0 - r, x0, y0 + r); g.addColorStop(0, col[0]); g.addColorStop(1, col[1]);
-    c.strokeStyle = '#141a1c'; c.lineWidth = 2 * r + 0.06; c.lineCap = 'round'; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
-    c.strokeStyle = g; c.lineWidth = 2 * r; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+  const ang = a1 + a2;
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  // punto a lo largo de un tramo (u de 0 a 1) desplazado n metros a un lado (n > 0: hacia abajo/atrás del tramo)
+  const en = (x0, y0, a, L, u, n) => [x0 + Math.cos(a) * L * u - Math.sin(a) * n, y0 + Math.sin(a) * L * u + Math.cos(a) * n];
+  // Tramo: viga que se estrecha hacia la punta, con sombreado de pieza redonda (luz arriba, sombra abajo) y canto iluminado
+  const viga = (x0, y0, a, L, r0, r1, detalle) => {
+    c.save(); c.translate(x0, y0); c.rotate(a);
+    const g = c.createLinearGradient(0, -r0, 0, r0); g.addColorStop(0, S.claro); g.addColorStop(0.45, S.medio); g.addColorStop(1, S.oscuro);
+    c.beginPath(); c.moveTo(0, -r0); c.lineTo(L, -r1); c.arc(L, 0, r1, -Math.PI / 2, Math.PI / 2); c.lineTo(0, r0); c.arc(0, 0, r0, Math.PI / 2, Math.PI * 1.5); c.closePath();
+    c.fillStyle = g; c.fill(); c.strokeStyle = S.borde; c.lineWidth = 0.035; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.28)'; c.lineWidth = 0.025; c.beginPath(); c.moveTo(0.12, -r0 * 0.62); c.lineTo(L - 0.1, -r1 * 0.62); c.stroke();
+    if (detalle) detalle(L, r0, r1);
+    c.restore();
   };
-  // soporte en la panza
-  c.fillStyle = '#1e2a2e'; c.beginPath(); c.moveTo(G0.px - 0.45, 1.0); c.lineTo(G0.px + 0.4, 1.0); c.lineTo(G0.px + 0.25, G0.py + 0.18); c.lineTo(G0.px - 0.3, G0.py + 0.18); c.closePath(); c.fill();
-  tramo(G0.px, G0.py, jx, jy, 0.17);
-  // pistón hidráulico, paralelo al primer tramo
-  { const nx = -Math.sin(a1) * 0.22, ny = Math.cos(a1) * 0.22;   // a un lado del tramo
-    c.strokeStyle = '#1a2224'; c.lineWidth = 0.1; c.lineCap = 'round'; c.beginPath(); c.moveTo(G0.px + nx, G0.py + ny); c.lineTo(lerp(G0.px, jx, 0.55) + nx, lerp(G0.py, jy, 0.55) + ny); c.stroke();
-    c.strokeStyle = '#c9ccc6'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(lerp(G0.px, jx, 0.5) + nx, lerp(G0.py, jy, 0.5) + ny); c.lineTo(lerp(G0.px, jx, 0.8) + nx, lerp(G0.py, jy, 0.8) + ny); c.stroke(); }
-  tramo(jx, jy, wx, wy, 0.13);
-  for (const [x, y, r] of [[G0.px, G0.py, 0.22], [jx, jy, 0.18]]) {   // articulaciones con perno de latón
+  // Cilindro hidráulico entre dos puntos: camisa oscura de largo fijo y vástago cromado que sale lo que falte
+  const piston = (ax, ay, bx, by, grueso, carenado) => {
+    const d = Math.hypot(bx - ax, by - ay) || 0.001, ux = (bx - ax) / d, uy = (by - ay) / d, Lc = Math.min(d * 0.95, 0.62);
+    c.strokeStyle = '#d7dcd8'; c.lineWidth = grueso * 0.42; c.beginPath(); c.moveTo(ax + ux * Lc, ay + uy * Lc); c.lineTo(bx, by); c.stroke();   // vástago
+    c.strokeStyle = S.borde; c.lineWidth = grueso + 0.04; c.beginPath(); c.moveTo(ax, ay); c.lineTo(ax + ux * Lc, ay + uy * Lc); c.stroke();
+    c.strokeStyle = carenado ? S.medio : '#2c3437'; c.lineWidth = grueso; c.stroke();   // camisa
+    c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = grueso * 0.25; c.beginPath(); c.moveTo(ax + ux * 0.06 - uy * grueso * 0.2, ay + uy * 0.06 + ux * grueso * 0.2);
+    c.lineTo(ax + ux * (Lc - 0.05) - uy * grueso * 0.2, ay + uy * (Lc - 0.05) + ux * grueso * 0.2); c.stroke();
+    if (tier === 1) { c.fillStyle = '#c79a52'; c.beginPath(); c.arc(ax + ux * Lc, ay + uy * Lc, grueso * 0.42, 0, 6.283); c.fill(); }   // racor de latón
+    for (const [x, y] of [[ax, ay], [bx, by]]) { c.fillStyle = '#20282b'; c.beginPath(); c.arc(x, y, grueso * 0.55, 0, 6.283); c.fill(); }   // horquillas
+  };
+  // Eje articulado: buje con corona de tornillos y perno central
+  const eje = (x, y, r) => {
     c.fillStyle = '#2a3437'; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill(); c.strokeStyle = '#0e1416'; c.lineWidth = 0.03; c.stroke();
-    c.fillStyle = '#b8904f'; c.beginPath(); c.arc(x, y, r * 0.4, 0, 6.283); c.fill();
-  }
-  // muñeca y pinza: tres dedos curvos (se ven dos de perfil y el tercero detrás, más oscuro)
-  const ang = a1 + a2, abre = lerp(0.55, 0.12, cierre);
-  c.save(); c.translate(wx, wy); c.rotate(ang); c.scale(1.6, 1.6);
-  c.fillStyle = '#3a4447'; rr(c, -0.04, -0.13, 0.2, 0.26, 0.05); c.fill(); c.strokeStyle = '#0e1416'; c.lineWidth = 0.03; c.stroke();
-  const dedo = (lado, color, esc) => {
-    c.save(); c.translate(0.15, lado * 0.07); c.rotate(lado * abre);
-    c.fillStyle = color; c.beginPath(); c.moveTo(0, -0.04 * esc); c.quadraticCurveTo(0.28 * esc, -0.06 * esc, 0.42 * esc, lado * 0.1 * esc);
-    c.lineTo(0.38 * esc, lado * 0.13 * esc); c.quadraticCurveTo(0.22 * esc, 0.02 * esc, 0, 0.04 * esc); c.closePath(); c.fill();
-    c.strokeStyle = '#0e1416'; c.lineWidth = 0.025; c.stroke(); c.restore();
+    c.fillStyle = tier === 2 ? '#7d888e' : '#b8904f'; c.beginPath(); c.arc(x, y, r * 0.42, 0, 6.283); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.45)'; for (let k = 0; k < 6; k++) { const q = k * 1.047 + 0.3; c.beginPath(); c.arc(x + Math.cos(q) * r * 0.72, y + Math.sin(q) * r * 0.72, r * 0.09, 0, 6.283); c.fill(); }
   };
-  dedo(0, '#2c3538', 0.85); dedo(-1, col[0], 1); dedo(1, col[0], 1);
+
+  // --- soporte en la panza (en T1 con franjas de peligro) ---
+  const sop = new Path2D(); sop.moveTo(G0.px - 0.5, 1.0); sop.lineTo(G0.px + 0.42, 1.0); sop.lineTo(G0.px + 0.27, G0.py + 0.2); sop.lineTo(G0.px - 0.34, G0.py + 0.2); sop.closePath();
+  c.fillStyle = '#1e2a2e'; c.fill(sop);
+  if (tier === 0) { c.save(); c.clip(sop); c.strokeStyle = '#d6a82c'; c.lineWidth = 0.07; c.beginPath();
+    for (let k = -4; k <= 4; k++) { c.moveTo(G0.px + k * 0.16 - 0.2, G0.py + 0.25); c.lineTo(G0.px + k * 0.16 + 0.15, 0.98); } c.stroke(); c.restore(); }
+  c.strokeStyle = '#0e1416'; c.lineWidth = 0.03; c.stroke(sop);
+  if (tier === 2) {   // compensador de presión: botella en el soporte con su piloto
+    c.fillStyle = '#3a454b'; rr(c, G0.px - 0.62, 1.04, 0.36, 0.2, 0.08); c.fill(); c.strokeStyle = '#0c1013'; c.lineWidth = 0.025; c.stroke();
+    c.fillStyle = rc ? '#7ff0ff' : '#2f8f9a'; c.beginPath(); c.arc(G0.px - 0.33, 1.14, 0.035, 0, 6.283); c.fill();
+  }
+
+  // --- manguera hidráulica: del soporte a la muñeca, con un bucle flojo por fuera del codo ---
+  { const [h0x, h0y] = [G0.px - 0.22, G0.py + 0.12];
+    const [p1x, p1y] = en(G0.px, G0.py, a1, G0.L1, 0.35, 0.22), [q1x, q1y] = en(G0.px, G0.py, a1, G0.L1, 1.2, 0.24);   // a lo largo del primer tramo y más allá del codo
+    const [q2x, q2y] = en(jx, jy, ang, G0.L2, -0.2, 0.22), [p2x, p2y] = en(jx, jy, ang, G0.L2, 0.45, 0.17);          // vuelve por el segundo tramo
+    c.strokeStyle = '#121618'; c.lineWidth = 0.065; c.beginPath(); c.moveTo(h0x, h0y); c.lineTo(p1x, p1y);
+    c.bezierCurveTo(q1x, q1y, q2x, q2y, p2x, p2y); c.quadraticCurveTo(...en(jx, jy, ang, G0.L2, 0.85, 0.16), wx - Math.cos(ang) * 0.04, wy - Math.sin(ang) * 0.04 + 0.08); c.stroke();
+    if (tier === 1) { c.fillStyle = '#c79a52'; for (const [x, y] of [[h0x, h0y], [p2x, p2y]]) { c.beginPath(); c.arc(x, y, 0.045, 0, 6.283); c.fill(); } } }
+
+  // --- primer tramo y su pistón (por debajo del tramo) ---
+  { const [bx, by] = en(G0.px, G0.py, a1, G0.L1, 0.55, 0.24);
+    piston(G0.px - 0.3, G0.py + 0.18, bx, by, tier === 2 ? 0.16 : 0.13, tier === 2); }
+  viga(G0.px, G0.py, a1, G0.L1, 0.19, 0.15, (L, r0, r1) => {
+    if (tier === 0) {   // pintura gastada: desconchones que dejan ver el acero, y arañazos
+      c.fillStyle = '#6d716c'; c.beginPath();   // desconchones pequeños e irregulares, sobre todo en los cantos
+      for (const [u, v, w] of [[0.28, -0.13, 0.05], [0.6, 0.1, 0.04], [0.83, -0.1, 0.03]]) { c.moveTo(u * L - w, v); c.lineTo(u * L - w * 0.2, v - w * 0.5); c.lineTo(u * L + w, v - w * 0.1); c.lineTo(u * L + w * 0.3, v + w * 0.45); c.closePath(); }
+      c.fill();
+      c.strokeStyle = 'rgba(60,45,10,.55)'; c.lineWidth = 0.012; c.beginPath(); c.moveTo(0.45 * L, -0.09); c.lineTo(0.58 * L, -0.03); c.moveTo(0.47 * L, -0.06); c.lineTo(0.56 * L, 0.0); c.stroke();
+    } else if (tier === 1) {   // pletinas atornilladas con remaches
+      c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(0.35 * L, -r0 * 0.75, 0.3 * L, r0 * 1.5);
+      c.fillStyle = '#c79a52'; for (const u of [0.38, 0.62]) for (const v of [-0.1, 0.1]) { c.beginPath(); c.arc(u * L, v, 0.022, 0, 6.283); c.fill(); }
+    } else {   // carenado liso con una junta y una franja cian
+      c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(0.5 * L, -r0 * 0.9); c.lineTo(0.5 * L, r0 * 0.9); c.stroke();
+      c.strokeStyle = 'rgba(95,227,240,.75)'; c.lineWidth = 0.025; c.beginPath(); c.moveTo(0.15 * L, r0 * 0.45); c.lineTo(0.42 * L, r0 * 0.4); c.stroke();
+    }
+  });
+  // --- segundo tramo; T2 y T3 llevan pistón también en el codo (por dentro de la «V») ---
+  viga(jx, jy, ang, G0.L2, 0.15, 0.12, (L, r0) => {
+    if (tier === 0) { c.fillStyle = '#6d716c'; c.beginPath(); c.moveTo(0.5 * L, 0.1); c.lineTo(0.56 * L, 0.07); c.lineTo(0.6 * L, 0.11); c.closePath(); c.fill(); }
+    else if (tier === 2) { c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(0.6 * L, -r0 * 0.85); c.lineTo(0.6 * L, r0 * 0.85); c.stroke(); }
+  });
+  if (tier > 0) { const [ax, ay] = en(G0.px, G0.py, a1, G0.L1, 0.5, -0.2), [bx, by] = en(jx, jy, ang, G0.L2, 0.32, -0.17);
+    piston(ax, ay, bx, by, tier === 2 ? 0.13 : 0.1, tier === 2); }
+  eje(G0.px, G0.py, 0.23); eje(jx, jy, 0.19);
+
+  // --- muñeca y pinza ---
+  const abre = lerp(0.55, 0.06, cierre);
+  c.save(); c.translate(wx, wy); c.rotate(ang); c.scale(1.6, 1.6);
+  // muñeca: cuerpo cilíndrico; en T2 y T3 con anillo giratorio
+  { const g = c.createLinearGradient(0, -0.14, 0, 0.14); g.addColorStop(0, '#5d686b'); g.addColorStop(1, '#22292b');
+    c.fillStyle = g; rr(c, -0.05, -0.14, 0.32, 0.28, 0.06); c.fill(); c.strokeStyle = '#0e1416'; c.lineWidth = 0.025; c.stroke();
+    if (tier > 0) { c.fillStyle = tier === 1 ? '#c79a52' : '#7d888e'; c.fillRect(0.06, -0.15, 0.05, 0.3);
+      c.fillStyle = 'rgba(0,0,0,.5)'; for (const v of [-0.1, 0, 0.1]) { c.beginPath(); c.arc(0.085, v, 0.012, 0, 6.283); c.fill(); } }
+    if (tier === 2) for (let k = 0; k < 3; k++) {   // testigos de presión: se encienden según aprieta
+      c.fillStyle = cierre * 3 > k + 0.5 ? '#7ff0ff' : '#14323a'; c.fillRect(0.15 + k * 0.035, -0.035, 0.024, 0.07); } }
+  // un dedo (en el marco de la muñeca): sale del nudillo, se curva y la punta va hacia el eje de la pinza
+  const dedo = (lado, color, esc, giro) => {
+    c.save(); c.translate(0.27, lado * 0.09); c.rotate(giro); c.scale(esc, -lado);   // el de abajo es el de arriba en espejo
+    c.beginPath(); c.moveTo(0, -0.055); c.quadraticCurveTo(0.27, -0.1, 0.44, 0.075); c.lineTo(0.41, 0.105);
+    if (tier === 2) { for (let k = 1; k <= 4; k++) c.lineTo(0.41 - k * 0.075, 0.08 - k * 0.012 + (k % 2 ? 0.02 : 0)); c.lineTo(0, 0.045); }   // canto dentado
+    else c.quadraticCurveTo(0.22, 0.0, 0, 0.045);
+    c.closePath(); c.fillStyle = color; c.fill(); c.strokeStyle = '#0e1416'; c.lineWidth = 0.022; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 0.015; c.beginPath(); c.moveTo(0.04, -0.04); c.quadraticCurveTo(0.24, -0.08, 0.36, 0.0); c.stroke();
+    if (tier === 1) { c.fillStyle = '#5a2a22'; c.beginPath(); c.ellipse(0.37, 0.075, 0.045, 0.025, 0.7, 0, 6.283); c.fill(); }   // almohadilla de goma
+    c.fillStyle = '#2a3437'; c.beginPath(); c.arc(0, 0, 0.04, 0, 6.283); c.fill();   // nudillo
+    c.restore();
+  };
+  dedo(-1, S.dedoOsc, 0.85, -abre * 0.5);   // el tercer dedo, detrás y más oscuro
+  dedo(-1, S.dedo, 1, -abre); dedo(1, S.dedo, 1, abre);
   c.restore();
+  c.lineJoin = 'miter';
 }
 function dibujarEmisorPulso(c, I) {
   const t = I.t || 0, carga = cargaPulso(I), listo = carga >= 1, y = EMISOR.y;
@@ -10456,24 +10766,111 @@ function dibujarCriatura(c, sx, sy, E) {
   if (e.pulpo) { ctx.restore(); dibujarPulpo(c, sx, sy, E); return; }
   if (e.sifonoforo) { ctx.restore(); dibujarSifonoforo(c, sx, sy, E); return; }
   if (e.id === 'delfin') {
-    // delfín de perfil: cuerpo fusiforme gris, vientre claro, melón y hocico, aleta dorsal curvada y cola horizontal
+    // v170: delfín mular de perfil, con más anatomía y movimiento. Contorno suave (curvas que pasan por puntos medidos
+    // sobre fotos de perfil), melón abultado y hocico corto con su pliegue, boca en «sonrisa», ojo con la franja oscura
+    // que baja hacia la aleta pectoral, espiráculo, aleta dorsal falcada, capa dorsal oscura que se funde con el vientre
+    // claro (contrasombreado) y brillo del sol en el lomo. Nada como nadan de verdad: el cuerpo se dobla arriba y abajo
+    // desde la mitad hacia la cola (no de lado como un pez) y la aleta caudal sigue ese latido.
+    // v171: cada uno es distinto (tamaño, tono, marcas, muesca en la dorsal), la cría lleva los pliegues claros con los
+    // que nace, gira sobre sí mismo (tonel), salta fuera del agua y, al cambiar de sentido, se da la vuelta. Cerca de la
+    // superficie le llegan las cáusticas del sol, como al submarino.
+    const ind = c.ind || IND_DELFIN0;
+    let vis = c.dirVis === undefined ? 1 : c.dirVis * c.dir; vis = (vis < 0 ? -1 : 1) * Math.max(0.06, Math.abs(vis));   // al darse la vuelta se estrecha (un instante de frente)
+    ctx.scale(vis * ind.esc, ind.esc);
     if (c.salida) { ctx.globalAlpha = Math.max(0, c.alfa); ctx.scale(c.esc, c.esc); }   // alejándose hacia el azul
-    ctx.rotate(clamp(Math.atan2(c.vy || 0, Math.abs(c.vx) || 1) * 0.9, -0.7, 0.7));
-    const cola = Math.sin(c.fase * 2.2) * 0.25;
-    ctx.fillStyle = e.color;
-    ctx.beginPath(); ctx.moveTo(T * 0.62, 0.02);                                         // punta del hocico
-    ctx.quadraticCurveTo(T * 0.5, -T * 0.05, T * 0.38, -T * 0.09);                       // melón
-    ctx.quadraticCurveTo(T * 0.05, -T * 0.17, -T * 0.4, -T * 0.06);                      // lomo
-    ctx.lineTo(-T * 0.55, 0); ctx.quadraticCurveTo(-T * 0.1, T * 0.15, T * 0.45, T * 0.06); ctx.lineTo(T * 0.6, T * 0.05); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = e.aleta;                                                             // vientre claro
-    ctx.beginPath(); ctx.moveTo(T * 0.45, T * 0.05); ctx.quadraticCurveTo(T * 0.0, T * 0.14, -T * 0.4, T * 0.03); ctx.quadraticCurveTo(0, T * 0.06, T * 0.45, T * 0.02); ctx.fill();
-    ctx.fillStyle = '#56656d';
-    ctx.beginPath(); ctx.moveTo(-T * 0.02, -T * 0.14); ctx.quadraticCurveTo(-T * 0.06, -T * 0.32, -T * 0.2, -T * 0.33); ctx.quadraticCurveTo(-T * 0.13, -T * 0.2, -T * 0.16, -T * 0.11); ctx.fill();   // dorsal
-    ctx.beginPath(); ctx.moveTo(T * 0.22, T * 0.06); ctx.lineTo(T * 0.1, T * 0.2); ctx.lineTo(T * 0.16, T * 0.06); ctx.fill();   // pectoral
-    ctx.save(); ctx.translate(-T * 0.55, 0); ctx.rotate(cola);                           // cola (aletas caudales)
-    ctx.beginPath(); ctx.moveTo(0.05, 0); ctx.quadraticCurveTo(-T * 0.08, -T * 0.12, -T * 0.16, -T * 0.13); ctx.quadraticCurveTo(-T * 0.1, 0, -T * 0.16, T * 0.13); ctx.quadraticCurveTo(-T * 0.08, T * 0.12, 0.05, 0); ctx.fill();
+    const lim = c.salto ? 1.15 : 0.7;
+    ctx.rotate(clamp(Math.atan2(c.vy || 0, Math.max(4, Math.abs(c.vx))) * 0.9, -lim, lim));
+    // tonel: ángulo de giro sobre el eje del cuerpo, suave al empezar y al acabar
+    const pg = c.giro || 0, ang = 6.283 * (pg - Math.sin(6.283 * pg) / 6.283), rc = Math.cos(ang), rs = Math.sin(ang);
+    const ry = (rc < 0 ? -1 : 1) * Math.max(0.1, Math.abs(rc)), kb = 0.82 + 0.18 * Math.abs(rc);
+    const ph = c.fase * 2.2, A = 0.075 * T * rc;   // latido de la cola y su amplitud (de canto, el latido no se ve)
+    // flexión: 0 delante de la mitad del cuerpo, crece hacia la cola (en x/T de 0,05 a −0,5)
+    const fl = x => { const k = clamp((0.05 * T - x) / (0.55 * T), 0, 1); return A * k * k * Math.sin(ph - k * 1.4); };
+    const P = (x, y) => [x * T, y * T * kb + fl(x * T)];   // contorno: el cuerpo es casi redondo, de canto mide casi lo mismo
+    const Q = (x, y) => [x * T, y * T * rc + fl(x * T)];   // lo que va pegado a la piel gira con ella (ojo, boca, aletas, marcas)
+    const enPiel = (x, y, f) => { const [ax, ay] = Q(x, y); ctx.save(); ctx.translate(ax, ay); ctx.scale(1, ry); f(); ctx.restore(); };
+    const arriba = [[0.62, 0.012], [0.56, -0.004], [0.51, -0.02], [0.47, -0.06], [0.4, -0.09], [0.28, -0.112], [0.12, -0.122], [-0.02, -0.118], [-0.16, -0.095], [-0.28, -0.058], [-0.4, -0.028], [-0.5, -0.012]];
+    const abajo = [[-0.5, 0.01], [-0.4, 0.02], [-0.28, 0.04], [-0.14, 0.07], [0.02, 0.095], [0.18, 0.1], [0.32, 0.085], [0.44, 0.055], [0.52, 0.032], [0.58, 0.024], [0.62, 0.016]];
+    const curva = (p, pts, mover) => {   // curva suave que pasa por todos los puntos (Catmull-Rom convertida a Bézier)
+      const q = pts.map(([x, y]) => P(x, y));
+      if (mover) p.moveTo(q[0][0], q[0][1]); else p.lineTo(q[0][0], q[0][1]);
+      for (let i = 0; i < q.length - 1; i++) { const a = q[Math.max(0, i - 1)], b = q[i], c2 = q[i + 1], d2 = q[Math.min(q.length - 1, i + 2)];
+        p.bezierCurveTo(b[0] + (c2[0] - a[0]) / 6, b[1] + (c2[1] - a[1]) / 6, c2[0] - (d2[0] - b[0]) / 6, c2[1] - (d2[1] - b[1]) / 6, c2[0], c2[1]); }
+    };
+    const cuerpo = new Path2D(); curva(cuerpo, arriba, true); curva(cuerpo, abajo, false); cuerpo.closePath();
+    // aleta caudal: sigue la pendiente de la cola; de lado se ven los dos lóbulos más o menos abiertos según el latido,
+    // y en el tonel se abren del todo (se ve la cola por arriba o por abajo)
+    { const [bx, by] = P(-0.5, 0), inc = Math.atan2(fl(-0.5 * T) - fl(-0.44 * T), 0.06 * T), ab = (0.012 + 0.04 * Math.abs(Math.cos(ph - 1.4))) * Math.abs(rc) + 0.1 * Math.abs(rs);
+      ctx.save(); ctx.translate(bx, by); ctx.rotate(inc);
+      ctx.fillStyle = '#4a5963'; ctx.beginPath(); ctx.moveTo(0.01 * T, -0.012 * T);
+      ctx.quadraticCurveTo(-0.05 * T, -0.014 * T - ab * 0.5 * T, -0.13 * T, -ab * T - 0.02 * T);   // lóbulo de arriba
+      ctx.quadraticCurveTo(-0.085 * T, -0.004 * T, -0.1 * T, 0);                              // escotadura
+      ctx.quadraticCurveTo(-0.085 * T, 0.004 * T, -0.13 * T, ab * T + 0.02 * T);               // lóbulo de abajo
+      ctx.quadraticCurveTo(-0.05 * T, 0.014 * T + ab * 0.5 * T, 0.01 * T, 0.012 * T); ctx.closePath(); ctx.fill();
+      ctx.restore(); }
+    // aleta pectoral del lado lejano (se asoma por debajo, más oscura)
+    enPiel(0.27, 0.075, () => { ctx.rotate(0.55 + 0.08 * Math.sin(ph * 0.5));
+      ctx.fillStyle = '#3c4950'; ctx.beginPath(); ctx.ellipse(-0.07 * T, 0.0, 0.08 * T, 0.022 * T, 0, 0, 6.283); ctx.fill(); });
+    // aleta dorsal falcada (curvada hacia atrás), con su canto iluminado y, en algunos, una muesca en el borde de salida
+    const dorsal = () => enPiel(0.07, -0.118, () => {
+      const tx = -0.2 * T, ty = -0.1 * T, qx = -0.135 * T, qy = -0.059 * T, ex = -0.12 * T, ey = 0.016 * T;
+      ctx.fillStyle = '#34424a'; ctx.beginPath(); ctx.moveTo(0, 0.01 * T);
+      ctx.bezierCurveTo(-0.05 * T, -0.035 * T, -0.1 * T, -0.085 * T, tx, ty);   // borde de ataque
+      if (ind.muesca) {   // borde de salida, cóncavo, con la muesca de este delfín
+        for (let i = 1; i <= 10; i++) { const u = i / 10, v = 1 - u; let x = v * v * tx + 2 * u * v * qx + u * u * ex; const y = v * v * ty + 2 * u * v * qy + u * u * ey;
+          if (Math.abs(u - ind.muesca) < 0.06) x += 0.016 * T; ctx.lineTo(x, y); }
+      } else ctx.quadraticCurveTo(qx, qy, ex, ey);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(200,225,230,.28)'; ctx.lineWidth = 0.008 * T; ctx.beginPath(); ctx.moveTo(-0.003 * T, -0.005 * T);
+      ctx.bezierCurveTo(-0.05 * T, -0.04 * T, -0.1 * T, -0.083 * T, -0.19 * T, -0.097 * T); ctx.stroke(); });
+    if (rs < 0) dorsal();   // en el tonel, cuando el lomo se aleja, la dorsal queda detrás del cuerpo
+    // cuerpo con contrasombreado: capa dorsal oscura, flanco gris, vientre casi blanco (boca arriba, al revés)
+    const g = ctx.createLinearGradient(0, -0.13 * T * kb, 0, 0.12 * T * kb);
+    for (const [p, col] of [[0, '#3a4851'], [0.3, '#566872'], [0.55, '#7f919a'], [0.72, '#b9c6ca'], [1, '#e3e9e8']]) g.addColorStop(rc < 0 ? 1 - p : p, col);
+    ctx.fillStyle = g; ctx.fill(cuerpo);
+    ctx.save(); ctx.clip(cuerpo);
+    if (Math.abs(rc) < 0.995) {   // de canto se ve todo el lomo (oscuro) o todo el vientre (claro)
+      ctx.globalAlpha *= 0.85 * (1 - Math.abs(rc)); ctx.fillStyle = rs > 0 ? '#34424a' : '#dfe6e5'; ctx.fill(cuerpo); ctx.globalAlpha = c.salida ? Math.max(0, c.alfa) : 1;
+    }
+    if (ind.tono) { ctx.fillStyle = ind.tono > 0 ? `rgba(18,26,32,${0.14 * ind.tono})` : `rgba(230,238,240,${-0.12 * ind.tono})`; ctx.fill(cuerpo); }   // unos más oscuros, otros más claros
+    ctx.lineCap = 'round';
+    if (c.cria) {   // pliegues fetales: bandas claras verticales en el costado de las crías recién nacidas
+      ctx.strokeStyle = `rgba(236,242,242,${0.17 * Math.abs(rc)})`; ctx.lineWidth = 0.016 * T; ctx.beginPath();
+      for (const x of [0.13, 0.03, -0.07, -0.17]) { ctx.moveTo(...Q(x, -0.075)); ctx.quadraticCurveTo(...Q(x - 0.012, -0.01), ...Q(x + 0.006, 0.05)); }
+      ctx.stroke();
+    }
+    if (ind.cic && rc > 0.2 && E * T > 50) {   // marcas de dientes de otros delfines (rayas paralelas pálidas), solo en este costado y si se ven de cerca
+      ctx.strokeStyle = `rgba(226,234,236,${0.38 * rc})`; ctx.lineWidth = 0.005 * T;
+      for (const m of ind.cic) enPiel(m.x, m.y, () => { ctx.rotate(m.a); ctx.beginPath();   // finas, algo curvas y de largo desigual
+        for (let i = 0; i < m.n; i++) { const l = m.l * T * (0.6 + 0.4 * ((i * 7 + m.n) % 3) / 2), y = i * 0.013 * T, x0 = ((i * 5) % 3 - 1) * 0.012 * T;
+          ctx.moveTo(x0 - l / 2, y); ctx.quadraticCurveTo(x0, y - 0.003 * T, x0 + l / 2, y + 0.002 * T); } ctx.stroke(); });
+    }
+    const kSol = c.y > 0 ? 1 - clamp(c.y / 30, 0, 1) : 0;
+    if (kSol > 0.02 && typeof CAUSTICA !== 'undefined') {   // cáusticas: la luz del sol ondulando sobre el lomo, fija al agua (no al delfín)
+      if (!patronCaustica) patronCaustica = ctx.createPattern(CAUSTICA, 'repeat');
+      const t = (inm && inm.t) || 0, a0 = ctx.globalAlpha;
+      patronCaustica.setTransform(new DOMMatrix().translate(t * 0.3 - c.x * c.dir, t * 0.1).scale(4 / 128));
+      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = patronCaustica;
+      for (let i = 0; i < 3; i++) { ctx.globalAlpha = a0 * 0.2 * kSol * (1 - i / 3); ctx.fillRect(-0.62 * T, (-0.15 + i * 0.07) * T, 1.25 * T, 0.07 * T); }   // más fuerte en el lomo, se apaga hacia el vientre
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = a0;
+    }
+    // brillo del sol a lo largo del lomo
+    ctx.strokeStyle = 'rgba(220,240,245,.22)'; ctx.lineWidth = 0.014 * T; ctx.beginPath();
+    ctx.moveTo(...P(0.4, -0.078)); for (const [x, y] of [[0.28, -0.1], [0.12, -0.11], [-0.02, -0.106], [-0.16, -0.085], [-0.28, -0.05]]) ctx.lineTo(...P(x, y)); ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = '#1a2024'; ctx.beginPath(); ctx.arc(T * 0.4, -T * 0.025, T * 0.018, 0, 6.283); ctx.fill();   // ojo
+    if (rs >= 0) dorsal();
+    // aleta pectoral del lado cercano: barrida hacia atrás, se mueve un poco al nadar
+    enPiel(0.3, 0.06, () => { ctx.rotate(0.42 + 0.1 * Math.sin(ph * 0.5 + 1));
+      ctx.fillStyle = '#4b5a63'; ctx.beginPath(); ctx.moveTo(0.01 * T, -0.018 * T); ctx.quadraticCurveTo(-0.05 * T, -0.026 * T, -0.12 * T, 0.004 * T);
+      ctx.quadraticCurveTo(-0.07 * T, 0.02 * T, 0.01 * T, 0.018 * T); ctx.closePath(); ctx.fill(); });
+    // cara: pliegue entre melón y hocico, boca en «sonrisa», franja del ojo, ojo con brillo y espiráculo
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(35,45,52,.55)'; ctx.lineWidth = 0.009 * T; ctx.beginPath(); ctx.moveTo(...Q(0.505, -0.02)); ctx.quadraticCurveTo(...Q(0.49, 0.0), ...Q(0.5, 0.016)); ctx.stroke();
+    ctx.strokeStyle = 'rgba(30,38,44,.7)'; ctx.lineWidth = 0.008 * T; ctx.beginPath(); ctx.moveTo(...Q(0.6, 0.017)); ctx.quadraticCurveTo(...Q(0.5, 0.03), ...Q(0.43, 0.012)); ctx.stroke();
+    ctx.strokeStyle = 'rgba(45,58,66,.2)'; ctx.lineWidth = 0.012 * T; ctx.beginPath(); ctx.moveTo(...Q(0.405, -0.02)); ctx.quadraticCurveTo(...Q(0.36, 0.03), ...Q(0.3, 0.06)); ctx.stroke();
+    { const [ox, oy] = Q(0.41, -0.024), ar = Math.abs(rc); ctx.fillStyle = '#12181b'; ctx.beginPath(); ctx.ellipse(ox, oy, 0.016 * T, 0.012 * T * ar, 0, 0, 6.283); ctx.fill();
+      if (ar > 0.3) { ctx.fillStyle = 'rgba(240,250,255,.85)'; ctx.beginPath(); ctx.arc(ox + 0.005 * T, oy - 0.004 * T * ry, 0.0045 * T, 0, 6.283); ctx.fill(); } }
+    enPiel(0.34, -0.104, () => { ctx.fillStyle = 'rgba(25,32,38,.7)'; ctx.beginPath(); ctx.ellipse(0, 0, 0.014 * T, 0.005 * T, -0.15, 0, 6.283); ctx.fill(); });
   } else if (e.id === 'barracuda') {
     // barracuda: cuerpo muy alargado y plateado, mandíbula inferior saliente, barras oscuras en el lomo, cola ahorquillada
     const ry = T * 0.075;
@@ -11815,6 +12212,38 @@ function dibujarEscena(tReal) {
   }
   // bruma cálida sobre el horizonte
   { const bz = c.createLinearGradient(0, HZ - 26, 0, HZ); bz.addColorStop(0, 'rgba(201,132,79,0)'); bz.addColorStop(1, 'rgba(201,132,79,.28)'); c.fillStyle = bz; c.fillRect(X0, HZ - 26, X1 - X0, 26); }
+  // v168: gaviotas que planean en el cielo del atardecer (siluetas; batir de alas lento, a ratos planean)
+  for (let i = 0; i < 3; i++) {
+    const v = 9 + i * 4, gx = ((t * v + i * 430) % 1500 + 1500) % 1500 - 250, gy = 70 + i * 26 + Math.sin(t * 0.5 + i * 2) * 10;
+    if (gx < X0 - 10 || gx > X1 + 10) continue;
+    const ba = Math.sin(t * (3.2 + i * 0.4) + i), ala = (Math.sin(t * 0.35 + i * 1.7) > 0.3 ? 0.35 : ba) * 3.2, e = 1.6 - i * 0.2;
+    c.strokeStyle = 'rgba(14,24,30,.85)'; c.lineWidth = 1.3; c.beginPath();
+    c.moveTo(gx - 7 * e, gy - ala * e); c.quadraticCurveTo(gx - 3 * e, gy - 3 * e - ala * 0.4, gx, gy); c.quadraticCurveTo(gx + 3 * e, gy - 3 * e - ala * 0.4, gx + 7 * e, gy - ala * e); c.stroke();
+  }
+  // v168: cabo lejano a la izquierda (costa en la bruma) con su faro, y las luces de un pueblo al pie
+  { const pts = [[-320, HZ], [-320, HZ - 58], [-150, HZ - 68], [0, HZ - 80], [80, HZ - 96], [128, HZ - 103], [152, HZ - 103], [190, HZ - 92], [240, HZ - 66], [300, HZ - 38], [370, HZ - 13], [430, HZ]];
+    const gcab = c.createLinearGradient(0, HZ - 92, 0, HZ); gcab.addColorStop(0, '#22333d'); gcab.addColorStop(1, '#46535a');
+    c.fillStyle = gcab; c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(200,215,220,.12)'; c.lineWidth = 1; c.beginPath(); pts.slice(1, -1).forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();   // filo de luna
+    // isla baja muy lejos, en el horizonte (se ve bajo la cubierta, entre las patas)
+    c.fillStyle = 'rgba(40,58,64,.8)'; c.beginPath(); c.moveTo(560, HZ); c.quadraticCurveTo(600, HZ - 9, 650, HZ - 7); c.quadraticCurveTo(690, HZ - 11, 730, HZ); c.closePath(); c.fill();
+    // luces del pueblo: puntitos cálidos al pie del cabo, cada uno con su ritmo
+    c.fillStyle = '#f3c97e';
+    for (let i = 0; i < 18; i++) { const h = hash2(21, i), x = 200 + (h % 210), yb = HZ - 2 - Math.max(0, (410 - x) / 210 * 40) * ((h >>> 8) % 100) / 100;
+      c.globalAlpha = 0.55 + 0.45 * Math.sin(t * (0.6 + (h % 7) * 0.2) + h); c.fillRect(x, yb, 1.4 * px + 0.4, 1.4 * px + 0.4); }
+    c.globalAlpha = 1;
+    // faro: torre blanca con banda roja, linterna y un haz que gira (de lado se ve largo; cuando apunta hacia ti, destella)
+    const fx = 140, fy = HZ - 103;
+    c.fillStyle = '#c9c6b8'; c.beginPath(); c.moveTo(fx - 3, fy); c.lineTo(fx + 3, fy); c.lineTo(fx + 2, fy - 20); c.lineTo(fx - 2, fy - 20); c.closePath(); c.fill();
+    c.fillStyle = '#9a3a2c'; c.fillRect(fx - 2.6, fy - 12, 5.2, 4);
+    c.fillStyle = '#2a3236'; c.fillRect(fx - 3, fy - 21, 6, 1.5); c.fillRect(fx - 1.5, fy - 26, 3, 1.5);
+    const th = t * 0.9, dx = Math.cos(th), fl = Math.pow(Math.max(0, Math.sin(th)), 10);
+    c.fillStyle = `rgba(255,236,180,${0.6 + 0.4 * fl})`; c.fillRect(fx - 1.5, fy - 24.5, 3, 3.5);   // linterna
+    const L = 330 * Math.abs(dx), dir = dx >= 0 ? 1 : -1;
+    if (L > 8) { const gh = c.createLinearGradient(fx, 0, fx + dir * L, 0); gh.addColorStop(0, 'rgba(255,236,180,.32)'); gh.addColorStop(1, 'rgba(255,236,180,0)');
+      c.fillStyle = gh; c.beginPath(); c.moveTo(fx, fy - 23.5); c.lineTo(fx + dir * L, fy - 23.5 - 9); c.lineTo(fx + dir * L, fy - 23.5 + 9); c.closePath(); c.fill(); }
+    if (fl > 0.02) { const gf = c.createRadialGradient(fx, fy - 23, 0, fx, fy - 23, 26); gf.addColorStop(0, `rgba(255,240,200,${0.85 * fl})`); gf.addColorStop(1, 'rgba(255,240,200,0)'); c.fillStyle = gf; c.fillRect(fx - 26, fy - 49, 52, 52); }
+  }
   // carguero lejano que cruza muy despacio el horizonte, con sus luces de navegación
   { const bxs = ((t * 4 + 300) % 1600) - 300;
     c.fillStyle = 'rgba(12,22,28,.85)'; c.fillRect(bxs, HZ - 5, 44, 5); c.fillRect(bxs + 30, HZ - 12, 10, 7); c.fillRect(bxs + 8, HZ - 8, 18, 3);
@@ -11844,6 +12273,16 @@ function dibujarEscena(tReal) {
       c.fillStyle = `rgba(${col},${Math.max(0, a)})`; c.fillRect((x0 + x1) / 2 - ancho / 2 + des, y, ancho, 1.6);
     }
   }
+  // v168: reflejo de la luna, una columna rota y pálida bajo ella
+  for (let k = 0; k < 10; k++) {
+    const y = HZ + 8 + k * 9, a = 0.4 * (1 - k / 11) * (0.5 + 0.5 * Math.sin(t * 2.1 + k * 1.3)), w = 10 + k * 1.6;
+    c.fillStyle = `rgba(225,232,220,${Math.max(0, a)})`; c.fillRect(150 - w / 2 + Math.sin(t * 1.3 + k) * 3, y, w, 1.3);
+  }
+  // v168: bruma que se arrastra sobre el agua (dos capas a distinta velocidad)
+  for (const [y, v, a] of [[HZ + 4, 6, 0.13], [HZ + 16, -4, 0.09]]) for (let k = 0; k < 4; k++) {
+    const x = ((k * 420 + t * v) % 1680 + 1680) % 1680 - 340; if (x < X0 - 170 || x > X1 + 170) continue;
+    c.globalAlpha = a / 0.5; c.drawImage(SPR_BASE.bruma, x - 170, y - 20, 340, 40); }
+  c.globalAlpha = 1;
   // espuma alrededor de cada pata, en la línea de flotación
   c.strokeStyle = 'rgba(210,235,235,.35)'; c.lineWidth = 1.2;
   for (const lx of PATAS) { const o = Math.sin(t * 1.8 + lx) * 1.5; c.beginPath(); c.ellipse(lx, HZ + 2 + o * 0.3, 11 + o, 2.2, 0, 0, Math.PI); c.stroke(); }
@@ -11905,6 +12344,12 @@ function dibujarCubierta(c, t, colgarSub) {
   c.fillStyle = '#5b6c70'; c.fillRect(28, 214, 879, 1.5);                       // canto superior iluminado
   c.fillStyle = 'rgba(184,144,79,.45)'; for (let x = 34; x < 905; x += 16) { c.fillRect(x, 221, 1.6, 1.6); c.fillRect(x, 226, 1.6, 1.6); }   // remaches
   c.fillStyle = '#141d21'; c.fillRect(28, 229, 879, 3);                          // sombra bajo la losa
+  // v168: defensas de neumático colgadas del canto de la losa, bolardos de amarre y la escalerilla al agua
+  c.strokeStyle = '#11181b'; c.lineWidth = 2.6; for (const x of [120, 280, 430, 580, 740]) { c.beginPath(); c.arc(x, 229, 4.2, 0, 6.283); c.stroke(); }
+  c.strokeStyle = 'rgba(120,135,140,.35)'; c.lineWidth = 0.8; for (const x of [120, 280, 430, 580, 740]) { c.beginPath(); c.arc(x, 229, 4.2, 3.6, 5.4); c.stroke(); }
+  c.fillStyle = '#1b2427'; for (const x of [34, 300, 640, 900]) { c.fillRect(x - 2, 207, 4, 7); c.fillRect(x - 3.5, 205, 7, 2.5); }
+  c.strokeStyle = '#2a363b'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(818, 214); c.lineTo(818, 262); c.moveTo(826, 214); c.lineTo(826, 262);
+  for (let y = 218; y < 262; y += 6) { c.moveTo(818, y); c.lineTo(826, y); } c.stroke();
   for (const lx of PATAS) {                                                       // capitel: une cada pata con la losa
     c.fillStyle = '#26343a'; c.beginPath(); c.moveTo(lx - 14, 230); c.lineTo(lx + 14, 230); c.lineTo(lx + 6, 238); c.lineTo(lx - 6, 238); c.closePath(); c.fill();
   }
@@ -12024,8 +12469,15 @@ function ventana(c, x, y, w, h, t, semilla, color) {
   const encendida = hash2(semilla, turno + 3) % 100 < 82;
   c.fillStyle = encendida ? (color || '#f1c27a') : '#1d2a2f';
   c.fillRect(x, y, w, h);
-  if (encendida) { c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(x, y, w, h * 0.3); }
+  if (encendida) { c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(x, y, w, h * 0.3);
+    // v168: halo de la ventana (la luz se derrama un poco por la fachada en la penumbra)
+    const op = c.globalCompositeOperation; c.globalCompositeOperation = 'lighter';
+    pintarSprite(c, color ? SPR_BASE.cian : SPR_BASE.calida, x + w / 2, y + h / 2, w * 1.4, h * 1.4, 0.55); c.globalCompositeOperation = op; }
+  return encendida;
 }
+const SPR_BASE = (() => { const rad = (col) => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), gg = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gg.addColorStop(0, col(0.5)); gg.addColorStop(0.5, col(0.18)); gg.addColorStop(1, col(0)); x.fillStyle = gg; x.fillRect(0, 0, 64, 64); return cv; };
+  return { calida: rad(a => `rgba(255,190,110,${a})`), cian: rad(a => `rgba(120,220,210,${a})`), bruma: rad(a => `rgba(190,205,210,${a})`) }; })();
 function lampara(c, x, y, t) {
   const g = c.createRadialGradient(x, y, 0, x, y, 18); g.addColorStop(0, 'rgba(255,214,150,.55)'); g.addColorStop(1, 'rgba(255,214,150,0)');
   c.fillStyle = g; c.fillRect(x - 18, y - 18, 36, 36);
@@ -13534,8 +13986,10 @@ function medallonTrofeo(c) {
 function dibujarPico(c, marco = true) {
   const tau = 6.283;
   if (marco) medallonTrofeo(c);
-  c.save(); c.translate(64, 64); c.rotate(-0.08); c.translate(-64, -64);
-  c.save(); c.filter = 'blur(3px)'; c.fillStyle = 'rgba(0,0,0,.55)'; c.beginPath(); c.ellipse(70, 97, 30, 4.5, 0, 0, tau); c.fill(); c.restore();
+  // v169: el pico ocupaba casi todo el medallón y se salía por la derecha; ahora va algo más pequeño y centrado como los demás
+  // (el dibujo mide de x 28 a 108 e y 21 a 88: su centro, (68, 55), se lleva al centro del medallón)
+  c.save(); c.translate(64, 65); c.scale(0.88, 0.88); c.rotate(-0.08); c.translate(-68, -55);
+  c.save(); c.filter = 'blur(3px)'; c.fillStyle = 'rgba(0,0,0,.55)'; c.beginPath(); c.ellipse(68, 97, 30, 4.5, 0, 0, tau); c.fill(); c.restore();
   // Degradado de quitina: negro brillante en la punta (la parte que corta), ámbar translúcido hacia las alas.
   const quitina = (x0, x1, y) => { const g = c.createLinearGradient(x0, y, x1, y);
     g.addColorStop(0, '#080403'); g.addColorStop(0.38, '#1d1009'); g.addColorStop(0.62, '#5a3518');
@@ -13721,120 +14175,11 @@ function htmlBalance() {
     <section class="placa">
       <h2>Diferencias con el GDD</h2>
       <ul class="lista-notas">
-        <li>Escala: 1 unidad = 1 metro. Los valores de 20.2 eran de prueba en unidades de Unity, así que aquí todos los números son nuevos.</li>
-        <li>El descenso activo va en <kbd>C</kbd> o flecha abajo en vez de Ctrl, porque Ctrl+W cierra la pestaña del navegador.</li>
-        <li>Jefes (10.2–10.7), siguiendo la novela: el Guardián de la Plataforma es un tiburón de seis branquias, el calamar de la Mesopelágica es un calamar gigante y el Depredador Acorazado Batial, el tiburón dormilón de once metros que caza por el oído. Hechos los tres primeros, con el sistema común a todos: aviso antes de cada ataque, segunda fase, barra de resistencia, bloqueo de franja (con un tope duro por debajo), huida tras un mínimo, estado guardado, pago y Registro. Los demás jefes aún no están: sus materiales siguen saliendo como nodos raros (anillo ámbar) en el último subnivel de su zona.</li>
-        <li>Segundo jefe: el calamar gigante (Calamar de las Profundidades Medias), en 800–950 m (el GDD no fijaba franja; se deja un margen sobre Caronte, a 1.000 m, y mientras dura el combate no te deja bajar de 965 m, así que no puedes refugiarte en la estación). No embiste: acecha a tu espalda, fuera del haz de los focos, recoge los brazos (aviso) y lanza los dos tentáculos hacia donde estás en ese momento; si te mueves, fallan. Si te alcanzan te agarra: no te puedes mover, el blindaje cede poco a poco y te arrastra hacia el pico; te sueltas alternando ◀ ▶ ocho veces o con el pulso, y si tardas más de 5 s te muerde y te suelta. Si en el aviso le mantienes los focos en el ojo un instante, se deslumbra (es su punto débil: tiene el ojo más grande del mar). En la segunda fase avisa menos, se aparta del haz (hay que sostenérselo más rato), a veces repite el latigazo casi sin aviso y, cuando falla, suelta tinta y se esconde en ella. Ajustado tras la primera partida del autor (le salió más fácil que el tiburón): resistencia 150, soltarse ya no le resta resistencia al forcejear y poco con el pulso. Al vencerlo te deja 4 Anillos de ventosa pegados al casco (van a la carga, sin peso), y desde entonces sus vetas aparecen en su guarida (antes salían en 750–1.000 m sin él). Trofeo: el Pico del calamar. Logros nuevos: superarlo, vencerlo sin que te agarre y soltarte con el pulso tres veces.</li>
-        <li>Guardián de la Plataforma (10.2), más hondo: entre 400 y 500 m (el GDD lo pone en 140–200 m, al final de la Fótica; al autor 200 m le parecía demasiado poco para un jefe). Así ya está a oscuras y exige el Casco T1 (el de serie aguanta 300 m), que es la primera mejora. Tiburón de seis branquias de 15 m, algo más largo que el submarino (al jugarlo, del mismo tamaño le pareció pequeño). Licencia de juego sobre el seis branquias real (y el de la novela, que tiene una sola dorsal muy atrasada), pedida por el autor para que se lea como tiburón y resulte agresivo: primera dorsal alta en el lomo además de la atrasada, morro cónico y puntiagudo como el del tiburón blanco, hilera de dientes siempre a la vista, mandíbula que se abre al ir a embestir, lomo oscuro con cicatrices pálidas y ojos que devuelven la luz en verde. No muerde: te rodea y te embiste con el morro (empujón y poco daño al blindaje; el daño de verdad es que te lance contra la pared). Avisa antes de cada embestida (se para, se encara y recula, con un sonido grave). Pierde resistencia si esquivas la embestida, mucho más si se estrella contra la roca, y si el pulso le corta la embestida (no lo aturde como a la fauna). Con los focos encendidos ataca más a menudo; a oscuras y lejos le cuesta encontrarte. Por debajo de la mitad se impacienta: avisa menos y a veces repite. A 0 se va: superado (500 cr de la Autoridad). No te deja bajar de 500 m hasta superarlo; desde la mitad de resistencia puedes escapar hacia abajo (10.7: superado por huida, 150 cr). Mientras te rodea, la demás fauna no ataca. Las partidas que ya habían pasado de 500 m lo tienen superado; en el Registro se puede volver a enfrentar para probarlo.</li>
-        <li>Etiquetas de los recursos en la pared (12.4 / 17), pedido del autor (el nombre suelto se veía feo): lectura del escáner del submarino. Un anillo que late sobre la veta y una línea fina hacia el agua; la veta a la que apuntas lleva una ficha con el icono del material, el nombre y lo que hay que saber (taladro que pide y si el tuyo llega, unidades, bodega llena, sello RARO o BOTÍN DE JEFE); las demás cercanas, solo el icono. La ficha se despliega con un barrido corto y siempre queda por encima del submarino.</li>
-        <li>Cuevas comunicadas (12.2): a veces dos cuevas de la misma pared se juntan bajo tierra (el autor lo encontró y le gusta). Corregido el fallo que hacía que, dentro del túnel de la segunda, todo se viera negro y la luz atravesara la roca: la luz y la rejilla de cada cueva incluyen ahora los túneles de la vecina, y manda la cueva en cuyo túnel estás.</li>
-        <li>Logros (idea nueva, no está en el GDD; el autor aprobó las cuatro familias, sin recompensa y con ocultos): 35 logros en Hitos (profundidades y zonas, estaciones, los tres jefes, cascos T2 y T4), Habilidad (extracción perfecta y 10 perfectas, vencer al Guardián sin que te toque, hacerlo estrellarse 3 veces, vencer al calamar sin que te agarre, soltarte de él con el pulso 3 veces, vencer al dormilón sin que te muerda, que muerda 3 bengalas, volver con menos del 5 % de O2, bajar de 1.000 m sin encender los focos), Colección e historia (diario completo, todos los materiales, cámara final de una cueva, saquear tu pecio, 3 recolectores produciendo, 10 encargos) y 3 ocultos (la firma de Lucía con todo apagado bajo 4.000 m, acompañar a los delfines, que un pulpo te suelte la tinta). Medallas de bronce, plata u oro con un símbolo grabado, aviso con sonido al conseguirlos y sección en el Registro (barra de progreso, últimas medallas y la lista entera plegable, con barras en los que tienen cuenta). Los ya conseguidos antes de existir se anotan en silencio al cargar. Cada logro tiene un id fijo pensado para conectarlo con Steam en Unity.</li>
-        <li>Avisos de acción (17), pedido del autor: en vez de una frase larga, una ficha con la tecla (F, G, R…) o una marca de «toca» en el móvil, el icono del material o del recolector, el verbo en grande (Extraer, Recoger, Vaciar R1, Retirar R1, Instalar R1…) y el dato que importa (unidades, kg, u/h); vaciar un recolector lleva además un medidor de llenado (ámbar si está lleno). En la pared, el recolector lleva una ficha pequeña con su tier, el medidor y las unidades.</li>
-        <li>Panel de la inmersión en el móvil (17): botón «Datos» para plegar la línea de datos (zona, segura, velocidad, carga, fallo, pulso, tiempo) y dejar más agua a la vista; se recuerda entre inmersiones (idea del autor, al ver que la barra del jefe y el objetivo del encargo no cabían). La barra del jefe y el objetivo ya no se montan uno encima del otro.</li>
-        <li>Ventanas (interfaz, 14): las que se pueden cerrar llevan una ✕ arriba a la derecha que se queda fija al hacer scroll (pedido del autor: en el móvil había que bajar hasta el final para cerrar) y también se cierran con Escape. Las que exigen una decisión (fin de inmersión, pausa, confirmaciones de Aceptar) no la llevan o hace lo mismo que Cancelar.</li>
-        <li>Trofeo de jefe (idea nueva, no está en el GDD): el GDD no da botín al Guardián de la Plataforma (9.7), así que al vencerlo en combate (no por huida) te llevas, una sola vez, el Diente del Guardián: diente inferior en forma de peine, como los del seis branquias real, guiño al diente que Kaori saca del parachoques en la novela. No es material (no se vende ni entra en recetas): queda en una Vitrina nueva del Registro, con su medallón de latón, su texto y de dónde salió según cómo fue el combate (clavado en la chapa si te embistió, partido contra la roca si se estrelló, o enganchado en la rejilla si solo lo esquivaste). Propuesta para los demás jefes: un trofeo por cada uno.</li>
-        <li>Botines de jefe renombrados por realismo (9.7): «Concha de calamar profundo» pasa a «Anillos de ventosa» (un calamar no tiene concha; sus ventosas llevan anillos de quitina dentados, como en la novela) y «Placas óseas acorazadas» a «Piel acorazada» (los tiburones son de cartílago, no tienen huesos; la piel del dormilón está endurecida por cicatrices). Cambiados el icono, el dibujo en la pared, las recetas (Blindaje T2 y T3) y las partidas guardadas.</li>
-        <li>Soplado de emergencia de los tanques (propuesta nueva): gasta O2 y no batería, da flotabilidad positiva que crece al subir y se cancela añadiendo lastre. El GDD (17.2) usa la propulsión como ascenso de emergencia sin tecla aparte; esto añade una segunda vía con coste. Pendiente de decidir y pasar al GDD.</li>
-        <li>Para recoger o extraer hay que tener la proa encarada al nodo (<kbd>Q</kbd>/<kbd>E</kbd> o Girar); si giras a mitad, se interrumpe. Extiende a la recolección la idea de 17.2 para la herramienta Frontal. Pendiente de pasar al GDD.</li>
-        <li>Blindaje (cambia 5.1, 4.3ter y 9.4): ya no es un eje letal. Absorbe las embestidas de la fauna; a 0, cada embestida pasa al casco ×1,5 y la muerte llega por el casco («Casco destrozado por la fauna»). Quedan cuatro ejes letales: casco, temperatura, CO2 y O2. Los choques contra la pared siguen yendo directos al casco. Decidido; pendiente de pasar al GDD.</li>
-        <li>Giro por marcha atrás (cambia 17.2): un toque en la dirección contraria a la proa hace retroceder al 60 % de potencia; mantenerla 0,35 s gira el submarino. Q/E siguen como atajo. El botón táctil Girar pasa a ser Baliza. Pendiente de pasar al GDD.</li>
-        <li>Cuevas laterales (12.2): dos por zona, una en cada pared y a distinta profundidad. Son laberintos: recorrido aleatorio cuyos ramales se ramifican a su vez (2 o 3 niveles), con un muro mínimo de roca entre túneles para que no se fundan, callejones sin salida (solo algunos con premio) y la cámara de la veta rica al final del recorrido más largo, que no siempre es el túnel principal. Boca de unos 25 m que se estrecha hasta unos 15 m. El interior de la roca se ve oscuro y, cerca de las cuevas, la luz de los focos se para en la roca: el trazado solo se descubre explorando, y para eso están las balizas de marcado (12.3, a la venta en el Taller). Más verticales en la Batial, más ramificadas en la Abisal, más rectas en la Fosa; emboscada en la cámara desde la Abisal. Valores de partida para 12.5, pendientes de pasar al GDD.</li>
-        <li>Arma pasiva (9.9) renombrada «Pulso disuasorio» (decidido por el autor: ya no es pasiva, lo disparas tú). Es un pulso eléctrico disuasorio: ahuyenta, no mata. Aturde a la criatura y la hace huir; el T1 solo vale para fauna pequeña y mediana. Ocupa el punto Frontal en exclusiva con el Taladro. Se dispara a mano (antes saltaba solo): <kbd>V</kbd> siempre, y el botón contextual <kbd>B</kbd> / Baliza del móvil, que fuera de las cuevas (o si algo te persigue de cerca) es el pulso y dentro de ellas coloca balizas; las balizas de marcado solo se colocan dentro de las cuevas. Ojo: el GDD lo llama «Arma pasiva»; con disparo manual el nombre ya no encaja y habrá que revisarlo. Recarga 14/10/7 s por tier. Decidido; pendiente de pasar al GDD.</li>
-        <li>Focos por tiers en el punto Dorsal (desarrolla 9.5 y la familia «Luces de largo alcance» de 13.3; aprobado por el autor): T1 Foco de serie (42 m, haz de 52°), T2 Focos de descarga (54 m, 60°, proyector auxiliar y el foco ventral) y T3 Corona de focos (62 m, 71°, más un foco trasero que se enciende con el frontal). Cada tier gasta más batería y te hace más visible (detección ×2,5 / ×2,8 / ×3,2): ver más nunca sale gratis, y la oscuridad sigue mandando. El T3 pide material Batial (titanio y piedra geotermal) para llegar después del calamar, cuya táctica de atacarte por la espalda anula el foco trasero. Pieza «Focos» en el plano del Taller y en el Muelle. Cada tier agranda también el halo de luz alrededor del casco (7 / 8,5 / 10 m; en cuevas +1,5 m, tope 11 m): el autor quería una rama propia de iluminación; se acordó que crezca con los Focos y que la variedad llegue por las recetas con materiales nuevos (T2 y T3 piden geodas de cuarzo, 3 y 6).</li>
-        <li>«Chatarra reciclada» (9.7) pasa a llamarse «Chatarra»: lo que arrancas de la roca o de un pecio aún no está reciclado.</li>
-        <li>Tercer jefe: el Depredador Acorazado Batial es el tiburón dormilón de la novela, en 3.600–3.850 m (el GDD dice 3.000–4.000; durante el combate no te deja bajar de 3.865 m, así que Estigia, a 4.000 m, queda fuera de alcance). Más grande que el Guardián (20 m; la novela dice 11). Rediseñado a petición del autor, mezclando sus referencias con el dormilón de antes (licencia sobre el dormilón real, para que sea más agresivo): conserva la silueta de tiburón dormilón (morro corto y romo, cuerpo macizo que se afila hacia un pedúnculo grueso, dos dorsales pequeñas, cola de lóbulos casi iguales y sin aleta anal), pero cubierta de coraza: grandes placas solapadas con el filo herrumbre y tubérculos de hueso («una coraza hecha de todas las peleas que había ganado»), una placa curva sobre el cráneo, cuernos de hueso por el lomo y espinas por el costado, aletas granates con radios y borde aserrado y surcos en el vientre. Colores de la referencia a color: carbón y pardo, filos herrumbre y hueso. Boca más grande, por debajo del morro hasta debajo del ojo, con colmillos que asoman siempre y que se abre de par en par al atacar (garganta roja con pliegues y lengua). Sigue casi ciego: ojo pálido y nublado bajo dos espinas de ceja, con el parásito colgando. Caza por el oído («el ruido llama, el silencio aleja»): barra de ruido bajo la del jefe, con lo que lo produce (motor, turbo, taladro, sonar, pulso, lastre y el ventilador de la calefacción). Si te oye viene y, cerca, se lanza a morder; si te muerde, gira y te arrastra mientras la chapa cede (te sueltas alternando ◀ ▶ o con el pulso; si tardas, se lleva el trozo). En silencio pierde el rastro y busca a ciegas, a veces rozándote: cada búsqueda que acaba sin encontrarte le baja la resistencia. Las bengalas suenan al arder: va a por ellas y las muerde. El frío es el precio del silencio (desarrolla el «frío + combate» de 10.4). Botín: 4 de Piel acorazada (sus vetas, después, solo en su guarida). Trofeo: el diente de la novela. Logros: superarlo, vencerlo sin que te muerda y que muerda tres bengalas.</li>
-        <li>Calefacción a mano: <kbd>K</kbd> o el botón Calor del panel (solo con calefacción de ventilador, T2 en adelante). Apagada no hace ruido ni gasta batería, pero la cabina se enfría.</li>
-        <li>«A bordo» (primera versión de la vista interior del submarino, 14.2bis; idea del autor): antes bajaban solos todos los consumibles del almacén (hasta 30 kg con el módulo de energía de estación) sin que se viera en ningún sitio. Ahora la ficha Bodega del Muelle muestra los kilos libres para la carga y abre «A bordo»: balizas, bengalas y módulo con − / +, sus kilos y una barra de la bodega. Se recuerda la elección; por defecto no baja nada; lo que no gastas vuelve al almacén. Las balizas de los encargos de logística siguen bajando siempre (y cuentan en la barra).</li>
-        <li>La anguila cuello cortado (4.700–6.000 m) también tiene ya su dibujo: cuerpo de anguila largo y ondulante, morro afilado con la boca hasta detrás del ojo, aleta en velo hasta la cola y el «corte» pálido de las branquias en la garganta.</li>
-        <li>Fauna que ataca con especie propia y dibujo propio (antes era el mismo pez con otro color de ojo; idea del autor, siguiendo 10.1), sin cambiar su comportamiento: pez víbora (450–1.000 m: largo, colmillos fuera de la boca, fotóforos en el vientre), pez colmillo (1.000–2.000 m: cabezón, todo boca), tiburones linterna en grupo (2.000–4.000 m: vientre luminoso; en la realidad se ven hasta unos 2.000 m), rape abisal con su cuerpo redondo y la caña con el señuelo, y pez caracol gelatinoso y rosado (en la realidad es inofensivo). Tamaños de juego: los reales miden centímetros.</li>
-        <li>Biomas (fase 2, idea nueva: no están en el GDD): una tabla por semilla reparte tramos de la fosa a cada bioma, con su paisaje, su luz, sus vetas y sus riesgos (<code>biomas</code>). El primero, los campos de fumarolas entre 1.500 y 6.000 m (desarrolla la «piedra geotermal, vetas cerca de fumarolas» y el «helio extraído de fumarolas» de 9.7): unos 5 campos de 180–320 m, nunca junto a una estación ni en la franja de un jefe. En cada uno, 1 o 2 repisas con 2 a 4 chimeneas negras (humo de sulfuros, gusanos tubícolas, gambas ciegas) y un resplandor anaranjado que se ve de lejos (licencia de juego: las reales apenas brillan). Cerca, la cabina se calienta hasta 24 °C (un respiro contra el frío); tocar la chimenea o meterse en el chorro (28 m por encima de la boca) quema el casco: 6 y 3,5 % por segundo, nueva causa de pérdida «Casco reventado por una fumarola». En el campo hay el cuádruple de vetas de piedra geotermal y helio y alguna veta más. Rugido y siseo propios, del lado de la chimenea. Las cuevas no se mueven: las repisas se colocan lejos de sus bocas. Pendiente de pasar al GDD (sección nueva de biomas, 12.1 y 9.7).</li>
-        <li>Materiales de la minería submarina real (fase 2, aprobado por el autor; amplía 9.7): costras de cobalto (pared desnuda de 1.000 a 2.500 m, taladro T2, capa fina con zona óptima estrecha), sulfuros masivos (al pie de las chimeneas apagadas de los campos de fumarolas, oxidadas y sin brasa; la minería real apunta a las inactivas para no destruir la fauna de las activas), nódulos polimetálicos (sueltos sobre las repisas de un bioma nuevo, la llanura de nódulos de la Abisal, con cerdos de mar como los de la novela; se recogen sin taladro) y lodo de tierras raras (repisas de lodo rojo de la Fosa, 6.000–9.000 m; los yacimientos reales están a 5–6 km, se llevan a la Fosa por licencia; toma de muestras). Ninguno sale en la pared normal: cada uno con su propio azar, sin mover las vetas de siempre.</li>
-        <li>Piezas de equipo (fase 2, aprobado: cada material nuevo alimenta algo nuevo, nunca abarata lo que existe): sección nueva del Taller, como las piezas de la expedición (se fabrican una vez, se montan o desmontan, cuestan kilos de bodega y suman al coste de reconstruir). Cableado de cobre (sulfuros: −20 % de consumo eléctrico de luces, sonar, pulso y calefacción, 3 kg), Refuerzo de cobalto (costras: −30 % de estrés acumulado, 8 kg), Celdas de nódulos (+20 % de batería, 6 kg) e Imanes de neodimio (tierras raras: +12 % de velocidad y aceleración sin gastar más, 2 kg; el autor prefirió los imanes al Sensor de sigilo, que llegará más adelante con una receta alcanzable antes del fondo). Todas montadas quitan 19 kg de bodega: no salen gratis. Pendiente de pasar al GDD (13.x y 9.7).</li>
-        <li>Fauna nueva (fase 2, último paso; amplía 10.2, toda real y de ambiente, con tamaños de juego): calamar vampiro (600–1.200 m; si te acercas suelta una nube de moco luminoso azul y se aleja), pulpo dumbo (1.000–7.000 m, nada aleteando con las «orejas»), pepino de mar nadador (500–5.000 m) y sifonóforo (700–3.200 m): una colonia en cadena de 26 m, quieta en el agua, que no hace daño pero si la rozas se ilumina entera y durante 5 s la fauna que caza te detecta ×1,8 (la «alarma antirrobo» de la bioluminiscencia). En los biomas, como decorado: cangrejos yeti al pie de las fumarolas activas, peces trípode sobre las repisas de nódulos y de lodo, e isópodos gigantes en la caída de ballena. Pendiente de pasar a 10.2.</li>
-        <li>Cámaras grandes en las cuevas (fase 2, desarrolla 12.2): al final del recorrido más largo, una sala de 14 a 19 m de radio con forma irregular (un círculo central y de 4 a 7 alrededor, más ancha que alta), con estalactitas de lava en techo y suelo (los tubos de lava submarinos las tienen; solo dibujo, sin colisión). Si no cabe, se queda la cámara de antes. Aviso al entrar. En cada zona, la cueva más larga guarda en el suelo de su cámara una pieza de colección: real de a ocho (Fótica, 250 cr), diente de megalodón (Mesopelágica, 400 cr), hidrófono de Kaori con el cabo cortado por el calamar (Batial), carcasa de flotación del Consorcio con los agujeros de media luna (Abisal, 300 cr) y una bolsa de plástico (Fosa; en 2018 se publicó una a 10.898 m en las Marianas). La Colección pasa a 8 piezas. Al cambiar la forma de las cuevas, las balizas de cueva y los recolectores de vetas de cueva de partidas anteriores vuelven al almacén (<code>versionCuevas</code>). Pendiente de pasar a 12.2 y a la Colección.</li>
-        <li>Copias de la partida (solo de la demo, a raíz de una partida perdida; en Unity se guarda en archivo): en Opciones, guardar la partida en el dispositivo (archivo .json), cargar un archivo, y un código de partida en texto para copiar y pegar si el navegador no deja descargar. Además, red de seguridad: copia automática de la última partida con progreso; si el guardado no se puede leer, se aparta y se carga la copia; antes de cargar otra partida se aparta la actual.</li>
-        <li>Puntos de interés y Colección (fase 2, desarrolla 11 y la idea de colección; lugares elegidos por el autor): uno de cada por partida, sobre repisas, lejos de biomas, estaciones, jefes y bocas de cueva. Caída de ballena (1.200–3.800 m: esqueleto con tapete bacteriano, gusanos Osedax y mixinos), destructor partido (2.300–5.200 m: la proa en una repisa y la popa 35–60 m más abajo en la pared de enfrente; sólido, con chatarra en cubierta) y Orfeo (hacia los 7.950 m, donde lo deja la novela: «Encontrar a Orfeo»). Aviso y nombre al acercarte. Cada uno guarda una pieza: vértebra de ballena (8 kg, la universidad paga 300 cr), campana del destructor (10 kg, el museo naval paga 600 cr; nombre inventado, «…ANDRA, 1943») y la cámara de popa de Orfeo con la cinta americana de Duarte (2 kg, no se vende). Hay que subirla: si pierdes el submarino, vuelve a su sitio. Sección Colección en el Registro (siluetas de lo que falta, con la zona o la profundidad a la que lo viste) y 2 logros nuevos. Pendiente de pasar al GDD (11 y sección nueva de Colección).</li>
-        <li>Cuarto jefe, Kraken Abisal (10.5; fase 3, diseño aprobado por el autor): es la «quinta baliza» de la novela. Basado en el calamar de aletas grandes (Magnapinna), que se ha filmado a 6.212 m: cuerpo pequeño con dos aletas enormes y brazos finísimos con «codo» que cuelgan muchos metros. Lucha entre 5.400 y 5.850 m (durante el combate no te deja bajar de 5.865 m: Leteo, a 6.000 m, queda fuera de alcance). El cuerpo se queda a distancia, en la oscuridad; se le ve una luz que destella cada 3 s, siempre un poco a destiempo. Varios puntos de ataque (GDD): cuatro brazos que atacan de uno en uno; cada uno avisa (se tensa y se enciende de violeta) y luego barre en arco (hay que alejarse del brazo; golpea el blindaje) o se lanza recto al sitio donde estabas (hay que apartarse de lado; si te alcanza te agarra y aprieta: el daño va al estrés estructural, 1,6 %/s y +5 % si no te sueltas en 5 s). Te sueltas forcejeando ◀ ▶ o con el pulso. El latido (novela: «el fondo late» y reinicia los ventiladores de Leteo): cada 9–13 s (6–9 en la fase 2) avisa con un rumor y, al latir, reinicia lo eléctrico que esté encendido (focos 2,6 s, motor 1,8 s); con todo apagado no pasa nada. Así prueba a la vez fallos eléctricos y estrés (GDD 10.5). Con los focos ataca más a menudo; a oscuras se ven las puntas de los brazos. Resistencia 180: baja al esquivar, cuando un brazo golpea la roca y con el pulso en un brazo que ataca; desde la mitad puedes huir hacia abajo. Fase 2: avisos más cortos, a veces otro brazo casi sin pausa, el señuelo se acerca y late más deprisa. Premio: 2.400 cr de la Autoridad (800 por huida) y 4 Tentáculos bioluminiscentes; desde ahora sus vetas solo salen en su guarida tras superarlo (antes eran un nodo raro). Trofeo: el Farol del kraken (la punta de un brazo con su fotóforo, en un tarro de muestras). Logros: superarlo, vencerlo sin que te agarre y vencerlo sin ningún fallo eléctrico.</li>
-        <li>Jefe final, El Guardián del Abismo (10.6 y 10.8; fase 3, opción fiel a la novela aprobada por el autor). Es lo que la novela nunca deja ver entero: una superficie pálida y gris, con pliegues profundos y paralelos y cristal verde en el fondo de cada pliegue, que pasa «con la lentitud de un glaciar» («No es un monstruo. Es el corazón»). Lucha entre 10.780 m y el fondo (11.000 m). No se le vence: se le calma. Te llama con pulsos cortos y largos (de 3 a 5) y hay que contestarle lo mismo con el emisor del sonar (pulsar = corto, mantener = largo; Z o B en teclado, botón Emitir en el móvil); cada llamada enciende el cristal de las paredes. En la fase 2 a veces te devuelve tu propia firma (· · · —, «el fondo aprende lo que oye») y hay que contestar de memoria, y la última llamada es siempre esa firma. Alarma: la suben las respuestas malas, no contestar, contestar fuera de turno, el ruido (motor a fondo, turbo, taladro…) y el pulso eléctrico (aquí abajo es un trueno); en silencio baja despacio. Con la alarma llena se asusta y carga: marca tu franja de profundidad y, a los 3 s (2,4 en la fase 2), pasa por ella a toda velocidad, de pared a pared (−45 de blindaje y +8 % de estrés si te arrolla); si la esquivas, se desahoga y se calma un poco. El latido: con la alarma por debajo de la mitad es hondo y no hace nada; por encima se acelera y reinicia los focos y el motor encendidos, como el del kraken. Además, cada 10–26 s, su cuerpo cruza lejos, por detrás de las paredes (capa con parallax), y solo se ve por el cristal de sus pliegues; al pasar por delante, una onda de agua te empuja. Así combina los ejes que pide el GDD: fallos eléctricos (latido y casco al límite), estrés y ruido. Sin huida (desvía 10.7): es el último y bajo él no hay adónde huir. Calmado del todo, se hunde hacia el fondo (hay que seguirlo), pasa rozándolo con todo su peso y se posa; el suelo se agrieta, se escapa luz verde por las grietas y cede: cae como una losa contigo encima («tres metros, siempre tres metros»), las hélices se ahogan en el sedimento y no responden, y llegas a Cocito, a 11.412 m, entre cortinas de sedimento y una nube de polvo que tarda en posarse. Premio: 6.000 cr de la Autoridad y 3 Escamas del Guardián (justo las que pide el Blindaje T4). Trofeo: el Cristal del latido. Logros: Cocito (llegar), Corazón en calma (calmarlo sin que llegue a cargar) y Sigo aquí (oculto). En el Registro, «Volver a enfrentarlo» cierra el fondo otra vez, para probarlo. Pendiente de pasar al GDD.</li>
-        <li>Cocito (novela, cap. 17; nuevo, no está en el GDD): la cavidad que hay debajo del fondo, ya abierta para siempre en esa partida. El agujero baja recto unos 30 m y se abre en una bóveda de casi 400 m de ancho; el suelo, a 11.412 m, es sedimento gris claro con campos de cristal (agujas más altas que el submarino, placas del tamaño de una puerta y racimos como flores de escarcha), negros fuera del haz y verdes donde los tocan los focos, y miles de hilos pálidos tendidos entre ellos (las bacterias cable de Kaori). El fondo late cada 7–11 s: los hilos tiemblan a la vez y los anfípodos pálidos acuden a agarrarse a ellos; hay «flores» translúcidas que se abren y se cierran y, muy lejos, el roce del Guardián pasando por encima de los campos de cristal. Perséfone está medio enterrada, inclinada hacia babor, junto al bastidor naranja de la T-2 (con su placa TETIS T-2); en su cesta de babor, la placa del Trieste (Piccard, Walsh, 23 de enero de 1960), pieza de Colección que no se vende (la Colección pasa a 9 piezas). Las Escamas del Guardián salen en el suelo de Cocito (7 vetas que reaparecen como las demás) y ya no en las paredes de la Fosa. Si mandas la firma desde Cocito (· · · —), el Abismo te la devuelve 40 s después, desde todas partes («Sigo aquí»). Debajo del fondo la zona se llama Cocito en el panel. Cristal en la roca de las paredes desde 8.700 m («la pared de los ocho mil setecientos, roca negra sembrada de estrellas verdes»), que se enciende con las llamadas y los latidos. Cerca del fondo, la cámara sube un poco para que el suelo quede abajo. Pendiente de pasar al GDD.</li>
-        <li>Fin de la partida (10.8): al llegar a Cocito, pantalla de resultados (profundidad máxima, inmersiones, tiempo bajo el agua, logros, Colección, créditos, cómo superaste cada jefe y el submarino final) con el cierre del hilo narrativo, y después exploración libre en la misma partida (sin más progresión). Se puede volver a ver desde el Registro. Casco T4 «de núcleo abisal»: profundidad segura 12.000 m (antes 11.200), para que Cocito quede a su alcance con algo de margen para el estrés; con 11.200 m la cavidad quedaba fuera y el casco se rompía al llegar.</li>
-        <li>Cierre de la fase 2 (desarrolla 6 y 3 del análisis; aprobado por el autor). Dos biomas más, que se colocan sin mover nada de lo que ya salía con la semilla (cuevas, barcos, puntos de interés, vetas; solo alguna veta de pared se corre unos metros si cae justo donde aparece una repisa nueva). Lago de salmuera (1.000–3.000 m, uno o dos por partida): una repisa ancha con un lago de agua tan salada y densa que se queda en el fondo, entre dos orillas de mejillones con tapete bacteriano, con su superficie que ondula, bruma encima y peces muertos flotando (sin oxígeno, lo que cae dentro muere; existen en el golfo de México y el mar Rojo). El submarino flota sobre la salmuera, no se puede hundir en ella, y la sal corroe el casco mientras la tocas (1,2 %/s; nueva causa «Casco corroído por la salmuera»). Nieve marina luminosa (500–2.000 m, dos o tres tramos): el plancton se enciende al rozarlo y el submarino deja una estela de chispas azules, tanto más viva cuanto más deprisa vas; esa estela te delata (la fauna te detecta hasta ×1,5 de lejos a toda velocidad) y en esos tramos hay un sifonóforo más por cada 100 m. Rarezas por zona, solo para vender y que no salen en cuevas ni admiten recolector (la Fótica ya tenía la perla): rama de coral negro (Mesopelágica, 110 cr; el coral negro vive miles de años y guarda el clima del pasado; solo ramas muertas), muestra de extremófilos (Batial, 260 cr; solo en las orillas de los lagos de salmuera), esférulas cósmicas (Abisal, 420 cr; polvo de meteorito en la arcilla roja; también en las repisas de nódulos) y xenofióforo (Fosa, 700 cr; un ser de una sola célula del tamaño de un puño; también en las repisas de lodo). Cada una con su icono y su aspecto en la pared.</li>
-        <li>Señal tenue de los puntos de interés (repaso antes de la fase 3; estaban a oscuras y costaba encontrarlos): cada uno tiene una luz propia que se distingue de lejos sin iluminar la fosa. Caída de ballena: chispas azules de bichos pequeños bioluminiscentes que se ceban con el esqueleto (las «chispas azules de cosas pequeñas» de la novela). Destructor (proa y popa): corales bambú y plumas de mar que lo cubren y se encienden en ondas verdosas que recorren el casco; los dos producen bioluminiscencia real al rozarlos, que se vea desde lejos es licencia de juego. Orfeo: a su lado, tumbada en el sedimento, una de las balizas estroboscópicas de Mikel (novela, «Las luces quietas») sigue soltando un destello blanco cada tres segundos. Cada señal deja ver un poco de lo que la rodea. Sin efecto en el juego.</li>
-        <li>Mesetas sin naufragio (repaso antes de la fase 3; amplía las mesetas de 12.1, aprobado por el autor): ya no quedan vacías. Cada una lleva, por semilla, unos restos de ambiente: un ancla de cepo medio enterrada con la cadena colgando por el borde, carga perdida (un contenedor volcado con la puerta abierta y bidones), una red fantasma enganchada a las rocas con los flotadores tirando hacia arriba, o un derrumbe de rocas con conchas. Encima, vida posada: estrellas de mar y erizos en la Fótica; esponjas de tubo y ofiuras en la Mesopelágica, y a veces un cangrejo (araña de mar en la Mesopelágica) que cruza la repisa. Solo decorado: sin colisión ni recursos. Si la boca de una cueva se come parte de la repisa, los restos se colocan en el tramo de roca maciza. No cambia nada de lo que ya salía con la semilla (barcos, cuevas, nodos).</li>
-        <li>Repaso y depuración antes de la fase 3 (herramientas de la demo, no del juego): en Opciones → Herramientas de prueba, «Mostrar rendimiento» pone arriba a la izquierda los fotogramas por segundo, los milisegundos que tarda el juego en cada fotograma, el peor de los últimos 2 s, la profundidad, si hay una cueva cerca y el bioma. Corregido: los nodos recolectables que caían en el borde entre dos trozos de la fosa (o muy juntos) salían apilados en el mismo punto; ahora se descartan los del borde y, si dos quedan a menos de 3 m, se queda uno. Nuevo dibujo del real de a ocho (columnario: columnas coronadas sobre las olas, en relieve) y del diente de megalodón (fósil: corona de esmalte gris azulado con los bordes finamente aserrados, la banda oscura en V o «bourlette» y la raíz de dos lóbulos).</li>
-        <li>Recompensas propias de las cuevas (fase 1 de la hoja de ruta acordada): la cámara trae material de la zona siguiente la mitad de las veces (antes una de cada tres) y suma 1 unidad por cada 150 m de túnel (hasta +4), así que las cuevas grandes compensan; los materiales raros cunden la mitad. Material nuevo que solo existe en cuevas: la geoda de cuarzo (2 kg, 70 cr, rara; huecos del basalto tapizados de cuarzo, el material real de los tubos de las lámparas de descarga), en 4 de cada 10 callejones con premio y alguna vez en la cámara. Dentro de una cueva, cada premio a menos de 40 m lanza un destello cada pocos segundos aunque esté a oscuras o tras un recodo (<code>recompensaCueva</code>). Pendiente de pasar a 12.2 y a la tabla de materiales.</li>
-        <li>Depósito en las estaciones levantadas (pestaña nueva; el autor lo pidió ya, limitado): material que dejas para recogerlo en otra inmersión, y que se conserva aunque pierdas el submarino. Caronte 40 kg, Estigia 70 kg, Leteo 100 kg (<code>estaciones.deposito</code>). Solo material, solo con la estación levantada, y siempre limitado por la bodega al recoger. Es un escondite para no perder la carga, no un segundo almacén. Pendiente de pasar a 11.2.</li>
-        <li>Foco ventral bajo el casco, apuntando al fondo (tercer estado de la tecla de luces): decidido que no es de serie, llega con los Focos T2. Gasta batería extra y te hace algo más visible para la fauna.</li>
-        <li>Bengalas (consumible nuevo, en el Taller junto a las balizas): <kbd>L</kbd> o el botón Bengala del panel. Caen despacio, se posan en la roca y alumbran 24 m a la redonda durante 30 s con luz roja (la luz se para en la roca, como la de los focos). La fauna que caza se va a por ellas y las rodea mientras arden: sirven de señuelo. 18 cr, 0,4 kg, hasta 6 por inmersión.</li>
-        <li>El sonar queda de serie (no es una familia del punto Dorsal, como se llegó a plantear): el Dorsal es solo para la luz. El Sensor de sigilo (la otra familia Dorsal de 13.3) llega en la v133 (ver abajo).</li>
-        <li>Música por franjas de profundidad y de combate (15.2; aprobado por el autor, v135): en vez de una música por zona o bioma, cuatro grandes franjas, cada vez más oscuras y con menos presencia, para que al bajar mande el silencio, el océano y el casco. Fótica (0–600 m): la pista de siempre, que ahora llega más hondo y se va apagando y amortiguando (pierde los agudos, como si el agua se la tragara). Penumbra (600–3.900 m): suena a ratos (frases de 1,5–2,5 min y silencios de 1–2 min). Abisal (3.900–7.500 m): pocas veces y corta. Fosa (7.500 m hasta Cocito): sin pista continua, solo fragmentos sueltos de 20–40 s cada 2–4 min. Cambio de franja con histéresis (6 s pasado el límite o 80 m) y fundidos largos; cada pista sigue donde se quedó. La música se aparta sola cuando hay que oír algo: la firma de Lucía, algo que te persigue cerca, el casco al límite o el aviso de latido del kraken. Combate: una sola pista para los jefes, que empieza cuando aparece su barra (la de la zona se aparta y vuelve 6 s después de acabar), con variaciones por jefe: más lenta y más grave cuanto más hondo (Guardián 100 %, calamar 96 %, kraken 92 %) y más fuerte y abierta en la fase 2; el dormilón la lleva casi inaudible y muy apagada (86 %, 30 % de volumen); el Guardián del Abismo no lleva música, porque el combate se juega de oído. Las pistas nuevas (penumbra, abisal, fosa y combate) las ha compuesto el autor con Suno (v136). Transiciones (pedido suyo): nunca suenan dos pistas a la vez; la que suena se apaga del todo y, al cambiar de franja, hay unos segundos sin música con un sonido de paso propio de cada cambio (bajando a la penumbra, un brillo que cae y algo grande muy lejos; a la abisal, el casco que cruje y un batido grave que aprieta; a la fosa, un solo pulso hondo con cola de pozo y la roca que «canta» muy bajo; subiendo, un aire que se abre), y luego entra la siguiente despacio. Entre frases de una misma franja y al combate, sin ese momento: se apaga una y entra la otra (al combate, deprisa; la de combate empieza por su golpe de entrada). Pendiente de pasar al GDD (15.2).</li>
-        <li>Taladro (v135): el autor notó que sonaba a soplido. No había cambiado ningún archivo (es todo sintetizado): desde que se bajó a frecuencias muy graves para que no sonara a motosierra, el motor del cabezal (22–50 Hz) no sale por el altavoz de un móvil y lo único audible era una capa de ruido. Ahora tiene cuerpo en medios (el cabezal entre ~110 y 300 Hz, que sube con la potencia), golpes de los dientes de la broca contra la roca (de 5 a 12 por segundo según la potencia: irregulares con poca potencia, regulares en la banda óptima, más rápidos en sobrecarga) con un golpe sordo y un timbre metálico breve, y la capa de ruido, estrecha y baja. Nada continuo por encima de ~1,5 kHz, para que no vuelva la motosierra. El retumbo grave sigue para quien juega con cascos.</li>
-        <li>Ajustes tras jugarlo (v137): el taladro le seguía pareciendo algo agudo, así que baja casi una quinta (cuerpo del cabezal entre ~80 y 200 Hz con un filtro que le quita el brillo, golpes de broca y timbre más graves; el golpe sordo, con más peso). Los delfines sonaban raros (tres pitidos fijos): ahora suenan como delfines mulares de verdad, cada uno con su silbido «firma» (una nota que se dobla: sube, baja, hace una U u ondula, con un armónico; algo más grave que en el mar para que no pite y se oiga en el móvil) y trenes de clics de ecolocalización que se aceleran hasta un zumbido, cruzando de un lado al otro con el grupo y algo lejos. En la pausa de la inmersión hay un botón Opciones (lo pidió): sonido, volúmenes de Ambiente, Efectos y Música, controles táctiles (se aplican al momento) y el medidor de rendimiento; las copias de la partida y Balance siguen solo en el menú principal, porque cargar una partida a mitad de inmersión la rompería. Rendimiento (notó bajadas de fps junto al lago de salmuera con el turbo, en el móvil): junto a una pared se hacían más de mil llamadas de dibujo por fotograma; la oscuridad de la roca junta en una sola tira las filas en las que la pared apenas se mueve y pinta la parte negra de una vez, la vida de las paredes se dibuja con un trazo por color y las motas del agua con un solo relleno: unas 550 llamadas en el mismo sitio, sin cambio visible. En Unity, lo equivalente es el batching: agrupar sprites que comparten material para dibujarlos en una sola llamada.</li>
-        <li>Avisos largos y Cuaderno de campo (v139, lo pidió el autor: los avisos de bioma y del sifonóforo duraban poco, no se llegaban a leer y ocupaban mucha pantalla en alto). Los avisos ocupan ahora todo el ancho (antes solo podían usar la mitad: un fallo de maquetación), los largos van alineados a la izquierda con el nombre destacado, duran según lo que hay que leer (entre 2,6 y 11 s) y se desvanecen al irse; si se juntan varios, se quita antes un aviso corto que uno largo. Además, lo que dicen queda escrito en una sección nueva del Registro, el Cuaderno de campo: los biomas que has cruzado y notas de fauna (de momento, el sifonóforo), ordenados por profundidad y con «Sin descubrir» para lo que falta. En el menú, en el móvil, Nueva partida ya no se queda iluminada como Continuar (el realce de pasar el ratón se quedaba enganchado tras un toque; v138).</li>
-        <li>Panel de la inmersión en pantallas estrechas sin controles táctiles (v141): en una ventana de ordenador estrecha, o en un móvil con «Controles táctiles: Nunca», el panel en tres columnas (dial, barras, datos) no cabía y las etiquetas se pisaban. Ahora usa el mismo reparto que el móvil (dial pequeño, barras en dos columnas, datos en una línea debajo), pero sigue abajo. El móvil con controles táctiles y el ordenador con pantalla ancha no cambian.</li>
-        <li>Tutorial (GDD 16, v142; aprobado por el autor): sin zona de práctica ni recorrido guiado, once consejos cortos que salen la primera vez que pasa algo, en una ficha de latón distinta de los avisos («Consejo 3 de 11»), uno cada vez, sin pausar ni bloquear nada; se va sola en 8–14 s (la línea de abajo marca el tiempo) o tocándola. En la base: al empezar (qué es cada pestaña), al volver de la primera inmersión (Mercado, punto cian del Taller, Encargos) y tras la primera pérdida (qué se pierde y qué no). En la inmersión: al entrar en el agua (mover y lastre), junto al primer recurso, al minar por primera vez, hacia los 150 m sin luces, cerca de la profundidad segura, con la batería o el O2 por debajo del 40 % o la bodega por encima del 60 % (volver), cuando la fauna te detecta y en la primera cueva. Los textos nombran los botones o las teclas según cómo se juegue. En Opciones (menú y pausa): «Mostrar consejos» y «Volver a ver los consejos». Las partidas que ya tenían inmersiones los dan por vistos. Cambia 16.2–16.4: no hay recorrido por la base ni primer encargo automático; el Laboratorio no existe.</li>
-        <li>Corrientes visibles y Garra (v143; decidido con el autor). Corrientes: las de siempre (empuje lateral que crece con la profundidad; el Motor de Estabilidad lo reduce) ahora se ven, porque las motas del agua van con ella a la velocidad a la que arrastraría al submarino; no cuesta rendimiento (son las mismas motas). Si te dejas llevar, las motas quedan quietas a tu lado y lo que se mueve es la pared; si aguantas (Motor de Estabilidad), el agua te pasa por delante. Garra (vuelve la familia de 9.9, opción A): el punto Frontal tiene tres herramientas y solo una montada (dos con el chasis Polivalente, 13.6): el Taladro mina la roca, la Garra recoge todo lo demás (orgánicos, gases, nódulos, botines de jefe, escamas) y los contenedores de los encargos, y el Pulso defiende. La Garra de serie viene con el submarino (cambiar de herramienta es gratis en el Muelle o el Taller); T2 «Garra articulada» (6 ferroníquel, 4 algas, 700 cr) y T3 «Garra de presión» (4 titanio, 4 aceite, 2.000 cr) recogen más deprisa (1,4 → 0,9 → 0,6 s). Dibujo: brazo hidráulico de dos tramos plegado en «V» bajo la proa, por detrás del taladro, que se estira al recoger; amarillo de seguridad, acero o titanio según el tier. La ficha del recurso y el aviso de acción dicen qué herramienta falta. Las piezas de colección, las páginas, los pecios y los recolectores se siguen recogiendo sin herramienta.</li>
-        <li>Chasis (13.6, v144; tabla aprobada por el autor): Explorador (el de siempre, equilibrado, una herramienta en la proa), Polivalente (dos herramientas a la vez, Taladro y Garra por ejemplo; a cambio −10 % de velocidad, más consumo de batería, no admite el Motor de Velocidad y reconstruirlo cuesta un 40 % más; 10 ferroníquel, 12 chatarra, 1.500 cr) y Ligero (+12 % de velocidad, gasta menos y reconstruirlo cuesta un 30 % menos; Focos y motor comparten un punto: el jugador elige cuál lleva su mejora y el otro va de serie; 6 titanio, 8 algas, 2.500 cr). El plano de los dos alternativos se recupera en una misión de rescate; con el plano se fabrica una vez y cambiar después es gratis, sin perder nada de lo fabricado. Se ven en el Taller (sección Chasis) y en la tarjeta Chasis del Muelle; el submarino cambia de aspecto (depósitos de lastre más grandes y franja ámbar el Polivalente, depósitos pequeños y franja roja el Ligero). El submarino de serie (tras una pérdida sin dinero) es siempre un Explorador. Cambia 13.6 en que el Polivalente no admite el Motor de Velocidad y en que el Ligero comparte Focos/motor (el GDD decía Dorsal/Popa).</li>
-        <li>Rescates (8.2.5, v145; aprobado por el autor): encargos especiales de la Autoridad, aparte del tablón y sin ocupar hueco. El Consorcio Tetis perdió en la fosa sus sumergibles de pruebas no tripulados (2027–2028; encaja con la novela: el Consorcio ya no existe y la Autoridad recoge lo que dejó). TS-4 «Nereida» (se ofrece desde 400 m de récord; pecio entre 650 y 880 m; 800 cr; plano del chasis Polivalente) y TS-7 «Galatea» (desde 1.500 m; pecio entre 1.800 y 2.500 m; 2.000 cr; plano del Ligero). No hay coordenada exacta: el indicador de objetivo marca la franja y el pecio (el mismo dibujo del submarino con su chasis, oscurecido y con sedimento, sobre una repisa libre o apoyado en la pared) tiene una baliza ámbar que destella cada 2,5 s. La caja negra (naranja, 6 kg) se saca con la Garra y hay que subirla; si pierdes el submarino o abandonas, se queda en el pecio. Al entregarla, se lee su registro (en la pantalla de vuelta y en el Cuaderno de campo). Sustituye la idea de «recuperar el blueprint de otro buzo» de 8.2.5 y cómo se consiguen los chasis en 13.6.</li>
-        <li>Dos chasis más con su rescate, uno por zona (v146; aprobado por el autor). Carguero (rescate del TS-9 «Doris», Abisal, 4.150–5.250 m, se ofrece desde 3.700 m de récord, 4.000 cr; 10 nódulos, 6 titanio, 5.000 cr): +90 kg de bodega, solo admite la Garra en la proa, −10 % de velocidad y, con la bodega llena, sube hasta un 45 % más despacio; reconstruirlo cuesta un 20 % más. Acorazado (rescate del TS-12 «Psámate», Fosa, 6.400–8.600 m, desde 6.000 m, 8.000 cr; 8 cristal, 6 sedimento, 9.000 cr): blindaje +60 % y −30 % de estrés del casco, pero −15 % de velocidad, más consumo de batería, sin turbo y reconstrucción un 50 % más cara. Dibujo: el Carguero con depósitos grandes y franja verde; el Acorazado con placas atornilladas y franja de acero. Rescates: dos tipos decididos con el autor; los del Consorcio dan chasis; los de la expedición de la novela (pendientes) darán historia.</li>
-        <li>La expedición y el nombre del submarino (v147; propuestos a partir del epílogo de la novela y aprobados por el autor). El epílogo ya fija el plan del sumergible nuevo de Mikel, que es el del jugador: encontrar a Orfeo y «traer de vuelta lo que Perséfone se había llevado». Encargos especiales de Ruth y el Anfitrite: «Encontrar a Orfeo» (desde 6.000 m de récord; se cumple al encontrar el punto de interés de Orfeo y volver; 3.000 cr) y, tras llegar a Cocito, «Lo que Perséfone se llevó»: el registro de las cámaras y el registro de voz, sujetos al bastidor de Perséfone, se sueltan con la Garra; el de voz solo en silencio (luces apagadas, motor parado y casi quieto unos 4 s junto a ella), por la petición de Lucía («Que alguien baje a buscarlo. Pero que baje en silencio»). Los cuadernos de Kaori se quedan dentro de la esfera, con ella (decidido: no se abre). El registro de voz es el texto de la novela, palabra por palabra; el de las cámaras es un borrador para que el autor lo revise. Ambos se leen al volver y en el Diario de Lucía del Registro; logro oculto «En silencio». Nombre del submarino: «No tenía nombre. —El nombre se lo pondrá quien lo pilote»; se pide una vez en la base (se puede dejar para más tarde), sale en el Muelle, al iniciar la inmersión y en la pantalla de fin de partida, y se cambia en Opciones o en el Muelle. Encaja con el pilar 5 del GDD (el submarino es el protagonista).</li>
-        <li>Taller en pestañas (v148; lo pidió el autor). El Taller ya ocupaba unas siete pantallas de scroll en el móvil. Ahora se reparte en cuatro pestañas fijas arriba: Submarino (plano y resumen del equipo), Chasis, Piezas (y expedición) y Recolectores y consumibles. Cada pestaña muestra un punto cian cuando hay algo que se puede fabricar o mejorar, y el juego recuerda la última pestaña abierta. Es un cambio solo de interfaz; no toca ninguna regla.</li>
-        <li>Registro sin destripes e iconos de la Colección (v149; lo pidió el autor). El Diario de Lucía ya no enseña las dos fichas de Perséfone hasta que llegas a Cocito, y la Colección oculta hasta entonces la placa del Trieste (decían «Perséfone · 11.412 m» y «Cocito» desde la primera partida, y eso destripaba el final). Cuando aparecen, cada ficha lleva su nombre: «Registro de las cámaras» y «Registro de voz». Además se rehacen seis iconos de la Colección con la calidad de la moneda y el diente: la vértebra de ballena (disco, arco neural, gusanos Osedax), la campana del destructor (bronce con verdín, letras en relieve, badajo), la pantalla de Orfeo con la cinta americana y su cámara, el hidrófono de Kaori con el cabo cortado, la carcasa naranja del Consorcio con sus medias lunas y la bolsa de plástico translúcida.</li>
-        <li>Luz, sonar y Soporte vital T4 (v150; lo pidió el autor). Al llegar a la Abisal no veía casi nada y le costaba navegar: la oscuridad tiene que dar tensión, no impedir jugar. <b>Luces</b>: el halo del casco pasa de 7 / 8,5 / 10 m a 12 / 14 / 16 m (según los Focos), con un degradado más suave y un resplandor tenue en el agua; los Focos alumbran más lejos y más ancho (T1 52 m y 60°, T2 64 m y 69°, T3 76 m y 80°). El Sensor de sigilo pasa de 26 m a 44 m, con un haz más ancho y un halo de 11 m, y su rojo apaga menos lo que alumbra (sigue siendo peor que los focos: es el precio de que la fauna no te vea). La oscuridad máxima baja de 0,97 a 0,88, así que las paredes se intuyen aunque no las alumbres, y la luz enseña más franja de roca. Dentro de las cuevas el halo ya no crece ni se recorta: es el mismo que fuera (el autor había pedido reducirlo y, tras bajar más hondo, vio que no fue buena idea). El consumo y la detección de las luces no cambian. <b>Sonar</b>: en la fosa abierta, el botón (que ahí se llama «Ping») o la tecla Z lanzan un pulso a mano, de 70 m, cada 2 s como mucho; nunca emite solo fuera de las cuevas. Dentro de ellas sigue igual: emite solo cada 3 s y el botón lo enciende o lo apaga. <b>Soporte vital T4</b>: depuraba lo mismo que el T3 (2,0) y, con todo al máximo, el CO2 te paraba a unos 9.000 m; ahora depura 2,6, y el CO2 deja de subir hasta los 12.000 m, como el casco T4. Con los motores lentos el límite pasa a ser el O2.</li>
-        <li>Trofeos del kraken y del Guardián del Abismo rehechos (v151; lo pidió el autor), con la calidad del diente y el pico. Farol del kraken: tarro cilíndrico de cristal con tapa de latón roscada, líquido con menisco y burbujas, la punta del brazo pálida y enroscada con un filamento, y el fotóforo como lo describe su texto (bolsa en forma de huevo, reflector blanco detrás, lente delante y un resto de luz dentro); etiqueta de papel «Magnapinna · 5.600 m». Cristal del latido: agujas talladas con luz que sube desde la base, fracturas internas, los hilos con gotas de luz, dos anillos tenues del latido y una base de basalto con caras y poros.</li>
-        <li>Avisos, perlas y tortugas (v152; tras jugar bastante, el autor y un amigo que ya lo prueba desde GitHub). Los avisos de bioma salen enteros solo la primera vez (quedan en el Cuaderno de campo); en las siguientes inmersiones, solo el nombre y la franja. Lo mismo con el sifonóforo. En la semilla del autor no había ni una perla: salían al azar y con algunas semillas ninguna; ahora cada tramo de 50 m entre 60 y 200 m tiene un banco de perlas fijo, y las vetas al azar las eligen casi el doble (de 3 a 6 vetas de perla por partida, que vuelven a crecer como cualquier veta rara). Los encargos de suministro de materiales raros piden 1 o 2 unidades (antes de 3 a 8, imposible con las perlas). La fauna ya no es la misma en cada inmersión con la misma semilla (antes, si en tu semilla no salía una tortuga, no salía nunca), y las tortugas son algo más frecuentes.</li>
-        <li>Número de versión al pie del menú principal (v153), para saber de un vistazo qué versión tiene cada probador.</li>
-        <li>Recolectores por tier (v154; el autor vio que al fabricar el tier siguiente los anteriores se quedaban inservibles). El tope pasa de 3 instalados en total a 3 de cada tier (3 R1 + 3 R2 + 3 R3): cada tier es su propia red, y los de tier bajo siguen trabajando en las zonas altas, que es justo lo que pide el GDD (9.8: liberar al jugador de farmear lo ya dominado). Sustituye a la mejora de base «Centro de Control de Recolectores» que preveía el GDD para ampliar el límite: aquí cada tier nuevo es la ampliación. Al instalar se usa el tier más bajo que sirve para esa veta y que aún tiene hueco. Los que sobran en el almacén se pueden desmantelar en el Taller: devuelven la mitad de los materiales de la receta (no los créditos).</li>
-        <li>Cancelar la extracción y vetas fuera del chorro (v155; el autor murió taladrando junto a una fumarola sin poder salir del minijuego). Mientras taladras, pulsar una dirección cancela la extracción y te devuelve el motor (si ya la tenías pulsada al empezar, hay que soltarla y volver a pulsarla; la pista del minijuego lo dice). En los campos de fumarolas, las vetas de pared que obligaban a taladrar dentro del chorro o pegado a una chimenea activa se colocan en otro punto del mismo tramo; si no hay sitio seguro, no salen. Las vetas de geotermal y helio siguen siendo cuatro veces más frecuentes en los campos.</li>
-        <li>Casco T4 a 13.500 m (v156; el autor murió en Cocito por colapso del casco con todo al máximo). Con 12.000 m, el estrés recortaba la profundidad segura (hasta un 30 % con el estrés al 100 %): a partir de un 16 % de estrés quedaba por debajo de Cocito (11.412 m), y allí el casco perdía varios puntos por segundo mientras el estrés seguía subiendo; las embestidas del Guardián (+8 % cada una) lo hacían casi inevitable. Con 13.500 m, Cocito es seguro hasta con un 50 % de estrés; con más, el casco sigue sufriendo, como en cualquier otra zona.</li>
-        <li>Sedimento hadal en la pared (v157; lo pidió el autor: se veía como un montículo de suelo plantado de lado, como una repisa). Ahora es una bolsa de sedimento en capas pegada a la pared y abombada hacia el agua, perpendicular a la pared aunque esté inclinada, con granos y algo de polvo que se desprende.</li>
-        <li>Cocito a 11.412 m en todo el juego (v158): el suelo estaba a 11.414 m y el trofeo, el logro y la pantalla final decían 11.412; se deja la cifra de la novela (el profundímetro de Perséfone y el registro de voz de Lucía: «once mil cuatrocientos doce»).</li>
-        <li>Kraken Abisal rehecho por fuera (v159; al autor le gustan sus mecánicas, pero no se veía impresionante). Ahora parece un Magnapinna de verdad y de su tamaño: manto largo y estrecho con cromatóforos que laten y un reflejo iridiscente, dos aletas enormes y translúcidas con venas que baten despacio, ojos grandes con brillo, y diez brazos que se afinan del cuerpo a la punta, con codo, ventosas diminutas y brillo húmedo (los cuatro que atacan, igual que antes). A oscuras se intuye por una hilera de fotóforos violeta en el manto y el borde de las aletas, que se encienden todos a la vez con el latido. Las mecánicas y las distancias no cambian.</li>
-        <li>El tramo de la Fosa (v160; el autor notó que de Leteo al jefe final había miles de metros de solo bajar). Tres cosas, aprobadas por el autor y sacadas del capítulo 16 de la novela. <b>La bajada de Perséfone</b>: un pez caracol pequeño y tranquilo entre 7.600 y 8.400 m («el último pez») y la pared que brilla a 8.700 m dejan notas en el Cuaderno de campo; a unos 9.700 m, fijo por semilla en la pared, el golpe de Perséfone: arañazos de titanio y pintura blanca y naranja en la roca, y uno de sus focos encajado en una grieta (pieza de Colección nueva, «Foco de Perséfone», con la Garra). <b>El roce</b>: entre 9.000 y 9.400 m (la primera vez siempre; luego, el 40 % de las inmersiones) los pulsos se aceleran y algo enorme pasa por detrás de las paredes (una pasada del Guardián del Abismo, de lejos). En silencio (luces apagadas, motor parado) pasa de largo: nota y logro oculto «Como Lucía». Con ruido llega el golpe: −60 de blindaje, +10 % de estrés y luces y motor fuera unos segundos. <b>Fondeo</b>: un depósito con baliza verde que se fabrica en el Taller (pestaña Piezas, junto a las estaciones; 6 nódulos, 4 cristales de presión, 4 de sedimento hadal y 6.000 cr; 25 kg), baja a bordo desde el Muelle y se ancla con Acción (o B) sobre cualquier repisa por debajo de 6.000 m. Tiene una botella de O2 y una carga de batería que el Anfitrite repone cada 6 h; se usa acercándose y pulsando Acción. Solo hay uno; para cambiarlo de sitio se iza desde el Taller (300 cr). Desarrolla los «encuentros opcionales» pendientes de la fase 3 y la logística de estaciones (13.5).</li>
-        <li>Bodega y pestaña Piezas (v161; lo pidió el autor). La ficha Bodega del Muelle no parecía tocable: ahora tiene el borde en latón y un botón «Cargar ▾» (con cuántas cosas llevas elegidas) que abre «A bordo». La pestaña Piezas del Taller era demasiado larga (unos 2.500 px en el móvil): cada pieza es ahora una fila plegable con su chapa, el nombre y el estado (montada, en el almacén, puedes fabricarla, faltan materiales); al tocarla se despliega con el efecto, de dónde sale, la receta y el botón (una abierta a la vez). La sección de estaciones pasa a llamarse «Expedición y logística» (módulo de energía, fondeo y planos). Queda en unos 890 px.</li>
-        <li>Equipo montado del Muelle (v162; el autor vio que la v161 lo había descolocado: una clase de estilo nueva chocaba con la de estas tarjetas, ya corregido). Además, cada tarjeta de una rama con tiers lleva una barra de segmentos con el nivel (en latón y «máx» al llegar al tope), también la de la herramienta frontal. Las piezas montadas (de equipo y de la expedición) pasan de dos listas de etiquetas a una cuadrícula de fichas con su chapa; al tocar una se abre su fila en Taller › Piezas.</li>
-        <li>Teclado (v163; lo pidió el autor al probarlo en PC): las flechas arriba y abajo (y también W y S) mueven el submarino con el motor; Espacio quita lastre y C lo añade (antes era al revés: W/S para el lastre y Espacio/C para el motor). El soplado de emergencia se hace manteniendo Espacio con el lastre a 0, o con X. En el móvil no cambia nada.</li>
-        <li>Pared en profundidad (v164; el autor veía la cara de la pared como una lámina de cristal en la Fosa): el haz visible de los focos ya no entra en la roca; la luz que da en la pared se apaga en degradado hacia dentro en unos 4 m (antes llegaba entera a 4 m y se cortaba en seco); y sin luces, la cara de la pared es más fina y oscura. Entra poco a poco entre 800 y 3.000 m; más arriba, con luz de sol, la pared se ve igual que antes.</li>
-        <li>Piloto de la cabina (v165; el autor pidió mejorarlo): jersey de lana de pescador color crudo, gorro de lana con etiqueta de latón, cascos con micrófono, arnés y botas; cara de perfil con ojo, luz cálida del plafón y cian de las pantallas. Se lee también a tamaño de juego (el jersey claro recorta la figura). Respira, parpadea, mira a la consola y la palanca se inclina al subir y bajar. Reacciona sin texto: con frío (bajo 15 °C) se le ve el aliento y tirita; con el CO2 alto cabecea de sueño (como en la hipercapnia real); con una embestida, el golpe lo sacude. En la base y el menú está siempre tranquilo. Para Unity: referencia del personaje y de sus animaciones de estado.</li>
-        <li>Submarino (v166; el autor pidió mejorarlo visualmente): casco con volumen de cilindro (brillo arriba, luz que rebota del agua abajo), planchas de tonos algo distintos, juntas con bisel y remaches, chorretones de óxido, desconchones con imprimación roja y percebes en la panza; ojo de buey con luz cálida, escotilla con volante, mástil con luz de navegación roja, ánodos de zinc y cinchas en los depósitos, góndola y timón con latón. El nombre que le pone el jugador va pintado a plantilla en el costado (los pecios de rescate llevan su código: TS-4…). Rendimiento: todo lo que no se mueve se dibuja una vez en una imagen y se pega (cuesta lo mismo que antes). Para Unity: el casco puede ser un sprite y lo animado (hélice, luces, cabina, herramientas) capas encima.</li>
-        <li>Submarino y luz (v167; el autor lo aprobó todo): librea de barco de trabajo (antiincrustante rojo óxido bajo la flotación y línea blanca); cerca de la superficie, la luz del sol enfocada por las olas (cáusticas) ondula sobre el lomo y se apaga al bajar; en lo hondo, la proa bajo los focos se ve y la popa y la panza se hunden en sombra; el ojo de buey, la cabina y la luz del mástil brillan por encima de la oscuridad. Medido: el fotograma cuesta lo mismo (diferencia dentro del ruido). Para Unity: la librea va en el sprite; cáusticas y sombra, con un material/shader sobre el sprite del casco; brillos, con luces 2D.</li>
-        <li>Sensor de sigilo (13.3, la otra familia del punto Dorsal; diseño aprobado por el autor): una cámara de luz roja lejana (como la Eye-in-the-Sea de Edith Widder: casi toda la fauna profunda no ve el rojo) y un revestimiento anecoico (las losetas que absorben el sonido en los submarinos). Se fabrica una vez en Piezas de equipo (4 Aceite de fauna de aguas frías, 3 Aleación titanio-cobalto y 2 Geodas de cuarzo, 1.800 cr; 3 kg: todo de la Batial y sus cuevas, así que llega antes que el dormilón) y se monta o desmonta antes de bajar; montado, sustituye a los Focos fabricados: haz rojo de 26 m, más estrecho que el T1, sin foco ventral ni trasero y con halo de 6 m, pero con él encendido la fauna te detecta como si fueras a oscuras; motor y taladro hacen un 30 % menos de ruido. Cambia los jefes sin reglas nuevas: al calamar no se le puede deslumbrar (tampoco ve el rojo), el kraken no ataca más a menudo por tu luz (su latido sí la reinicia, como cualquier aparato eléctrico), el dormilón te oye menos y el Guardián del Abismo se inquieta menos por el ruido. Un solo nivel (el GDD da tiers a cada familia; aquí no hacen falta). En el panel, el botón de luces dice «Rojo» y en el plano del Taller el punto Dorsal dice «Sigilo». Pendiente de pasar al GDD.</li>
-        <li>Hilo narrativo (sección 11): el juego ocurre tres años después de «Lo que queda debajo». Caronte (1.000 m), Estigia (4.000 m, con la T-1 del Consorcio al lado) y Leteo (6.000 m, sin esfera) están sobre cornisas fijas, apagadas, con páginas del diario de Lucía. Por debajo de 4.000 m se oye a veces su señal (tres cortos y uno largo). Las páginas son un borrador para que el autor las revise. Pendiente de pasar a 4.6bis y 11.2: la expedición ya no «desapareció»; su destino se conoce, pero su señal sigue llegando.</li>
-        <li>Sonido (sección 15), fases 1 y 2 de 4: todo sintetizado por código en la demo (en Unity irán grabaciones y un AudioMixer). Tres canales: ambiente, submarino y efectos. Ambiente que cambia con la profundidad: oleaje cerca de la superficie, rumor del agua cada vez más grave, un dron desde los 500 m que late más inquieto en la Abisal y suma una nota disonante, gruñidos lejanos cada vez más frecuentes y agua más sorda dentro de las cuevas. Submarino: motor que sube de tono con el empuje (y se corta en un fallo de motor), hélice «troceada» al ritmo de las palas, agua rozando el casco según la velocidad y zumbido de cabina. Crujidos del casco desde el 80 % de la profundidad segura, más largos y graves al acercarte, casi continuos por debajo. En pausa o acoplado, el exterior se oye lejos. Primeras muestras grabadas, de prueba (hechas por el autor con Suno): la hélice de submarino suena de fondo en el menú principal, una copia tras otra alternando de lado; y un ambiente de la inmensidad del océano entra en las inmersiones desde los 700 m, cada vez más lento y grave. Tras escucharlo pidió el motor más grave y más bajo y el mar más de fondo (bus de ambiente a −6 dB). En el menú, por encima de las hélices y suena la firma de Lucía (la primera a los 2,5 s y luego cada 14–24 s, sin horario fijo) (tres cortos y uno largo, grave, ondulante y con un eco lejano); es la misma que se oye en las inmersiones por debajo de 4.000 m, más grave cuanto más hondo. Base (fase 3 adelantada): grabación de muelle tranquilo hecha por el autor con Suno, en bucle sin costura (parte central, golpes sueltos aplanados y dos voces desfasadas para que no se reconozca la repetición), muy baja; encima, sonidos sintetizados sueltos: crujidos de amarras, algún golpe metálico lejano del taller y alguna gaviota. Al bajar a la inmersión, el muelle se cruza con el agua. Clic de consola de latón al pulsar las pestañas de la base y los botones del menú (se descartó usar el pitido de la firma de Lucía para no gastar su significado). Volúmenes en Opciones (fase 4 adelantada): Ambiente, Efectos y Música, guardados con la partida. Primera música (GDD 15.2), hecha por el autor con Suno: una pista instrumental de 6 min que suena en bucle en el menú y en la zona Fótica, muy baja por defecto (se apaga entre los 140 y los 200 m y sigue donde iba al volver). Ping de sonar en las cuevas: tono limpio con cola larga y reverberación de roca, y tres ecos (pared más cercana, intermedia y más lejana) sincronizados con los ecos que se dibujan y del lado por el que vuelven. En el fondo del menú cruza de vez en cuando, lenta y difusa, la sombra del Guardián de la Plataforma (el tiburón jefe de la Fótica, 10.2), por detrás del submarino y de la nieve marina, con un rumor grave al pasar: la primera a los 10 s, siempre de derecha a izquierda, y luego cada 35–55 s en cualquier sentido. Silueta de tiburón blanco con proporciones reales (dorsal de un 12 % del largo, pectorales en hoz, cola en media luna), con el cuerpo ondulando hacia la cola y teñida del azul del agua honda en vez de negro. Pantalla de inicio en el menú («Pulsa cualquier tecla / Toca la pantalla para empezar»): el navegador no deja sonar nada hasta el primer toque, así el ambiente del menú se oye siempre; ese toque no pulsa ningún botón. En Unity no hace falta (una aplicación nativa puede sonar al abrirse), aunque la pantalla de «pulsa para empezar» es habitual. Fase 2, taladro y fauna: el taladro suena distinto en cada estado del minijuego de minería (9.11), como información de juego: con poca potencia, ahogado y a mordiscos; en la banda óptima, liso y con un zumbido afinado; en sobrecarga, más forzado y con chasquidos de roca cada vez más seguidos (todo en graves y lento, como una perforadora pesada: con agudos sonaba a motosierra) cuanto más cerca está la fractura. La fractura es un estallido con golpe grave, cascotes contra el casco y burbujas; al terminar la extracción, la roca se suelta y se cierra la escotilla de la bodega. Recoger orgánicos sorbe agua. Fauna: al detectarte, el agua que desplaza al girar hacia ti (del lado por el que viene y más grave cuanto más grande) y un aviso suave de contacto en cabina; mientras te persigue, su estela se oye crecer al acercarse; la embestida contra el blindaje suena a chapa que aguanta (golpe sordo, retumbo y placas sueltas) y contra el casco sin blindaje a algo que cede (más grave y largo, crujido de la estructura, siseo de agua y alarma de casco), para distinguirlas sin mirar las barras. También el choque contra la roca y el chorro de tinta del pulpo. Añade al GDD el ambiente de la base y de las estaciones, el sonido del taladro, el acoplamiento, el pulso y el sonar (fases siguientes).</li>
-        <li>Profundidades seguras del casco (ajuste de balance; el GDD, 9.1, no fija cifras): T1 1.500 m, T2 4.600 m, T3 7.800 m, T4 12.000 m (antes 1.100, 4.200, 6.400 y 11.200; el T4 sube con Cocito, a 11.412 m). Cada tier deja asomarse a la zona siguiente lo bastante para sacar los materiales del siguiente: antes había solo 100 m de franja para el titanio (unas 6 unidades de media para las 8 del casco T2, que obligaban a repetir la misma inmersión esperando a que reaparecieran), 200 m para el cristal, y el núcleo del casco T4 (desde 7.000 m) quedaba por debajo de la profundidad segura del T3, así que era inalcanzable. Ahora, de media: 28 de titanio, 52 de cristal y 12 de núcleo en su franja.</li>
-        <li>Estaciones rediseñadas según la novela (propuesta, pendiente de pasar a 4.6bis y 11.2): cada una con su silueta, unas tres veces el submarino. Caronte con el bastidor blanco de las ventosas, el cable que «sube hacia ninguna parte» y la línea de Kaori cortada en el borde; Estigia ancha, con dos bastidores, calefactores gemelos, el cable enroscado encima, nódulos y la T-1; Leteo sin esfera, con la cuna vacía, depósitos de O2, la mancha blanca y las balizas de Mikel.</li>
-        <li>Acoplamiento e interior en modo texto (propuesta nueva): con Acción junto a la estación el submarino se acopla al collarín (en Leteo, al umbilical de la bancada) y se abre una ventana con cuatro pestañas: Esfera (descripción y cosas que examinar), Bastidor (energía y reservas), Taquilla (el plano de la estación) y Registro (lo que apuntó la bancada). Mientras estás acoplado la inmersión está en pausa. Las páginas de Lucía se recogen y se leen dentro. Textos en borrador para que el autor los revise.</li>
-        <li>Levantar estaciones y reservas limitadas (cambia el «no repostar en estaciones» de la demo): con un módulo de energía de estación (Taller, 20 kg, baja uno a bordo) vuelven los focos fijos, que se ven desde lejos, y unas reservas de 2 botellas (O2 +50 %, CO2 −50) y 2 cargas de batería (+50 %) que se reponen una cada 4 h con el reloj real, igual que los recolectores. Estigia además calienta la cabina; Leteo, sin esfera, solo carga batería. Refugios, no gasolineras.</li>
-        <li>Piezas de expedición (propuesta nueva, enlaza con los planos de 13.6 y 8.2.5): cada estación guarda un plano único que se fabrica una vez y se monta o desmonta en el Taller. No son un tier más: dan algo y cuestan algo. Botellas de la expedición (Caronte: +3 min de O2, −8 kg de bodega); Calefactores gemelos de Mikel (Estigia: calor extra y −20 % de pérdida, más consumo de batería, −6 kg); Balizas estroboscópicas de Mikel (Leteo: las balizas de cueva destellan a la vez cada 3 s e iluminan 14 m, a cambio de +0,5 kg y +8 cr cada una). Montadas, suman a la reconstrucción. Junto a Estigia, los restos de la T-1 dan 4 de titanio una sola vez.</li>
-        <li>Clientes del tablón: Autoridad (inspección, balizas de vigilancia y contenedores abandonados del Consorcio), universidades (muestreo y fauna) y taller de Pasaia (prueba de casco y suministro).</li>
-        <li>Naufragios de ambiente (pesquero, velero y remolcador) en las zonas Fótica y Mesopelágica, apoyados sobre mesetas de la pared: techo plano, cara vertical y vuelta a la pared en pendiente. Son sólidos y su cubierta tiene chatarra, que es de donde el GDD (9.7) dice que sale. Las mesetas son un añadido al generador de 12.1, pendiente de pasar al GDD.</li>
-        <li>Encargos nuevos: estudio de fauna (8.2.2), recuperación de contenedor normal o frágil (8.2.1) y logística inversa con baliza (8.2.6), del GDD; y «prueba de casco», que es una propuesta nueva pendiente de pasar al GDD. El antiguo «entregar materiales» se llama ahora «Suministro» para no confundirlo con la logística inversa.</li>
-        <li>Fauna: a oscuras te detecta a menos distancia y con luces mucho más (sigilo de 4.3ter); persigue más despacio que tu velocidad lateral, se retira tras cada embestida y se cansa a los 12 s. Ajuste de balance, no cambia el diseño.</li>
-        <li>Propuesta nueva para 9.11: la anchura de la zona óptima depende también del mineral (más duro, más estrecha), cada veta tiene su punto óptimo en un sitio distinto del medidor, y en los minerales duros la zona se desplaza sola. La cantidad depende de la precisión (% del tiempo en verde: 85 % o más, todas; 60–85 %, tres cuartas partes; menos, la mitad), sin azar. Pasarse de potencia acumula inestabilidad y, si llega al 100 %, la veta se fractura, se pierde todo el material y el casco recibe un golpe (sustituye la «roca mal rota» de 9.11). Pendiente de pasar al GDD.</li>
-        <li>En el punto Frontal solo existe el Taladro; no hay Garra, armas ni modo herramienta (<kbd>M</kbd>). <kbd>F</kbd> inicia la extracción.</li>
-        <li>Los motores de Popa no tienen tiers. El motor inicial es un «Propulsor de serie» neutro, porque el GDD no fija cuál es.</li>
-        <li>El motor gasta batería al empujar y, con la batería a 0, se para. Antes había un 35 % de potencia de reserva para no quedarse atrapado; ahora esa salida es el soplado de emergencia, que encaja con el «fallo suave» de la sección 5. El valor sigue en <code>movimiento.potenciaReserva</code> por si quieres recuperarlo.</li>
-        <li>Reparar el estrés cuesta solo créditos (el GDD apunta al Sedimento hadal, que es de la Fosa). El estrés es del submarino construido: al reconstruirlo vuelve a 0 y el submarino base no acumula.</li>
-        <li>Abandonar desde la pausa sube al instante pero suelta toda la carga.</li>
-        <li>Taller: plano grande del submarino con una etiqueta por pieza (popa, batería, calefacción, casco, soporte vital, bodega, blindaje y frontal). Al tocarla se abren sus niveles con efecto, receta, coste, botón de fabricar o montar y la profundidad a la que llegarías con cada uno (el mismo cálculo de autonomía de Balance). Un punto cian marca las piezas que ya puedes mejorar. El plano sustituye a las tablas de fabricación; debajo quedan los consumibles y un resumen plegado de todas las ramas para equilibrar. Propuesta de interfaz para 13.2, pendiente de pasar al GDD.</li>
-        <li>Muelle rehecho: resumen de la inmersión (hasta dónde llegas, profundidad segura con el estrés actual y bodega), estrés y reparación junto al botón de bajar, tarjetas del equipo montado que abren la misma ventana que el plano del Taller, almacén con su valor y última inmersión en cifras. Propuesta de interfaz, pendiente de pasar al GDD.</li>
-        <li>Blindaje T1 se llama «Chapa de serie» en vez de «Sin blindaje»: desde que el blindaje absorbe las embestidas, el nivel inicial sí protege (40 puntos) y el nombre confundía. Revisar el nombre en 9.4.</li>
-        <li>Mercado: se elige cuántas unidades vender (− / +, escribir el número, deslizador y atajos). Reserva de materiales (decidido por el autor): lo que pide la siguiente mejora de cada rama y los encargos de suministro aceptados. «Vender todo el sobrante» y el atajo «Sobrante» venden todo menos eso, la ventana de venta avisa si tocas la reserva y cada tarjeta dice para qué está reservado (por ejemplo «Casco T3 6 · Suministro 4») y cuánto te falta.</li>
-        <li>Mercado rehecho: cifras de valor del almacén, sobrante y créditos; botón «Vender todo el sobrante» (con confirmación y detalle); una tarjeta por material con profundidad, cómo se extrae (avisa si tu taladro no llega), kg, precio y una barra de valor por kilo; filtro En almacén / Todos y orden por profundidad o por cr/kg. Propuesta de interfaz, pendiente de pasar al GDD.</li>
-        <li>Encargos rehechos: tarjeta por contrato con cliente (color propio), tipo, pago y objetivo explicado; avisos de si está a tu alcance (tiempo que aguanta tu equipo a esa profundidad frente al que pide el encargo), zona, peso en bodega y fragilidad; huecos libres visibles, total cobrable de los activos y confirmación al abandonar. Propuesta de interfaz, pendiente de pasar al GDD.</li>
-        <li>Menú principal (el GDD lo prevé en 15.2, con su música): título ABISMO en letras de latón fundido (degradado de metal, canto iluminado, grosor y sombra sobre el agua; cada 11 s lo cruza un reflejo tenue, como un rayo de sol desde la superficie) sobre un descenso animado (el agua se oscurece con la profundidad, rayos de sol que se apagan, nieve marina, banco de peces y el submarino con sus focos). Botones Continuar (con resumen: inmersiones, récord y créditos; «Empezar» si la partida es nueva), Nueva partida (con confirmación, slot único 4.10), Controles y Opciones (sonido y controles táctiles, que salen de Balance). Desde la base se vuelve con el botón «Menú» de la cabecera. Pendiente de pasar al GDD (sección 14).</li>
-        <li>Recursos en la fosa redibujados a juego con su icono: cada material tiene su aspecto en la pared (vetas metálicas, lingotes, grietas incandescentes que laten, racimos de cristal, montículo de sedimento, núcleo dorado, coral ramificado que se mece, algas que ondulan, almeja que se abre, anillos de ventosa con su corona de dientes, sacos de aceite, jirón de piel cicatrizada, tentáculo que se mueve, escama iridiscente y fumarola de helio). Marcadores de posición para el arte de Unity; pendiente de pasar al GDD.</li>
-        <li>Iconos de materiales: cada material tiene su icono en una tesela con su color (Mercado, almacén del Muelle, ventana de venta y recetas del Taller). Están dibujados con código como marcadores de posición; en Unity se sustituirán por el arte definitivo. Pendiente de pasar al GDD.</li>
-        <li>Barra de secciones de la base rehecha: cinco botones iguales con icono (Muelle, Taller, Mercado, Encargos, Registro) y un punto cian cuando hay mejora disponible en el Taller o un suministro listo para entregar. Balance sale de la barra: es una herramienta de la demo y se abre desde el menú principal (Opciones → Balance); la cabecera de la base solo tiene el título, el botón Menú y las cifras, sin rótulos de demo. En la escena, el Registro pasa a la oficina de ventanas azules (antes Balance) y la torre de radio queda como decorado. Al quitarla del juego final no cambia nada más. Propuesta de interfaz, pendiente de pasar al GDD.</li>
-        <li>Registro rehecho: el diario de Lucía en tres tarjetas (se leen en una ventana); cifras de inmersiones, porcentaje de vueltas, récord y lo ganado; gráfica de profundidad máxima de las últimas 40 inmersiones (rojo = submarino perdido, línea del récord); causas de pérdida; lista con filtro Todas/Vueltas/Pérdidas, de 10 en 10, que oculta por defecto las inmersiones vacías (menos de 10 m). El CSV sigue llevándolo todo. Propuesta de interfaz, pendiente de pasar al GDD.</li>
-        <li>Indicador de objetivo en inmersión: bajo el panel aparece el objetivo de profundidad más cercano de tus encargos (baliza por desplegar, muestreo, inspección o contenedor) con la franja y cuánto falta (▼/▲). Al entrar en la franja de despliegue o de muestreo se pone verde, suena un doble pitido y sale un aviso; la franja también se marca en verde en el profundímetro. El contenedor recuperado y la baliza por desplegar se ven colgados bajo el casco y alargan el submarino por abajo al chocar con el fondo. Pendiente de pasar al GDD (8.2.1, 8.2.6 y HUD).</li>
-        <li>Recolectores (9.8 y 10.9) con tiers por zona, matiz nuevo acordado con el autor: el tier decide en qué vetas se puede instalar. R1 «básico», comunes hasta 1.000 m; R2 «presurizado», hasta 4.000 m y también raras; R3 «abisal», cualquier veta. Los botines de jefe nunca. La receta usa materiales de la zona anterior y el ritmo y la capacidad suben con el tier (6, 8 y 10 u/h; 12, 16 y 20 u). En vetas raras producen a un tercio del ritmo, la misma proporción que el reaparecido. Se instalan con <kbd>G</kbd> (o tocando su aviso) junto a una veta, aunque esté agotada, y producen con el reloj real, también con el juego cerrado, hasta llenarse; se vacían con Acción (a la bodega, lo que quepa) y se retiran con <kbd>G</kbd>. Máximo 3 instalados (el Centro de Control de 9.8 no está en la demo). Se eligen en «A bordo» del Muelle como los consumibles (por defecto no baja ninguno, máximo 3 por tier) y pesan en la bodega 6, 8 y 10 kg según el tier (<code>tiers.*.peso</code>); al retirarlo vuelve a ocupar sitio y, si no cabe, se queda instalado. Lista con su estado en el Muelle y punto de aviso cuando alguno se llena. Se fabrican en una sección propia del Taller, no en la rama Soporte. Valores de partida, pendientes de pasar al GDD.</li>
-        <li>Fauna de ambiente nueva en la Fótica (10.2), basada en especies reales: pulpo común pegado a la roca hasta unos 160 m, que se camufla con ella y, si te acercas, suelta tinta, sale a chorro y se vuelve a posar más lejos; cardúmenes de barracudas (8–100 m) que giran despacio sin asustarse; y grupos de 2–4 delfines mulares (4 m, para no confundirlos con peces) que de vez en cuando cruzan rápido cerca de la superficie (menos de 45 m), con silbidos; antes de llegar a la pared no desaparecen: se alejan hacia el azul, subiendo hacia la luz, haciéndose pequeños y desvaneciéndose. No afectan al juego, salvo que el pulpo y las barracudas pueden salir en los estudios de fauna. Pendiente de pasar al GDD.</li>
-        <li>Vida fija en las paredes (decoración, sin efecto en el juego), con enfoque realista de agua fría: algas pardas solo en los primeros 40 m y algas rojas hasta unos 110 m, gorgonias, anémonas y esponjas en la Fótica; coral blanco de agua fría (<i>Lophelia</i>), gorgonias pálidas y plumas de mar bioluminiscentes en la Mesopelágica; corales bambú y negros, esponjas de cristal y lirios de mar en la Batial; cada vez menos vida en la Abisal (holoturias, xenofióforos) y casi nada en la Fosa (tapetes bacterianos). Colores apagados para que los recursos destaquen, nunca encima de un nodo, y algo más grandes que en la realidad para que se lean. Sirve de lista de arte por zona para Unity. Pendiente de pasar al GDD.</li>
-        <li>Tiers de las herramientas frontales: al fabricar un tier, sustituye al anterior y ya no se puede volver a montar el inferior (igual que en las ramas internas). El GDD (13.3) dice que en cada punto de anclaje se elige familia <i>y tier</i> entre los ya fabricados. En la demo no compensa, porque un tier inferior no tiene ninguna ventaja. Decidido por el autor: se quita esa frase de 13.3. Los tiers sustituyen al anterior, como en las demás ramas; la elección real está entre familias (Taladro o Pulso en el Frontal, los motores en Popa).</li>
-        <li>Cuevas con nombre y placa: cada cueva tiene un nombre fijo por la semilla (Gruta del Eco, Sima Honda…) y un código de la Autoridad (letra de zona y número: F-1, B-2…). Sobre la boca, fija en la roca, hay una placa de acero remachada con letras de plantilla, el código, la zona y la profundidad, y una baliza ámbar que parpadea para encontrarla a oscuras. Al entrar sale un aviso con el nombre. Dentro de una cueva, el halo de luz alrededor del submarino crece 1,5 m (<code>luces.haloCueva</code>, tope 11 m); el resto lo hace el sonar, y los focos siguen siendo los que revelan lo que hay más allá. Pendiente de pasar al GDD (12.2).</li>
-        <li>Sonar de proximidad (propuesta nueva): cada 3 s emite un pulso; la onda se expande y la roca que toca devuelve ecos cian que dibujan el contorno de las paredes alrededor (solo lo que se ve en línea recta, no a través de la roca) y se apagan poco a poco. La fauna devuelve un eco aparte, ámbar si es peligrosa. Solo emite dentro de las cuevas (en la fosa abierta, no); cada pulso gasta 0,15 de batería y durante 1,2 s la fauna te detecta a más distancia (×1,35). Se enciende y apaga con <kbd>Z</kbd> o el botón Sonar del panel. Es de serie; podría pasar a ser una familia del punto Dorsal (13.3, junto a luces de largo alcance y sensor de sigilo). Pendiente de pasar al GDD.</li>
-        <li>Fuera de la demo: chasis alternativos, repostar en las estaciones y los saltos de tiempo por CO2 alto.</li>
+        <li class="nota">Todo lo decidido hasta la v170 ya está en el GDD (actualizado el 27-10-2026). Aquí solo se apunta lo nuevo desde entonces.</li>
+        <li>Delfines (v171; el autor pidió mejorarlos más): cada uno es distinto (tamaño, tono, marcas de dientes de otros delfines y, algunos, una muesca en la dorsal); en la mitad de los grupos de 3 o más va una cría pegada a la madre (más pequeña, con los pliegues claros del nacimiento); giran sobre sí mismos (tonel), se dan la vuelta al cambiar de sentido, sueltan burbujas por el espiráculo y, cerca de la superficie, saltan con salpicadura, espuma y sonido de chapuzón, y les llegan las cáusticas del sol. A menudo uno del grupo se acerca a curiosear delante de la cabina unos segundos y vuelve con los suyos (esto también ayuda al logro «Compañía»). Para Unity: variaciones del sprite, animaciones de tonel, giro y salto, y un estado «curioso» en la IA decorativa.</li>
+        <li>Garra de recuperación (v172; el autor pidió mejorar su aspecto por tier): cada tier se distingue por la forma y no solo por el color. T1 de serie: amarillo gastado con desconchones, franjas de peligro en el soporte, un pistón al aire y dedos lisos. T2 articulada: acero con racores de latón, pistón también en el codo, muñeca giratoria y almohadillas de goma en los dedos. T3 de presión: titanio oscuro, pistones carenados, compensador de presión con piloto cian, dedos dentados y tres testigos en la muñeca que se encienden al apretar. Todas llevan manguera hidráulica y la pinza se cierra de verdad al agarrar. El movimiento y las medidas no cambian; plegada se dibuja una vez en una imagen (como el casco). Para Unity: un sprite por tier con las piezas animadas (tramos, pistones, dedos) en capas.</li>
+        <li>Garra con el chasis Polivalente (v173; el autor la veía enredada con el taladro): si también va montado el taladro, plegada no sube hacia la proa; el primer tramo baja un poco hacia popa y el segundo vuelve hacia proa por debajo del taladro, con la pinza cerrada. Al recoger sale desde ahí y abre la pinza; el brazo estirado, los tiempos y el alcance no cambian. Con la garra sola se pliega como antes.</li>
+        <li>Taladro (v174; el autor pidió mejorarlo): broca con estrías en hélice de verdad y portabrocas con garras. T1 acero claro, caja con aletas y franja de peligro; T2 broca pavonada con dientes de carburo, collarín de latón y motor hidráulico; T3 caja de titanio sellada con anillo cian y broca con grano de diamante. Durante el minijuego (9.11) la broca gira más deprisa cuanta más potencia, vibra más, y las chispas dicen la franja: pocas con poca potencia, chorro constante en la banda y, en sobrecarga, punta al rojo con muchas más chispas y esquirlas; a oscuras la punta alumbra un poco. No cambia ninguna regla. Parado se dibuja una vez en una imagen. Para Unity: sprite por tier y la broca animada con su velocidad ligada a la potencia.</li>
       </ul>
     </section>`;
 }
