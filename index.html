@@ -810,7 +810,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie">Partida única · se guarda en este dispositivo · v174</p>
+      <p class="menu-pie">Partida única · se guarda en este dispositivo · v175</p>
     </div>
   </div>
 
@@ -6473,7 +6473,22 @@ function pegarCasco(c, chV, DT, FS, rot, der, I) {
   }
   const K = CASCO_CAJA; c.drawImage(spr, K.x, K.y, K.w, K.h);
 }
+// v175: cada chasis se distingue a simple vista (13.6): color propio en la obra muerta (lo que queda sobre la línea
+// blanca; el antiincrustante rojo, la línea y el nombre no cambian), una marca pintada y una pieza que cambia un poco
+// la silueta. Mismo casco, mismas medidas y mismos choques: solo cambia la imagen del casco, que está en caché.
+//  Explorador: el verde azulado de siempre (la referencia).
+//  Polivalente: amarillo mostaza de barco de trabajo, galones de peligro y barandilla en la cubierta.
+//  Ligero: blanco con doble franja naranja de carreras y un carenado afilado sobre la joroba.
+//  Carguero: verde de mercante, el disco de Plimsoll (la marca de carga máxima de los barcos) y dos cáncamos de izado.
+//  Acorazado: gris pavonado, placas atornilladas bien marcadas y la roda reforzada.
+const ESTILO_CHASIS = {
+  explorador:  { casco: ['#6aa4af', '#4a8490', '#2f5f6a', '#132a30'], joroba: ['#4f8692', '#2a4f58'], gondola: ['#3e6670', '#16292e'] },
+  polivalente: { casco: ['#d9b85e', '#b8913a', '#7c5d22', '#2a1f0c'], joroba: ['#c9a650', '#7a5c22'], gondola: ['#8f7436', '#2e2410'] },
+  ligero:      { casco: ['#eef1ee', '#c9d1d0', '#8e9a9b', '#2f3a3d'], joroba: ['#e2e7e5', '#9aa6a7'], gondola: ['#a9b4b5', '#3a4547'] },
+  carguero:    { casco: ['#8fb57a', '#6a955a', '#44673b', '#172612'], joroba: ['#7ea56b', '#40613a'], gondola: ['#5d7f50', '#1b2b16'] },
+  acorazado:   { casco: ['#8c969d', '#69737a', '#454e54', '#171c1f'], joroba: ['#7a858c', '#3f484e'], gondola: ['#5a646a', '#1c2226'] } };
 function cascoEstatico(c, chV, DT, FS, rot, der) {
+  const EC = ESTILO_CHASIS[chV] || ESTILO_CHASIS.explorador;
   // v166: aletas del timón con volumen (degradado y canto de ataque iluminado)
   for (const sg of [-1, 1]) {
     const ga = c.createLinearGradient(-5.9, 0, -5.0, 0); ga.addColorStop(0, '#22343a'); ga.addColorStop(1, '#3d5a61');
@@ -6505,7 +6520,7 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
   }
 
   // --- Góndola del motor con rejilla ---
-  const gm = c.createLinearGradient(0, -1.1, 0, 1.1); gm.addColorStop(0, '#3e6670'); gm.addColorStop(1, '#16292e');
+  const gm = c.createLinearGradient(0, -1.1, 0, 1.1); gm.addColorStop(0, EC.gondola[0]); gm.addColorStop(1, EC.gondola[1]);
   c.fillStyle = gm; rr(c, -5.75, -1.1, 1.35, 2.2, 0.4); c.fill();
   c.strokeStyle = '#0d1a1e'; c.lineWidth = 0.08; c.stroke();
   c.fillStyle = '#0b1518'; for (let k = 0; k < 4; k++) c.fillRect(-5.55 + k * 0.28, -0.75, 0.13, 1.5);
@@ -6520,7 +6535,7 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
   casco.moveTo(-4.55, -0.85); casco.quadraticCurveTo(-4.4, -1.42, -3.5, -1.48); casco.lineTo(1.1, -1.55);
   casco.lineTo(3.25, -1.48); casco.quadraticCurveTo(4.0, -1.0, 4.6, 0.05); casco.lineTo(4.3, 0.95);
   casco.quadraticCurveTo(4.0, 1.22, 3.5, 1.22); casco.lineTo(-3.8, 1.22); casco.quadraticCurveTo(-4.75, 1.1, -4.75, 0.15); casco.closePath();
-  const gh = c.createLinearGradient(0, -1.55, 0, 1.22); gh.addColorStop(0, '#6aa4af'); gh.addColorStop(0.22, '#4a8490'); gh.addColorStop(0.55, '#2f5f6a'); gh.addColorStop(1, '#132a30');
+  const gh = c.createLinearGradient(0, -1.55, 0, 1.22); gh.addColorStop(0, EC.casco[0]); gh.addColorStop(0.22, EC.casco[1]); gh.addColorStop(0.55, EC.casco[2]); gh.addColorStop(1, EC.casco[3]);
   c.fillStyle = gh; c.fill(casco);
   // detalles recortados dentro del casco
   c.save(); c.clip(casco);
@@ -6530,14 +6545,29 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.fillStyle = ga; c.fillRect(-5, 0.64, 10, 0.7);
     c.fillStyle = 'rgba(226,220,200,.8)'; c.fillRect(-5, 0.6, 10, 0.05);
     c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(-5, 0.65, 10, 0.025); }
-  c.fillStyle = chV === 'polivalente' ? 'rgba(217,168,46,.42)' : chV === 'ligero' ? 'rgba(239,110,69,.4)' : chV === 'carguero' ? 'rgba(120,200,110,.38)' : chV === 'acorazado' ? 'rgba(170,176,180,.35)' : 'rgba(150,205,212,.28)'; c.fillRect(-5, 0.2, 6.4, 0.2);   // franja: clara, ámbar (Polivalente), roja (Ligero), verde (Carguero) o acero (Acorazado)
-  if (chV === 'acorazado') {   // placas de blindaje atornilladas sobre el casco
-    for (const [px, py, pw, ph] of [[-3.9, -1.25, 1.6, 0.85], [-2.15, -1.3, 1.7, 0.85], [-0.3, -1.32, 1.4, 0.85], [-3.9, -0.3, 1.6, 0.95], [-2.15, -0.3, 1.7, 0.95], [-0.3, -0.3, 1.4, 0.95]]) {
-      c.fillStyle = 'rgba(70,78,82,.55)'; c.fillRect(px, py, pw, ph);
-      c.strokeStyle = 'rgba(10,16,18,.7)'; c.lineWidth = 0.05; c.strokeRect(px, py, pw, ph);
-      c.fillStyle = 'rgba(200,190,160,.5)'; for (const [rx, ry] of [[px + 0.12, py + 0.12], [px + pw - 0.12, py + 0.12], [px + 0.12, py + ph - 0.12], [px + pw - 0.12, py + ph - 0.12]]) { c.beginPath(); c.arc(rx, ry, 0.045, 0, 6.283); c.fill(); }
+  // marca pintada de cada chasis, a media altura del costado
+  if (chV === 'polivalente') {   // franja amarilla con galones negros de peligro
+    c.fillStyle = '#e6b733'; c.fillRect(-5, 0.2, 6.4, 0.22);
+    c.save(); c.beginPath(); c.rect(-5, 0.2, 6.4, 0.22); c.clip(); c.fillStyle = '#1d1a12';
+    for (let x = -5; x < 1.5; x += 0.36) { c.beginPath(); c.moveTo(x, 0.42); c.lineTo(x + 0.18, 0.2); c.lineTo(x + 0.3, 0.2); c.lineTo(x + 0.12, 0.42); c.closePath(); c.fill(); }
+    c.restore();
+  } else if (chV === 'ligero') {   // doble franja naranja de carreras que sube hacia la proa
+    c.fillStyle = '#ef6e45'; c.beginPath(); c.moveTo(-5, 0.12); c.lineTo(1.4, -0.02); c.lineTo(1.4, 0.16); c.lineTo(-5, 0.3); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-5, 0.38); c.lineTo(1.4, 0.26); c.lineTo(1.4, 0.33); c.lineTo(-5, 0.45); c.closePath(); c.fill();
+  } else if (chV === 'carguero') {   // franja blanca y el disco de Plimsoll: hasta dónde se puede cargar
+    c.fillStyle = 'rgba(236,232,214,.85)'; c.fillRect(-5, 0.26, 6.4, 0.06);
+    c.strokeStyle = 'rgba(236,232,214,.9)'; c.lineWidth = 0.05; c.beginPath(); c.arc(-3.3, 0.18, 0.22, 0, 6.283); c.moveTo(-3.6, 0.18); c.lineTo(-3.0, 0.18); c.stroke();
+    c.beginPath(); for (const [dy, l] of [[-0.12, 0.3], [0.0, 0.36], [0.12, 0.3], [0.24, 0.26]]) { c.moveTo(-2.92, 0.18 + dy); c.lineTo(-2.92 + l, 0.18 + dy); } c.moveTo(-2.92, 0.04); c.lineTo(-2.92, 0.44); c.stroke();
+  } else if (chV === 'acorazado') {   // placas de blindaje atornilladas, con bisel y sombra: se leen de lejos
+    for (const [px, py, pw, ph] of [[-3.9, -1.25, 1.6, 0.85], [-2.15, -1.3, 1.7, 0.85], [-0.3, -1.32, 1.4, 0.85], [-3.9, -0.3, 1.6, 0.86], [-2.15, -0.3, 1.7, 0.86], [-0.3, -0.3, 1.4, 0.86]]) {
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(px + 0.06, py + 0.06, pw, ph);
+      const gp = c.createLinearGradient(0, py, 0, py + ph); gp.addColorStop(0, '#7c868c'); gp.addColorStop(1, '#3b4348');
+      c.fillStyle = gp; c.fillRect(px, py, pw, ph);
+      c.strokeStyle = '#0c1214'; c.lineWidth = 0.05; c.strokeRect(px, py, pw, ph);
+      c.strokeStyle = 'rgba(220,230,232,.3)'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(px + 0.03, py + ph - 0.03); c.lineTo(px + 0.03, py + 0.03); c.lineTo(px + pw - 0.03, py + 0.03); c.stroke();
+      c.fillStyle = '#b9ae8e'; for (const [rx, ry] of [[px + 0.12, py + 0.12], [px + pw - 0.12, py + 0.12], [px + 0.12, py + ph - 0.12], [px + pw - 0.12, py + ph - 0.12]]) { c.beginPath(); c.arc(rx, ry, 0.05, 0, 6.283); c.fill(); }
     }
-  }
+  } else { c.fillStyle = 'rgba(150,205,212,.28)'; c.fillRect(-5, 0.2, 6.4, 0.2); }   // Explorador: la franja clara de siempre
   // v166: volumen de cilindro: banda de brillo arriba y luz que rebota del agua por abajo
   { const gb = c.createLinearGradient(0, -1.5, 0, -0.55); gb.addColorStop(0, 'rgba(225,248,250,0)'); gb.addColorStop(0.45, 'rgba(225,248,250,.17)'); gb.addColorStop(1, 'rgba(225,248,250,0)');
     c.fillStyle = gb; c.fillRect(-5, -1.5, 10, 0.95);
@@ -6582,7 +6612,7 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.save(); c.translate(-0.05, 0.02); if (!der) c.scale(-1, 1); c.scale(0.01, 0.01);
     c.font = "700 22px 'Big Shoulders Display', 'Arial Narrow', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
     if ('letterSpacing' in c) c.letterSpacing = '2px';
-    c.fillStyle = 'rgba(232,226,206,.5)'; c.fillText(rot.toUpperCase(), 0, 0, 170);
+    c.fillStyle = chV === 'ligero' ? 'rgba(34,46,50,.62)' : 'rgba(232,226,206,.5)'; c.fillText(rot.toUpperCase(), 0, 0, 170);   // sobre el casco blanco, pintura oscura
     if ('letterSpacing' in c) c.letterSpacing = '0px';
     c.strokeStyle = 'rgba(40,80,90,.55)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-60, -4); c.lineTo(-20, 3); c.moveTo(15, -7); c.lineTo(45, -2); c.stroke();   // arañazos sobre la pintura
     c.restore();
@@ -6605,12 +6635,29 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.fillStyle = '#c9a96e'; for (let k = 0; k < 6; k++) { const a = k * 1.047; c.beginPath(); c.arc(ox + Math.cos(a) * (orr + 0.045), oy + Math.sin(a) * (orr + 0.045), 0.022, 0, 6.283); c.fill(); } }
   // luz de posición ámbar
   c.fillStyle = '#ffb347'; rr(c, -0.35, 0.62, 0.32, 0.18, 0.05); c.fill();
+  if (chV === 'acorazado') {   // roda reforzada: un escudo de acero atornillado en la proa, bajo la cabina
+    const rd = new Path2D(); rd.moveTo(3.55, 0.25); rd.lineTo(4.48, 0.18); rd.lineTo(4.62, 0.05); rd.lineTo(4.3, 0.95); rd.quadraticCurveTo(4.0, 1.24, 3.5, 1.24); rd.lineTo(3.35, 1.24); rd.closePath();
+    const gr = c.createLinearGradient(0, 0.1, 0, 1.25); gr.addColorStop(0, '#828c92'); gr.addColorStop(1, '#2b3135');
+    c.fillStyle = gr; c.fill(rd); c.strokeStyle = '#0c1214'; c.lineWidth = 0.06; c.stroke(rd);
+    c.fillStyle = '#b9ae8e'; for (const [rx, ry] of [[3.7, 0.4], [4.2, 0.36], [3.65, 0.95], [4.05, 0.85]]) { c.beginPath(); c.arc(rx, ry, 0.05, 0, 6.283); c.fill(); }
+  }
+  if (chV === 'carguero') {   // cáncamos de izado en la cubierta (para colgarlo de la grúa con carga)
+    for (const x of [-4.0, -2.75]) { c.fillStyle = '#2b3437'; c.fillRect(x - 0.16, -1.62, 0.32, 0.1);
+      c.strokeStyle = '#2b3437'; c.lineWidth = 0.09; c.beginPath(); c.arc(x, -1.78, 0.17, Math.PI * 0.9, Math.PI * 2.1); c.stroke();
+      c.strokeStyle = 'rgba(220,230,232,.3)'; c.lineWidth = 0.03; c.beginPath(); c.arc(x, -1.78, 0.17, Math.PI * 1.1, Math.PI * 1.5); c.stroke(); }
+  }
+  if (chV === 'polivalente') {   // barandilla de trabajo en la cubierta de popa
+    c.strokeStyle = '#2a2414'; c.lineWidth = 0.06; c.beginPath();
+    for (const x of [-4.0, -3.35, -2.7]) { c.moveTo(x, -1.47); c.lineTo(x, -1.92); }
+    c.moveTo(-4.1, -1.9); c.lineTo(-2.6, -1.9); c.moveTo(-4.05, -1.7); c.lineTo(-2.65, -1.7); c.stroke();
+    c.strokeStyle = '#e6b733'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(-4.1, -1.92); c.lineTo(-2.6, -1.92); c.stroke();
+  }
 
   // --- Joroba dorsal con el foco ---
   const joroba = new Path2D();
   joroba.moveTo(-2.3, -1.48); joroba.quadraticCurveTo(-1.9, -2.25, -1.0, -2.25); joroba.lineTo(0.9, -2.2);
   joroba.quadraticCurveTo(1.55, -2.15, 1.75, -1.55); joroba.closePath();
-  const gj = c.createLinearGradient(0, -2.25, 0, -1.5); gj.addColorStop(0, '#4f8692'); gj.addColorStop(1, '#2a4f58');
+  const gj = c.createLinearGradient(0, -2.25, 0, -1.5); gj.addColorStop(0, EC.joroba[0]); gj.addColorStop(1, EC.joroba[1]);
   // v166: mástil con antena y luz de navegación roja que parpadea (detrás de la joroba)
   c.strokeStyle = '#1d2b2f'; c.lineWidth = 0.07; c.beginPath(); c.moveTo(-1.75, -2.15); c.lineTo(-1.75, -3.05); c.stroke();
   c.strokeStyle = '#2a3a3f'; c.lineWidth = 0.025; c.beginPath(); c.moveTo(-1.75, -3.05); c.lineTo(-1.75, -3.45); c.moveTo(-1.95, -2.75); c.lineTo(-1.55, -2.75); c.stroke();
@@ -6618,6 +6665,12 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
   c.fillStyle = gj; c.fill(joroba); c.strokeStyle = '#0c191d'; c.lineWidth = 0.08; c.stroke(joroba);
   c.save(); c.clip(joroba); const gjb = c.createLinearGradient(0, -2.25, 0, -1.8); gjb.addColorStop(0, 'rgba(225,248,250,.25)'); gjb.addColorStop(1, 'rgba(225,248,250,0)');
   c.fillStyle = gjb; c.fillRect(-2.4, -2.3, 4.3, 0.5); c.restore();
+  if (chV === 'ligero') {   // carenado hidrodinámico: una aleta afilada que alarga la joroba hacia popa
+    const cf = new Path2D(); cf.moveTo(-1.6, -2.18); cf.quadraticCurveTo(-2.6, -2.3, -4.0, -1.55); cf.lineTo(-3.4, -1.5); cf.quadraticCurveTo(-2.4, -1.85, -1.4, -1.9); cf.closePath();
+    const gcf = c.createLinearGradient(0, -2.3, 0, -1.5); gcf.addColorStop(0, '#e9eeec'); gcf.addColorStop(1, '#8e9a9b');
+    c.fillStyle = gcf; c.fill(cf); c.strokeStyle = '#0c191d'; c.lineWidth = 0.06; c.stroke(cf);
+    c.strokeStyle = '#ef6e45'; c.lineWidth = 0.06; c.beginPath(); c.moveTo(-1.7, -2.1); c.quadraticCurveTo(-2.6, -2.15, -3.7, -1.6); c.stroke();
+  }
   c.fillStyle = '#0c1a1e'; for (let k = 0; k < 3; k++) rr(c, -1.3 + k * 0.5, -2.0, 0.32, 0.28, 0.06), c.fill();
   c.fillStyle = 'rgba(170,220,228,.25)'; for (let k = 0; k < 3; k++) c.fillRect(-1.27 + k * 0.5, -1.76, 0.26, 0.03);   // canto de las rejillas
   // escotilla de acceso con su volante
@@ -14180,6 +14233,7 @@ function htmlBalance() {
         <li>Garra de recuperación (v172; el autor pidió mejorar su aspecto por tier): cada tier se distingue por la forma y no solo por el color. T1 de serie: amarillo gastado con desconchones, franjas de peligro en el soporte, un pistón al aire y dedos lisos. T2 articulada: acero con racores de latón, pistón también en el codo, muñeca giratoria y almohadillas de goma en los dedos. T3 de presión: titanio oscuro, pistones carenados, compensador de presión con piloto cian, dedos dentados y tres testigos en la muñeca que se encienden al apretar. Todas llevan manguera hidráulica y la pinza se cierra de verdad al agarrar. El movimiento y las medidas no cambian; plegada se dibuja una vez en una imagen (como el casco). Para Unity: un sprite por tier con las piezas animadas (tramos, pistones, dedos) en capas.</li>
         <li>Garra con el chasis Polivalente (v173; el autor la veía enredada con el taladro): si también va montado el taladro, plegada no sube hacia la proa; el primer tramo baja un poco hacia popa y el segundo vuelve hacia proa por debajo del taladro, con la pinza cerrada. Al recoger sale desde ahí y abre la pinza; el brazo estirado, los tiempos y el alcance no cambian. Con la garra sola se pliega como antes.</li>
         <li>Taladro (v174; el autor pidió mejorarlo): broca con estrías en hélice de verdad y portabrocas con garras. T1 acero claro, caja con aletas y franja de peligro; T2 broca pavonada con dientes de carburo, collarín de latón y motor hidráulico; T3 caja de titanio sellada con anillo cian y broca con grano de diamante. Durante el minijuego (9.11) la broca gira más deprisa cuanta más potencia, vibra más, y las chispas dicen la franja: pocas con poca potencia, chorro constante en la banda y, en sobrecarga, punta al rojo con muchas más chispas y esquirlas; a oscuras la punta alumbra un poco. No cambia ninguna regla. Parado se dibuja una vez en una imagen. Para Unity: sprite por tier y la broca animada con su velocidad ligada a la potencia.</li>
+        <li>Chasis (v175; idea del autor): cada chasis se distingue a simple vista (amplía el «Aspecto» de 13.6). Color propio en la obra muerta: Explorador verde azulado, Polivalente amarillo mostaza, Ligero blanco, Carguero verde y Acorazado gris pavonado. Una marca pintada: galones de peligro (Polivalente), doble franja naranja (Ligero), disco de Plimsoll (Carguero) y placas atornilladas con relieve (Acorazado). Y una pieza que cambia la silueta: barandilla en cubierta, carenado sobre la joroba, cáncamos de izado y roda reforzada. Mismo casco, medidas y choques; el antiincrustante, la línea blanca y el nombre no cambian. Los pecios del Consorcio lo muestran también. Para Unity: un casco base con tinte por chasis y dos o tres piezas encima, no cinco cascos distintos.</li>
       </ul>
     </section>`;
 }
