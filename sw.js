@@ -1,7 +1,7 @@
 // Service worker de Abismo.
 // IMPORTANTE: sube CACHE_NAME cada vez que cambies index.html, el manifest o los iconos,
 // así los móviles que ya tienen la app instalada descargan la versión nueva.
-const CACHE_NAME = 'abismo-v188';
+const CACHE_NAME = 'abismo-v191';
 const ARCHIVOS = ['./', './index.html', './manifest.json', './favicon-32.png', './apple-touch-icon-180.png',
   './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png'];
 
