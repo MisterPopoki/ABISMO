@@ -1110,7 +1110,7 @@ label.vol input[type=range]{width:100%;accent-color:var(--laton);min-height:28px
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie"><span>Partida única · se guarda en este dispositivo</span> · v217</p>
+      <p class="menu-pie"><span>Partida única · se guarda en este dispositivo</span> · v218</p>
     </div>
   </div>
 
@@ -7986,8 +7986,9 @@ let patronCaustica = null;
 function brillosSub(s, px, py, E, I, k) {
   if (k < 0.1) return;
   const d = s.derecha ? 1 : -1, P = (lx, ly) => [px + d * lx * E, py + ly * E];
-  const [ox, oy] = P(-0.75, -0.95); pintarSprite(ctx, spriteRadial('subOjo', [[0, 'rgba(255,190,110,.9)'], [0.35, 'rgba(255,170,90,.35)'], [1, 'rgba(255,150,70,0)']]), ox, oy, 1.1 * E, 1.1 * E, 0.55 * k);
-  const [cx, cy] = P(2.7, -0.4); pintarSprite(ctx, spriteRadial('subCab', [[0, 'rgba(130,220,215,.5)'], [0.5, 'rgba(255,214,160,.18)'], [1, 'rgba(255,214,160,0)']]), cx, cy, 2.6 * E, 2.0 * E, 0.45 * k);
+  const falloB = !!(I.fallo && I.fallo.luces > 0);   // v218
+  const [ox, oy] = P(-0.75, -0.95); if (!falloB) pintarSprite(ctx, spriteRadial('subOjo', [[0, 'rgba(255,190,110,.9)'], [0.35, 'rgba(255,170,90,.35)'], [1, 'rgba(255,150,70,0)']]), ox, oy, 1.1 * E, 1.1 * E, 0.55 * k);
+  const [cx, cy] = P(2.7, -0.4); if (falloB) pintarSprite(ctx, spriteRadial('subCabR', [[0, 'rgba(230,50,35,.35)'], [1, 'rgba(230,50,35,0)']]), cx, cy, 2.2 * E, 1.7 * E, 0.4 * k); else pintarSprite(ctx, spriteRadial('subCab', [[0, 'rgba(130,220,215,.5)'], [0.5, 'rgba(255,214,160,.18)'], [1, 'rgba(255,214,160,0)']]), cx, cy, 2.6 * E, 2.0 * E, 0.45 * k);
   if (Math.sin((I.t || 0) * 2.6) > 0.55) { const [mx, my] = P(-1.75, -3.08); pintarSprite(ctx, spriteRadial('subMastil', [[0, 'rgba(255,90,70,.9)'], [1, 'rgba(255,60,40,0)']]), mx, my, 1.4 * E, 1.4 * E, 0.7 * k); }
   if (I.minado && I.eq && I.eq.tieneTaladro) {   // v174: las chispas del taladro alumbran un poco alrededor de la punta (más en sobrecarga)
     const e = I.minado.estado, a = e === 'sobre' ? 0.8 : e === 'optima' ? 0.45 : 0.2, [tx, ty] = P(TALADRO.punta, TALADRO.y);
@@ -8018,16 +8019,17 @@ const OXIDO_SUB = [11, 29, 47].map(semilla => {
   g.putImageData(im, 0, 0); return cv;
 });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => CACHE_CASCO.clear());   // el nombre, con la letra buena en cuanto cargue
-const CASCO_CAJA = { x: -6.2, y: -3.6, w: 11.1, h: 6.3 };
+const CASCO_CAJA = { x: -6.8, y: -3.6, w: 11.7, h: 6.3 };   // v218: más ancha por la tobera del motor de Velocidad
 function pegarCasco(c, chV, DT, FS, rot, der, I) {
   const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b)));
-  const clave = `${px}|${chV}|${FS.ventral ? 1 : 0}|${rot}|${rot ? (der ? 1 : 0) : 1}`;
+  const mot = (I && I.eq && I.eq.motorId) || 'serie';
+  const clave = `${px}|${chV}|${FS.ventral ? 1 : 0}|${rot}|${rot ? (der ? 1 : 0) : 1}|${mot}`;
   let spr = CACHE_CASCO.get(clave);
   if (!spr) {
     if (CACHE_CASCO.size > 10) CACHE_CASCO.clear();
     const K = CASCO_CAJA; spr = document.createElement('canvas'); spr.width = Math.ceil(K.w * px); spr.height = Math.ceil(K.h * px);
     const g = spr.getContext('2d'); g.scale(px, px); g.translate(-K.x, -K.y); g.lineJoin = 'round'; g.lineCap = 'round';
-    cascoEstatico(g, chV, DT, FS, rot, der);
+    cascoEstatico(g, chV, DT, FS, rot, der, mot);
     CACHE_CASCO.set(clave, spr);
   }
   const K = CASCO_CAJA; c.drawImage(spr, K.x, K.y, K.w, K.h);
@@ -8046,7 +8048,7 @@ const ESTILO_CHASIS = {
   ligero:      { casco: ['#eef1ee', '#c9d1d0', '#8e9a9b', '#2f3a3d'], joroba: ['#e2e7e5', '#9aa6a7'], gondola: ['#a9b4b5', '#3a4547'] },
   carguero:    { casco: ['#8fb57a', '#6a955a', '#44673b', '#172612'], joroba: ['#7ea56b', '#40613a'], gondola: ['#5d7f50', '#1b2b16'] },
   acorazado:   { casco: ['#8c969d', '#69737a', '#454e54', '#171c1f'], joroba: ['#7a858c', '#3f484e'], gondola: ['#5a646a', '#1c2226'] } };
-function cascoEstatico(c, chV, DT, FS, rot, der) {
+function cascoEstatico(c, chV, DT, FS, rot, der, mot = 'serie') {
   const EC = ESTILO_CHASIS[chV] || ESTILO_CHASIS.explorador;
   // v166: aletas del timón con volumen (degradado y canto de ataque iluminado)
   for (const sg of [-1, 1]) {
@@ -8060,6 +8062,20 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.strokeStyle = 'rgba(6,14,17,.6)'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(-5.33, sg * 0.97); c.lineTo(-5.86, sg * 1.78); c.stroke();
     c.strokeStyle = 'rgba(190,235,240,.18)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(-5.3, sg * 0.97); c.lineTo(-5.83, sg * 1.78); c.stroke();
     c.fillStyle = '#9c7a45'; for (const k of [0.3, 0.68]) { c.beginPath(); c.arc(-5.33 - 0.53 * k, sg * (0.97 + 0.81 * k), 0.032, 0, 6.283); c.fill(); }
+  }
+
+  if (mot === 'carga') {   // v218: Módulo de Carga extra: cesta de carga colgada bajo la popa (bastidor, malla y lo que lleva)
+    const x0 = -5.05, x1 = -3.4, y0 = 1.06, y1 = 1.66;
+    c.strokeStyle = '#141c1f'; c.lineWidth = 0.06; c.beginPath(); c.moveTo(x0 + 0.15, 0.98); c.lineTo(x0 + 0.15, y0); c.moveTo(x1 - 0.15, 1.1); c.lineTo(x1 - 0.15, y0); c.stroke();
+    c.fillStyle = 'rgba(0,6,8,.35)'; rr(c, x0 + 0.04, y0 + 0.05, x1 - x0, y1 - y0, 0.08); c.fill();
+    c.fillStyle = '#0c1416'; rr(c, x0, y0, x1 - x0, y1 - y0, 0.08); c.fill();
+    c.fillStyle = '#6b5a44'; rr(c, x0 + 0.2, y0 + 0.22, 0.42, 0.34, 0.03); c.fill(); c.fillStyle = '#8c8a7a'; rr(c, x0 + 0.7, y0 + 0.3, 0.34, 0.26, 0.05); c.fill();   // lo que va dentro
+    c.fillStyle = 'rgba(255,240,210,.18)'; c.fillRect(x0 + 0.22, y0 + 0.23, 0.38, 0.03);
+    c.save(); rr(c, x0, y0, x1 - x0, y1 - y0, 0.08); c.clip(); c.strokeStyle = 'rgba(150,165,168,.45)'; c.lineWidth = 0.014; c.beginPath();
+    for (let k = -8; k < 20; k++) { const x = x0 + k * 0.12; c.moveTo(x, y0); c.lineTo(x + 0.6, y1); c.moveTo(x + 0.6, y0); c.lineTo(x, y1); } c.stroke(); c.restore();   // malla
+    c.strokeStyle = '#2a3437'; c.lineWidth = 0.07; rr(c, x0, y0, x1 - x0, y1 - y0, 0.08); c.stroke();
+    c.strokeStyle = 'rgba(210,225,228,.3)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(x0 + 0.06, y0 + 0.02); c.lineTo(x1 - 0.06, y0 + 0.02); c.stroke();
+    c.fillStyle = '#e9b43c'; c.fillRect(x0 + 0.02, y1 - 0.12, x1 - x0 - 0.04, 0.05);   // banda amarilla del bastidor
   }
 
   // --- Depósitos inferiores (latón) y tubería --- (cambian con el chasis, 13.6: el Polivalente los lleva más grandes,
@@ -8114,6 +8130,60 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
   c.strokeStyle = 'rgba(255,226,170,.4)'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(-5.74, -0.95); c.lineTo(-5.74, -0.2); c.moveTo(-4.47, -1.0); c.lineTo(-4.47, -0.25); c.stroke();
   c.fillStyle = '#c9a96e'; for (const yy of [-0.85, -0.3, 0.3, 0.85]) { c.beginPath(); c.arc(-5.72, yy, 0.035, 0, 6.283); c.arc(-4.45, yy, 0.035, 0, 6.283); c.fill(); }
 
+  if (mot === 'velocidad') {   // v218: tobera Kort alrededor de la hélice, sujeta a la góndola con dos brazos
+    const x0 = -6.58, x1 = -5.94, Rf = 1.12, Rt = 0.98;
+    c.strokeStyle = '#141c1f'; c.lineWidth = 0.1; c.beginPath(); c.moveTo(-5.78, -0.75); c.lineTo(-6.05, -1.0); c.moveTo(-5.78, 0.75); c.lineTo(-6.05, 1.0); c.stroke();
+    const tob = new Path2D(); tob.moveTo(x1, -Rf + 0.06); tob.quadraticCurveTo(x1, -Rf, x1 - 0.1, -Rf); tob.lineTo(x0 + 0.06, -Rt); tob.quadraticCurveTo(x0, -Rt, x0, -Rt + 0.06);
+    tob.lineTo(x0, Rt - 0.06); tob.quadraticCurveTo(x0, Rt, x0 + 0.06, Rt); tob.lineTo(x1 - 0.1, Rf); tob.quadraticCurveTo(x1, Rf, x1, Rf - 0.06); tob.closePath();
+    const EC = ESTILO_CHASIS[chV] || ESTILO_CHASIS.explorador;   // pintada como el casco: es parte del submarino
+    const g = c.createLinearGradient(0, -Rf, 0, Rf); g.addColorStop(0, EC.casco[2]); g.addColorStop(0.1, EC.casco[0]); g.addColorStop(0.3, EC.casco[1]); g.addColorStop(0.62, EC.casco[2]); g.addColorStop(0.92, EC.casco[3]); g.addColorStop(1, EC.casco[2]);
+    c.fillStyle = g; c.fill(tob); c.strokeStyle = '#0a1214'; c.lineWidth = 0.06; c.stroke(tob);
+    // la boca de salida: se ve un poco del interior del tubo (oscuro) con el estator delante
+    c.fillStyle = '#05090a'; c.beginPath(); c.ellipse(x0 + 0.015, 0, 0.055, Rt - 0.07, 0, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(225,245,248,.3)'; c.lineWidth = 0.02; c.beginPath(); c.ellipse(x0 + 0.015, 0, 0.055, Rt - 0.07, 0, -1.4, 1.4); c.stroke();
+    c.strokeStyle = '#1c2629'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(x0 + 0.01, -Rt + 0.1); c.lineTo(x0 - 0.12, -0.12); c.moveTo(x0 + 0.01, Rt - 0.1); c.lineTo(x0 - 0.12, 0.12); c.stroke();   // brazos del estator
+    const ge = c.createLinearGradient(0, -0.2, 0, 0.2); ge.addColorStop(0, '#8f9ea2'); ge.addColorStop(1, '#283438');
+    c.fillStyle = ge; c.beginPath(); c.moveTo(x0 + 0.02, -0.19); c.quadraticCurveTo(x0 - 0.18, -0.16, x0 - 0.21, 0); c.quadraticCurveTo(x0 - 0.18, 0.16, x0 + 0.02, 0.19); c.closePath(); c.fill(); c.strokeStyle = '#0a1214'; c.lineWidth = 0.03; c.stroke();   // cono del estator
+    c.fillStyle = 'rgba(225,245,248,.22)'; c.beginPath(); c.ellipse(x1 - 0.02, 0, 0.04, Rf - 0.08, 0, 0, 6.283); c.fill();   // labio de entrada con luz
+    const gx = c.createLinearGradient(x0, 0, x1, 0); gx.addColorStop(0, 'rgba(0,6,8,.4)'); gx.addColorStop(0.2, 'rgba(0,6,8,0)'); gx.addColorStop(0.75, 'rgba(225,245,248,0)'); gx.addColorStop(1, 'rgba(225,245,248,.18)');
+    c.fillStyle = gx; c.fill(tob);   // el labio de entrada, redondo y con luz; el de salida, en sombra
+    c.fillStyle = '#7a5c32'; c.fillRect(-6.3, -1.06, 0.07, 2.12);   // aro de refuerzo de latón
+    c.fillStyle = 'rgba(255,230,180,.4)'; c.fillRect(-6.3, -1.06, 0.025, 2.12);
+    c.fillStyle = '#c9a96e'; for (const yy of [-0.8, -0.27, 0.27, 0.8]) { c.beginPath(); c.arc(-6.265, yy, 0.026, 0, 6.283); c.fill(); }
+    c.fillStyle = 'rgba(225,245,248,.22)'; c.fillRect(x0 + 0.08, -0.86, x1 - x0 - 0.2, 0.035);
+  } else if (mot === 'eficiencia') {   // v218: cola afilada: un carenado cónico detrás de la góndola (menos resistencia)
+    const EC = ESTILO_CHASIS[chV] || ESTILO_CHASIS.explorador;
+    const cola = new Path2D(); cola.moveTo(-5.7, -0.62); cola.quadraticCurveTo(-6.05, -0.55, -6.42, -0.14); cola.lineTo(-6.42, 0.14); cola.quadraticCurveTo(-6.05, 0.55, -5.7, 0.62); cola.closePath();
+    const g = c.createLinearGradient(0, -0.62, 0, 0.62); g.addColorStop(0, EC.casco[2]); g.addColorStop(0.12, EC.casco[0]); g.addColorStop(0.32, EC.casco[1]); g.addColorStop(0.65, EC.casco[2]); g.addColorStop(0.92, EC.casco[3]); g.addColorStop(1, EC.casco[2]);
+    c.fillStyle = g; c.fill(cola); c.strokeStyle = '#0a1214'; c.lineWidth = 0.05; c.stroke(cola);
+    c.save(); c.clip(cola);
+    const gx = c.createLinearGradient(-6.42, 0, -5.7, 0); gx.addColorStop(0, 'rgba(0,6,8,.45)'); gx.addColorStop(0.6, 'rgba(0,6,8,0)'); c.fillStyle = gx; c.fillRect(-6.5, -0.7, 0.85, 1.4);   // se estrecha: su superficie se aparta de la luz
+    c.strokeStyle = 'rgba(6,14,16,.6)'; c.lineWidth = 0.025; c.beginPath(); c.moveTo(-6.02, -0.7); c.lineTo(-6.02, 0.7); c.stroke();   // junta del carenado
+    c.strokeStyle = 'rgba(220,240,242,.18)'; c.lineWidth = 0.012; c.beginPath(); c.moveTo(-6.0, -0.7); c.lineTo(-6.0, 0.7); c.stroke();
+    c.fillStyle = 'rgba(0,6,8,.4)'; for (const yy of [-0.32, 0, 0.32]) { c.beginPath(); c.arc(-5.96, yy, 0.02, 0, 6.283); c.fill(); }
+    c.save(); c.strokeStyle = 'rgba(235,250,250,.35)'; c.lineWidth = 0.035; c.beginPath(); c.moveTo(-5.75, -0.42); c.quadraticCurveTo(-6.02, -0.36, -6.32, -0.1); c.stroke(); c.restore();   // brillo que sigue la curva
+    c.restore();
+    c.fillStyle = '#7a5c32'; c.fillRect(-6.46, -0.13, 0.05, 0.26);   // casquillo de latón del eje
+    c.fillStyle = '#1b2427'; rr(c, -5.5, -0.62, 0.62, 0.3, 0.05); c.fill(); c.fillStyle = 'rgba(200,225,230,.2)'; c.fillRect(-5.47, -0.6, 0.56, 0.03);   // caja de bornes del motor eléctrico
+    c.fillStyle = '#b8904f'; for (const x of [-5.4, -5.2, -5.0]) { c.beginPath(); c.arc(x, -0.47, 0.035, 0, 6.283); c.fill(); }
+    c.strokeStyle = '#0d1214'; c.lineWidth = 0.06; c.beginPath(); c.moveTo(-4.95, -0.47); c.quadraticCurveTo(-4.6, -0.5, -4.5, -0.75); c.stroke();
+  } else if (mot === 'estabilidad') {   // v218: propulsor orientable bajo el casco (el de este costado; el otro, simétrico, queda detrás)
+    const EC = ESTILO_CHASIS[chV] || ESTILO_CHASIS.explorador, P = ESTAB_POD;
+    const g = c.createLinearGradient(0, P.y - P.r, 0, P.y + P.r); g.addColorStop(0, EC.casco[2]); g.addColorStop(0.15, EC.casco[0]); g.addColorStop(0.38, EC.casco[1]); g.addColorStop(0.72, EC.casco[2]); g.addColorStop(1, EC.casco[3]);
+    // brazo que baja del casco, con su corona de giro de latón
+    c.fillStyle = '#141c1f'; c.beginPath(); c.moveTo(-4.5, 1.06); c.lineTo(-4.2, 1.06); c.lineTo(-4.28, P.y - P.r + 0.02); c.lineTo(-4.45, P.y - P.r + 0.02); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(200,225,230,.18)'; c.fillRect(-4.47, 1.08, 0.04, P.y - P.r - 1.08);
+    c.fillStyle = '#7a5c32'; rr(c, -4.56, 1.0, 0.42, 0.08, 0.02); c.fill(); c.fillStyle = 'rgba(255,230,180,.4)'; c.fillRect(-4.54, 1.0, 0.38, 0.02);
+    // cápsula del motor: morro redondo a proa, cola que se estrecha hacia la hélice
+    const cp = new Path2D(); cp.moveTo(P.x0, P.y - P.r * 0.55); cp.quadraticCurveTo(P.x0 + 0.18, P.y - P.r, P.x0 + 0.4, P.y - P.r); cp.lineTo(P.x1 - P.r, P.y - P.r);
+    cp.arc(P.x1 - P.r, P.y, P.r, -Math.PI / 2, Math.PI / 2); cp.lineTo(P.x0 + 0.4, P.y + P.r); cp.quadraticCurveTo(P.x0 + 0.18, P.y + P.r, P.x0, P.y + P.r * 0.55); cp.closePath();
+    c.fillStyle = 'rgba(0,6,8,.35)'; c.save(); c.translate(0.03, 0.05); c.fill(cp); c.restore();
+    c.fillStyle = g; c.fill(cp); c.strokeStyle = '#0a1214'; c.lineWidth = 0.035; c.stroke(cp);
+    c.fillStyle = 'rgba(235,250,250,.32)'; c.fillRect(P.x0 + 0.25, P.y - P.r + 0.04, P.x1 - P.x0 - 0.45, 0.025);
+    c.fillStyle = '#7a5c32'; c.fillRect(P.x0 + 0.42, P.y - P.r + 0.01, 0.045, 2 * P.r - 0.02);   // junta de latón
+    c.fillStyle = '#b8904f'; c.beginPath(); c.arc(P.x0 + 0.02, P.y, 0.035, 0, 6.283); c.fill();   // casquillo del eje
+  }
+
   // --- Casco principal ---
   const casco = new Path2D();
   casco.moveTo(-4.55, -0.85); casco.quadraticCurveTo(-4.4, -1.42, -3.5, -1.48); casco.lineTo(1.1, -1.55);
@@ -8131,19 +8201,19 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(-5, 0.65, 10, 0.025); }
   // marca pintada de cada chasis, a media altura del costado
   if (chV === 'polivalente') {   // franja amarilla con galones negros de peligro
-    c.fillStyle = '#e6b733'; c.fillRect(-5, 0.2, 6.4, 0.22);
-    c.save(); c.beginPath(); c.rect(-5, 0.2, 6.4, 0.22); c.clip(); c.fillStyle = '#1d1a12';
-    for (let x = -5; x < 1.5; x += 0.36) { c.beginPath(); c.moveTo(x, 0.42); c.lineTo(x + 0.18, 0.2); c.lineTo(x + 0.3, 0.2); c.lineTo(x + 0.12, 0.42); c.closePath(); c.fill(); }
+    c.fillStyle = '#e6b733'; c.fillRect(-5, 0.35, 6.4, 0.2);
+    c.save(); c.beginPath(); c.rect(-5, 0.35, 6.4, 0.2); c.clip(); c.fillStyle = '#1d1a12';
+    for (let x = -5; x < 1.5; x += 0.36) { c.beginPath(); c.moveTo(x, 0.55); c.lineTo(x + 0.17, 0.35); c.lineTo(x + 0.29, 0.35); c.lineTo(x + 0.12, 0.55); c.closePath(); c.fill(); }
     c.restore();
   } else if (chV === 'ligero') {   // doble franja naranja de carreras que sube hacia la proa
-    c.fillStyle = '#ef6e45'; c.beginPath(); c.moveTo(-5, 0.12); c.lineTo(1.4, -0.02); c.lineTo(1.4, 0.16); c.lineTo(-5, 0.3); c.closePath(); c.fill();
-    c.beginPath(); c.moveTo(-5, 0.38); c.lineTo(1.4, 0.26); c.lineTo(1.4, 0.33); c.lineTo(-5, 0.45); c.closePath(); c.fill();
+    c.fillStyle = '#ef6e45'; c.beginPath(); c.moveTo(-5, 0.31); c.lineTo(1.4, 0.25); c.lineTo(1.4, 0.38); c.lineTo(-5, 0.44); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-5, 0.49); c.lineTo(1.4, 0.43); c.lineTo(1.4, 0.49); c.lineTo(-5, 0.55); c.closePath(); c.fill();
   } else if (chV === 'carguero') {   // franja blanca y el disco de Plimsoll: hasta dónde se puede cargar
-    c.fillStyle = 'rgba(236,232,214,.85)'; c.fillRect(-5, 0.26, 6.4, 0.06);
-    c.strokeStyle = 'rgba(236,232,214,.9)'; c.lineWidth = 0.05; c.beginPath(); c.arc(-3.3, 0.18, 0.22, 0, 6.283); c.moveTo(-3.6, 0.18); c.lineTo(-3.0, 0.18); c.stroke();
-    c.beginPath(); for (const [dy, l] of [[-0.12, 0.3], [0.0, 0.36], [0.12, 0.3], [0.24, 0.26]]) { c.moveTo(-2.92, 0.18 + dy); c.lineTo(-2.92 + l, 0.18 + dy); } c.moveTo(-2.92, 0.04); c.lineTo(-2.92, 0.44); c.stroke();
+    c.fillStyle = 'rgba(236,232,214,.85)'; c.fillRect(-5, 0.36, 6.4, 0.06);
+    c.strokeStyle = 'rgba(236,232,214,.9)'; c.lineWidth = 0.05; c.beginPath(); c.arc(-3.78, 0.18, 0.22, 0, 6.283); c.moveTo(-4.08, 0.18); c.lineTo(-3.48, 0.18); c.stroke();   // v218: a popa, fuera de la plancha del nombre
+    c.beginPath(); for (const [dy, l] of [[-0.12, 0.3], [0.0, 0.36], [0.12, 0.3], [0.24, 0.26]]) { c.moveTo(-3.4, 0.18 + dy); c.lineTo(-3.4 + l, 0.18 + dy); } c.moveTo(-3.4, 0.04); c.lineTo(-3.4, 0.44); c.stroke();
   } else if (chV === 'acorazado') {   // placas de blindaje atornilladas, con bisel y sombra: se leen de lejos
-    for (const [px, py, pw, ph] of [[-3.9, -1.25, 1.6, 0.85], [-2.15, -1.3, 1.7, 0.85], [-0.3, -1.32, 1.4, 0.85], [-3.9, -0.3, 1.6, 0.86], [-2.15, -0.3, 1.7, 0.86], [-0.3, -0.3, 1.4, 0.86]]) {
+    for (const [px, py, pw, ph] of [[-3.9, -1.25, 1.6, 0.85], [-2.15, -1.3, 1.7, 0.85], [-0.3, -1.32, 1.4, 0.85], [-3.9, -0.3, 1.0, 0.86], [-2.75, -0.3, 3.85, 0.86]]   /* v218: abajo, una placa larga para el nombre */) {
       c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(px + 0.06, py + 0.06, pw, ph);
       const gp = c.createLinearGradient(0, py, 0, py + ph); gp.addColorStop(0, '#7c868c'); gp.addColorStop(1, '#3b4348');
       c.fillStyle = gp; c.fillRect(px, py, pw, ph);
@@ -8151,34 +8221,57 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
       c.strokeStyle = 'rgba(220,230,232,.3)'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(px + 0.03, py + ph - 0.03); c.lineTo(px + 0.03, py + 0.03); c.lineTo(px + pw - 0.03, py + 0.03); c.stroke();
       c.fillStyle = '#b9ae8e'; for (const [rx, ry] of [[px + 0.12, py + 0.12], [px + pw - 0.12, py + 0.12], [px + 0.12, py + ph - 0.12], [px + pw - 0.12, py + ph - 0.12]]) { c.beginPath(); c.arc(rx, ry, 0.05, 0, 6.283); c.fill(); }
     }
-  } else { c.fillStyle = 'rgba(150,205,212,.28)'; c.fillRect(-5, 0.2, 6.4, 0.2); }   // Explorador: la franja clara de siempre
-  // v166: volumen de cilindro: banda de brillo arriba y luz que rebota del agua por abajo
-  { const gb = c.createLinearGradient(0, -1.5, 0, -0.55); gb.addColorStop(0, 'rgba(225,248,250,0)'); gb.addColorStop(0.45, 'rgba(225,248,250,.17)'); gb.addColorStop(1, 'rgba(225,248,250,0)');
-    c.fillStyle = gb; c.fillRect(-5, -1.5, 10, 0.95);
-    const gr = c.createLinearGradient(0, 0.7, 0, 1.25); gr.addColorStop(0, 'rgba(110,200,205,0)'); gr.addColorStop(1, 'rgba(110,200,205,.16)');
-    c.fillStyle = gr; c.fillRect(-5, 0.7, 10, 0.55); }
+  } else { c.fillStyle = 'rgba(150,205,212,.28)'; c.fillRect(-5, 0.35, 6.4, 0.17); }   // Explorador: la franja clara de siempre
+  // v218: volumen de cilindro, con el mismo oficio que en los jefes. El casco resistente es un tubo: una luz ancha y
+  // difusa en el tercio de arriba, el terminador (la línea donde deja de mirar a la luz) algo por debajo del ecuador,
+  // la sombra propia debajo y, en el canto de la panza, la luz que rebota del agua. Va encima de la pintura de cada
+  // chasis, así que sirve para los cinco.
+  { const gb = c.createLinearGradient(0, -1.55, 0, 1.22);
+    gb.addColorStop(0, 'rgba(0,8,12,.12)'); gb.addColorStop(0.06, 'rgba(225,248,250,.05)'); gb.addColorStop(0.19, 'rgba(225,248,250,.3)');
+    gb.addColorStop(0.31, 'rgba(225,248,250,.1)'); gb.addColorStop(0.48, 'rgba(225,248,250,0)'); gb.addColorStop(0.58, 'rgba(0,8,12,.03)');
+    gb.addColorStop(0.7, 'rgba(0,8,12,.2)'); gb.addColorStop(0.86, 'rgba(0,8,12,.32)'); gb.addColorStop(1, 'rgba(0,8,12,.1)');
+    c.fillStyle = gb; c.fillRect(-5, -1.6, 10, 2.9);
+    const gr = c.createLinearGradient(0, 0.9, 0, 1.24); gr.addColorStop(0, 'rgba(110,200,205,0)'); gr.addColorStop(1, 'rgba(120,205,210,.3)');
+    c.fillStyle = gr; c.fillRect(-5, 0.9, 10, 0.34); }
   // cada chapa con un tono algo distinto (como planchas soldadas de lotes diferentes)
-  { const xs = [-4.8, -3.0, -1.25, 0.55, 1.3], ys = [-1.6, -0.47, 0.61, 1.3], tonos = [0.05, -0.04, 0.02, -0.06, 0.035, -0.02, 0.06, -0.035, 0.0, 0.04, -0.05, 0.025];
+  { const xs = [-4.8, -3.0, -1.25, 0.55, 1.3], ys = [-1.6, -0.47, 0.61, 1.3], tonos = [0.05, -0.04, 0.02, -0.06, 0.035, -0.02, 0.06, 0.035, 0.0, 0.04, -0.05, 0.025];   // v218: la del nombre, del mismo tono a los dos lados
     let k = 0; for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++, k++) { const a = tonos[k]; if (!a) continue;
       c.fillStyle = a > 0 ? `rgba(220,245,248,${a})` : `rgba(0,10,14,${-a * 1.4})`; c.fillRect(xs[i], ys[j], xs[i + 1] - xs[i], ys[j + 1] - ys[j]); } }
+  // v218: cada chapa abomba un poco entre las cuadernas (el «oil canning» de los cascos de chapa): luz en su borde de
+  // arriba, sombra en el de abajo y los costados algo hundidos junto a las costuras. Se lee como planchas, no como pintura.
+  { const xs = [-4.8, -3.0, -1.25, 0.55, 1.3], ys = [-1.6, -0.47, 0.61, 1.3];
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { if (i === 2 && j === 1) continue;   // la plancha del nombre es una sola (ver juntas)
+      const x0 = xs[i], x1 = i === 1 && j === 1 ? xs[3] : xs[i + 1], y0 = ys[j], y1 = ys[j + 1];
+      const gv = c.createLinearGradient(0, y0, 0, y1); gv.addColorStop(0, 'rgba(232,250,250,.08)'); gv.addColorStop(0.22, 'rgba(232,250,250,0)'); gv.addColorStop(0.72, 'rgba(0,8,12,0)'); gv.addColorStop(1, 'rgba(0,8,12,.12)');
+      c.fillStyle = gv; c.fillRect(x0, y0, x1 - x0, y1 - y0);
+      const gh = c.createLinearGradient(x0, 0, x1, 0); gh.addColorStop(0, 'rgba(0,8,12,.07)'); gh.addColorStop(Math.min(0.4, 0.18 / (x1 - x0)), 'rgba(0,8,12,0)'); gh.addColorStop(Math.max(0.6, 1 - 0.18 / (x1 - x0)), 'rgba(0,8,12,0)'); gh.addColorStop(1, 'rgba(0,8,12,.07)');
+      c.fillStyle = gh; c.fillRect(x0, y0, x1 - x0, y1 - y0); } }
   { for (const sx of [-3.0, -1.25, 0.55]) {   // v211
-      const ga = c.createLinearGradient(sx - 0.16, 0, sx, 0); ga.addColorStop(0, 'rgba(0,8,12,0)'); ga.addColorStop(1, 'rgba(0,8,12,.2)'); c.fillStyle = ga; c.fillRect(sx - 0.16, -1.6, 0.16, 2.21);
-      const gb = c.createLinearGradient(sx, 0, sx + 0.16, 0); gb.addColorStop(0, 'rgba(230,250,250,.08)'); gb.addColorStop(1, 'rgba(230,250,250,0)'); c.fillStyle = gb; c.fillRect(sx, -1.6, 0.16, 2.21); }
+      const ga = c.createLinearGradient(sx - 0.16, 0, sx, 0); ga.addColorStop(0, 'rgba(0,8,12,0)'); ga.addColorStop(1, 'rgba(0,8,12,.2)'); c.fillStyle = ga; c.fillRect(sx - 0.16, -1.6, 0.16, sx === -1.25 ? 1.13 : 2.21);
+      const gb = c.createLinearGradient(sx, 0, sx + 0.16, 0); gb.addColorStop(0, 'rgba(230,250,250,.08)'); gb.addColorStop(1, 'rgba(230,250,250,0)'); c.fillStyle = gb; c.fillRect(sx, -1.6, 0.16, sx === -1.25 ? 1.13 : 2.21); }
     const gc = c.createLinearGradient(0, -0.62, 0, -0.47); gc.addColorStop(0, 'rgba(0,8,12,0)'); gc.addColorStop(1, 'rgba(0,8,12,.16)'); c.fillStyle = gc; c.fillRect(-4.8, -0.62, 6.0, 0.15);
     const gd = c.createLinearGradient(0, -0.47, 0, -0.33); gd.addColorStop(0, 'rgba(230,250,250,.07)'); gd.addColorStop(1, 'rgba(230,250,250,0)'); c.fillStyle = gd; c.fillRect(-4.8, -0.47, 6.0, 0.14); }
-  // juntas de chapa con bisel: línea oscura y su canto claro al lado
+  // v218: juntas de solape (la chapa de proa monta sobre la de popa: sombra a un lado, canto con luz al otro) y
+  // remacheado solo donde hay costura, pintado por encima como en los barcos de trabajo: cabezas pequeñas que se leen
+  // por su brillo y su sombra sobre la pintura que tengan debajo, no lunares de latón. El latón queda para los herrajes
+  // (ojo de buey, marco de la cabina, escotilla, depósitos).
   const juntas = new Path2D(), cantos = new Path2D();
-  for (const sx of [-3.0, -1.25, 0.55]) { juntas.moveTo(sx, -1.6); juntas.lineTo(sx, 1.3); cantos.moveTo(sx + 0.04, -1.6); cantos.lineTo(sx + 0.04, 1.3); }
-  for (const [y0, y1] of [[-0.45, -0.5], [0.62, 0.6]]) { juntas.moveTo(-4.8, y0); juntas.lineTo(1.2, y1); cantos.moveTo(-4.8, y0 + 0.04); cantos.lineTo(1.2, y1 + 0.04); }
-  c.strokeStyle = 'rgba(8,20,24,.6)'; c.lineWidth = 0.055; c.stroke(juntas);
-  c.strokeStyle = 'rgba(190,235,240,.16)'; c.lineWidth = 0.025; c.stroke(cantos);
-  // remaches a lo largo de cada junta (un solo trazo por color: barato aunque sean muchos)
-  { const rem = new Path2D(), brl = new Path2D();
-    const smb = new Path2D();   // v211
-    const r1 = (x, y) => { rem.moveTo(x + 0.032, y); rem.arc(x, y, 0.032, 0, 6.283); brl.rect(x - 0.018, y - 0.022, 0.016, 0.013); smb.moveTo(x + 0.047, y + 0.02); smb.arc(x + 0.015, y + 0.02, 0.032, 0, 6.283); };
-    for (const sx of [-3.0, -1.25, 0.55]) for (let y = -1.12; y < 1.0; y += 0.38) r1(sx - 0.09, y);
-    for (let x = -4.3; x < 1.2; x += 0.38) r1(x, -0.36);
-    c.fillStyle = 'rgba(0,8,10,.32)'; c.fill(smb); c.fillStyle = '#7d6240'; c.fill(rem); c.fillStyle = 'rgba(255,228,180,.55)'; c.fill(brl); }
+  // la costura vertical del centro se corta en la fila del nombre: el nombre va pintado en una sola plancha larga, como
+  // en los barcos, para que ninguna junta lo parta
+  for (const sx of [-3.0, -1.25, 0.55]) for (const [ya, yb] of sx === -1.25 ? [[-1.6, -0.47], [0.61, 1.3]] : [[-1.6, 1.3]]) {
+    juntas.moveTo(sx, ya); juntas.lineTo(sx, yb); cantos.moveTo(sx + 0.035, ya); cantos.lineTo(sx + 0.035, yb); }
+  for (const [y0, y1] of [[-0.45, -0.5], [0.62, 0.6]]) { juntas.moveTo(-4.8, y0); juntas.lineTo(1.2, y1); cantos.moveTo(-4.8, y0 + 0.035); cantos.lineTo(1.2, y1 + 0.035); }
+  c.strokeStyle = 'rgba(4,12,16,.62)'; c.lineWidth = 0.045; c.stroke(juntas);
+  c.strokeStyle = 'rgba(205,240,244,.2)'; c.lineWidth = 0.022; c.stroke(cantos);
+  c.save(); c.setLineDash([0.08, 0.5, 0.15, 0.9, 0.05, 0.35, 0.22, 1.1]); c.lineDashOffset = 0.3;   // el canto de cada chapa, pelado a trozos
+  c.strokeStyle = chV === 'ligero' ? 'rgba(70,62,52,.22)' : 'rgba(225,236,230,.24)'; c.lineWidth = 0.032; c.stroke(cantos); c.restore();
+  { const luz = new Path2D(), som = new Path2D(), cab = new Path2D(), r = 0.027;
+    const r1 = (x, y) => { som.moveTo(x + r + 0.014, y + 0.018); som.arc(x + 0.014, y + 0.018, r, 0, 6.283); cab.moveTo(x + r, y); cab.arc(x, y, r, 0, 6.283);
+      luz.moveTo(x + 0.002, y - 0.011); luz.arc(x - 0.009, y - 0.011, 0.011, 0, 6.283); };
+    if (chV !== 'ligero') for (const sx of [-3.0, -1.25, 0.55]) for (let y = -1.22; y < 1.2; y += 0.2) if (sx !== -1.25 || y < -0.5 || y > 0.64) r1(sx + 0.1, y);   // costuras verticales: una fila en la chapa que monta
+    if (chV !== 'ligero') for (let x = -4.45; x < 1.15; x += 0.2) { r1(x, -0.37 - (x + 4.8) * 0.0083); r1(x, 0.7 - (x + 4.8) * 0.0033); }   // costuras longitudinales
+    for (let x = -4.2; x < 1.05; x += 0.21) { r1(x, -1.37); r1(x, 1.08); }   // lomo y quilla
+    c.fillStyle = 'rgba(0,8,10,.42)'; c.fill(som); c.fillStyle = 'rgba(0,8,10,.1)'; c.fill(cab); c.fillStyle = 'rgba(240,252,252,.45)'; c.fill(luz); }
   { c.fillStyle = 'rgba(225,245,248,.16)'; rr(c, -2.64, -0.97, 1.13, 0.62, 0.1); c.fill();   // v211: rejilla lateral hundida en su marco
     const gr = c.createLinearGradient(0, -0.95, 0, -0.4); gr.addColorStop(0, '#050d10'); gr.addColorStop(1, '#14262b');
     c.fillStyle = gr; rr(c, -2.6, -0.95, 1.05, 0.55, 0.08); c.fill();
@@ -8190,8 +8283,9 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.fillStyle = '#8f9a9b'; for (const [x, y] of [[-2.56, -0.91], [-1.59, -0.91], [-2.56, -0.44], [-1.59, -0.44]]) { c.beginPath(); c.arc(x, y, 0.026, 0, 6.283); c.fill(); } }
   // óxido: manchas y chorretones que bajan desde las juntas y los remaches (sprites precalculados: baratos)
   const sO = SPR_SUB.oxido, sC = SPR_SUB.chorreton;
-  { let k = 0; for (const [ox, oy, r] of [[-3.6, -0.9, 0.16], [-2.0, 0.6, 0.12], [-0.3, -1.1, 0.13], [1.6, 0.85, 0.1], [-4.2, 0.4, 0.11], [0.2, 0.55, 0.07], [-1.0, -0.2, 0.06], [-2.95, -1.3, 0.07], [0.6, 0.15, 0.05]])
-    pintarSprite(c, OXIDO_SUB[k++ % 3], ox, oy, r * 2.3, r * 1.8, 0.7); }   // v211: óxido irregular (antes, sO: un círculo borroso)
+  const DESF = { explorador: 0, polivalente: 1.7, ligero: 3.1, carguero: 0.9, acorazado: 2.4 }[chV] || 0;   // v218
+  { let k = 0; for (const [ox0, oy, r] of [[-3.6, -0.9, 0.16], [-2.0, 0.6, 0.12], [-0.3, -1.1, 0.13], [1.6, 0.85, 0.1], [-4.2, 0.4, 0.11], [0.2, 0.55, 0.07], [-1.0, -0.2, 0.06], [-2.95, -1.3, 0.07], [0.6, 0.15, 0.05]])
+    { const ox = -4.5 + (((ox0 + 4.5 + DESF) % 5.6) + 5.6) % 5.6; pintarSprite(c, OXIDO_SUB[(k++ + Math.round(DESF * 3)) % 3], ox, oy, r * 2.3, r * 1.8, 0.7); } }   // v211: óxido irregular (antes, sO: un círculo borroso)
   for (const [cx, cy, w, l, a] of [[-3.1, -0.36, 0.09, 0.75, 0.6], [-1.35, -0.36, 0.07, 0.55, 0.5], [-2.2, -0.5, 0.06, 0.4, 0.45], [0.45, -0.38, 0.08, 0.85, 0.55], [-3.9, 0.72, 0.07, 0.42, 0.5], [-0.6, 0.72, 0.06, 0.35, 0.45], [0.9, -1.2, 0.06, 0.6, 0.4], [-4.1, -1.2, 0.05, 0.5, 0.4]]) {
     c.globalAlpha = a; c.drawImage(sC, cx - w / 2, cy, w, l); }
   c.globalAlpha = 1;
@@ -8207,16 +8301,17 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.fillStyle = '#8d8a7c'; c.fill(pb); c.fillStyle = '#4a483e'; c.fill(pl); }
   // v211: el cilindro se lee mejor: brillo especular estrecho arriba, zona en sombra bajo el ecuador y la popa, que se
   // curva hacia la góndola, en penumbra. Todo en capas suaves sobre la pintura de cada chasis.
-  { const gs = c.createLinearGradient(0, -1.32, 0, -0.98); gs.addColorStop(0, 'rgba(240,252,252,0)'); gs.addColorStop(0.5, 'rgba(240,252,252,.13)'); gs.addColorStop(1, 'rgba(240,252,252,0)');
-    c.fillStyle = gs; c.fillRect(-5, -1.32, 10, 0.34);
-    const gx = c.createLinearGradient(-4.4, 0, 3.4, 0); gx.addColorStop(0, 'rgba(245,255,255,0)'); gx.addColorStop(0.3, 'rgba(245,255,255,.2)'); gx.addColorStop(0.75, 'rgba(245,255,255,.26)'); gx.addColorStop(1, 'rgba(245,255,255,0)');
-    c.fillStyle = gx; c.fillRect(-4.4, -1.19, 7.8, 0.045);
-    const gt = c.createLinearGradient(0, -0.1, 0, 0.62); gt.addColorStop(0, 'rgba(0,8,12,0)'); gt.addColorStop(0.75, 'rgba(0,8,12,.16)'); gt.addColorStop(1, 'rgba(0,8,12,.05)');
-    c.fillStyle = gt; c.fillRect(-5, -0.1, 10, 0.72);
-    const gp = c.createLinearGradient(-4.8, 0, -3.6, 0); gp.addColorStop(0, 'rgba(0,6,10,.42)'); gp.addColorStop(1, 'rgba(0,6,10,0)');
-    c.fillStyle = gp; c.fillRect(-4.8, -1.6, 1.2, 2.9);
+  { const gx = c.createLinearGradient(-4.4, 0, 3.4, 0); gx.addColorStop(0, 'rgba(245,255,255,0)'); gx.addColorStop(0.3, 'rgba(245,255,255,.2)'); gx.addColorStop(0.75, 'rgba(245,255,255,.26)'); gx.addColorStop(1, 'rgba(245,255,255,0)');
+    c.save(); c.setLineDash([1.6, 0.18, 0.9, 0.3, 2.2, 0.14, 1.2]); c.strokeStyle = gx; c.lineWidth = 0.04; c.lineCap = 'butt';   // brillo especular, roto en cada junta
+    c.beginPath(); c.moveTo(-4.4, -1.19); c.lineTo(3.4, -1.19); c.stroke(); c.restore();
+    const gp = c.createLinearGradient(-4.8, 0, -3.5, 0); gp.addColorStop(0, 'rgba(0,6,10,.45)'); gp.addColorStop(1, 'rgba(0,6,10,0)');
+    c.fillStyle = gp; c.fillRect(-4.8, -1.6, 1.3, 2.9);   // la popa se curva hacia la góndola
+    const gd = c.createRadialGradient(-4.1, -0.95, 0, -4.1, -0.95, 0.75); gd.addColorStop(0, 'rgba(230,250,250,.16)'); gd.addColorStop(1, 'rgba(230,250,250,0)');   // v218: brillo de la cúpula de popa
+    c.fillStyle = gd; c.fillRect(-4.9, -1.7, 1.6, 1.6);
     const gn = c.createLinearGradient(3.7, 0, 4.65, 0); gn.addColorStop(0, 'rgba(0,6,10,0)'); gn.addColorStop(1, 'rgba(0,6,10,.3)');
-    c.fillStyle = gn; c.fillRect(3.7, 0.6, 1.0, 0.7); }
+    c.fillStyle = gn; c.fillRect(3.7, 0.6, 1.0, 0.7);
+    const go = c.createLinearGradient(0.75, 0, 1.25, 0); go.addColorStop(0, 'rgba(0,6,10,0)'); go.addColorStop(1, 'rgba(0,6,10,.22)');   // v218: oclusión junto al aro de la cabina
+    c.fillStyle = go; c.fillRect(0.75, -1.6, 0.5, 2.3); }
   { const gm = c.createLinearGradient(0, 0.92, 0, 1.24); gm.addColorStop(0, 'rgba(10,4,2,0)'); gm.addColorStop(1, 'rgba(10,4,2,.32)');   // v211
     c.fillStyle = gm; c.fillRect(-5, 0.92, 10, 0.33);
     c.fillStyle = 'rgba(205,190,170,.06)'; for (const [x, w] of [[-3.7, 0.08], [-2.9, 0.05], [-0.9, 0.1], [0.3, 0.06], [2.1, 0.08], [3.2, 0.05]]) c.fillRect(x, 0.68, w, 0.5);   // lavados del agua
@@ -8233,11 +8328,11 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
   // nombre del submarino pintado a plantilla en el costado (el que le pone el jugador; en los pecios, su código)
   if (rot) {
     // v178: letras casi el doble de grandes (antes apenas se leían): 0,38 m de cuerpo y hasta 2,8 m de ancho
-    c.save(); c.translate(-0.9, -0.1); if (!der) c.scale(-1, 1); c.scale(0.01, 0.01);
+    c.save(); c.translate(-1.22, chV === 'acorazado' ? 0.12 : 0.04); if (!der) c.scale(-1, 1); c.scale(0.01, 0.01);   // v218: centrado en su plancha (y las franjas, más abajo)
     c.font = "800 38px 'Big Shoulders Display', 'Arial Narrow', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
     if ('letterSpacing' in c) c.letterSpacing = '4px';
-    if (chV !== 'ligero') { c.fillStyle = 'rgba(10,18,22,.38)'; c.fillText(rot.toUpperCase(), 2, 2, 280); }   // sombra: se lee también sobre las placas claras
-    c.fillStyle = chV === 'ligero' ? 'rgba(34,46,50,.72)' : 'rgba(236,230,210,.7)'; c.fillText(rot.toUpperCase(), 0, 0, 280);   // sobre el casco blanco, pintura oscura
+    if (chV !== 'ligero') { c.fillStyle = 'rgba(10,18,22,.38)'; c.fillText(rot.toUpperCase(), 2, 2, 300); }   // sombra: se lee también sobre las placas claras
+    c.fillStyle = chV === 'ligero' ? 'rgba(34,46,50,.72)' : 'rgba(236,230,210,.7)'; c.fillText(rot.toUpperCase(), 0, 0, 300);   // sobre el casco blanco, pintura oscura
     if ('letterSpacing' in c) c.letterSpacing = '0px';
     c.strokeStyle = 'rgba(40,80,90,.55)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-95, -6); c.lineTo(-35, 5); c.moveTo(25, -10); c.lineTo(75, -3); c.stroke();   // arañazos sobre la pintura
     c.restore();
@@ -8247,17 +8342,13 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
   c.lineWidth = 0.17; c.beginPath(); c.moveTo(4.3, 0.95); c.quadraticCurveTo(4.0, 1.22, 3.5, 1.22); c.lineTo(-3.8, 1.22); c.quadraticCurveTo(-4.75, 1.1, -4.75, 0.15); c.stroke();   // v211: trazo más grueso en el lado de sombra
   c.strokeStyle = 'rgba(190,235,240,.35)'; c.lineWidth = 0.07;                       // brillo del canto superior
   c.beginPath(); c.moveTo(-4.3, -1.3); c.quadraticCurveTo(-3.9, -1.44, -3.4, -1.45); c.lineTo(1.0, -1.5); c.stroke();
-  // remaches
-  { const rb = new Path2D(), bb = new Path2D();
-    const sb = new Path2D();   // v211: sombra de cada remache
-    for (let rx = -4.1; rx < 1.0; rx += 0.42) for (const ry of [-1.3, 1.05]) { rb.moveTo(rx + 0.05, ry); rb.arc(rx, ry, 0.05, 0, 6.283); bb.rect(rx - 0.03, ry - 0.035, 0.03, 0.02); sb.moveTo(rx + 0.072, ry + 0.028); sb.arc(rx + 0.022, ry + 0.028, 0.05, 0, 6.283); }
-    c.fillStyle = 'rgba(0,8,10,.35)'; c.fill(sb); c.fillStyle = '#9c7a45'; c.fill(rb); c.fillStyle = 'rgba(255,232,190,.7)'; c.fill(bb); }
   // ojo de buey de la sala de máquinas, con aro de latón y luz cálida dentro
   { const ox = -0.75, oy = -0.95, orr = 0.24;
     c.fillStyle = '#7a5c32'; c.beginPath(); c.arc(ox, oy, orr + 0.08, 0, 6.283); c.fill();
     c.fillStyle = 'rgba(255,232,190,.45)'; c.beginPath(); c.arc(ox, oy, orr + 0.08, Math.PI * 1.05, Math.PI * 1.6); c.arc(ox, oy, orr + 0.02, Math.PI * 1.6, Math.PI * 1.05, true); c.fill();
     const gw = c.createRadialGradient(ox + 0.05, oy + 0.05, 0, ox, oy, orr); gw.addColorStop(0, '#f0b874'); gw.addColorStop(0.6, '#8a5a2e'); gw.addColorStop(1, '#2a1c12');
     c.fillStyle = gw; c.beginPath(); c.arc(ox, oy, orr, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(12,8,4,.55)'; c.lineWidth = 0.05; c.beginPath(); c.arc(ox, oy, orr - 0.025, 0, 6.283); c.stroke();   // v218: canto del cristal grueso
     c.fillStyle = 'rgba(230,250,255,.35)'; c.beginPath(); c.ellipse(ox - 0.08, oy - 0.08, 0.07, 0.035, -0.7, 0, 6.283); c.fill();
     c.fillStyle = '#c9a96e'; for (let k = 0; k < 6; k++) { const a = k * 1.047; c.beginPath(); c.arc(ox + Math.cos(a) * (orr + 0.045), oy + Math.sin(a) * (orr + 0.045), 0.022, 0, 6.283); c.fill(); } }
   // luz de posición ámbar
@@ -8296,7 +8387,8 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.fillStyle = gjo; c.fillRect(-2.4, -1.8, 4.3, 0.34);
     c.strokeStyle = 'rgba(6,16,20,.55)'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(-2.4, -1.68); c.lineTo(1.9, -1.7); c.stroke();
     c.strokeStyle = 'rgba(200,240,245,.14)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(-2.4, -1.645); c.lineTo(1.9, -1.665); c.stroke();
-    c.fillStyle = '#7d6240'; for (let x = -1.9; x < 1.6; x += 0.35) { c.beginPath(); c.arc(x, -1.6, 0.03, 0, 6.283); c.fill(); } }
+    c.fillStyle = 'rgba(0,8,10,.4)'; for (let x = -1.9; x < 1.6; x += 0.22) { c.beginPath(); c.arc(x + 0.012, -1.585, 0.026, 0, 6.283); c.fill(); }   // v218: pintados
+    c.fillStyle = 'rgba(240,252,252,.4)'; for (let x = -1.9; x < 1.6; x += 0.22) { c.beginPath(); c.arc(x - 0.009, -1.611, 0.011, 0, 6.283); c.fill(); } }
   c.restore();
   c.strokeStyle = 'rgba(205,240,245,.3)'; c.lineWidth = 0.04;   // v211: canto superior de la joroba con luz
   c.beginPath(); c.moveTo(-2.12, -1.7); c.quadraticCurveTo(-1.82, -2.16, -1.0, -2.17); c.lineTo(0.88, -2.12); c.stroke();
@@ -8306,14 +8398,336 @@ function cascoEstatico(c, chV, DT, FS, rot, der) {
     c.fillStyle = gcf; c.fill(cf); c.strokeStyle = '#0c191d'; c.lineWidth = 0.06; c.stroke(cf);
     c.strokeStyle = '#ef6e45'; c.lineWidth = 0.06; c.beginPath(); c.moveTo(-1.7, -2.1); c.quadraticCurveTo(-2.6, -2.15, -3.7, -1.6); c.stroke();
   }
+  if (chV === 'explorador') {   // la del Explorador (Mikel): rejillas de ventilación con lamas
   c.fillStyle = '#0c1a1e'; for (let k = 0; k < 3; k++) rr(c, -1.3 + k * 0.5, -2.0, 0.32, 0.28, 0.06), c.fill();
   c.fillStyle = 'rgba(170,220,228,.25)'; for (let k = 0; k < 3; k++) c.fillRect(-1.27 + k * 0.5, -1.76, 0.26, 0.03);   // canto de las rejillas
   c.fillStyle = 'rgba(120,160,168,.35)'; for (let k = 0; k < 3; k++) for (const ly of [-1.95, -1.87, -1.79]) c.fillRect(-1.26 + k * 0.5, ly, 0.24, 0.025);   // v211: lamas
-  // escotilla de acceso con su volante
-  c.fillStyle = '#2e4a52'; rr(c, -0.05, -2.42, 0.62, 0.2, 0.05); c.fill(); c.strokeStyle = '#0c191d'; c.lineWidth = 0.04; c.stroke();
-  c.fillStyle = 'rgba(225,248,250,.25)'; c.fillRect(0.0, -2.41, 0.52, 0.04);
-  c.strokeStyle = '#8a6a3a'; c.lineWidth = 0.045; c.beginPath(); c.ellipse(0.26, -2.5, 0.2, 0.05, 0, 0, 6.283); c.stroke();
-  c.beginPath(); c.moveTo(0.26, -2.42); c.lineTo(0.26, -2.5); c.stroke();
+  } else {   // v218: los del Consorcio llevan la joroba de espuma sintáctica (flotación) con los agujeros de media luna
+    c.save(); c.clip(joroba); c.fillStyle = 'rgba(255,255,255,.07)';
+    for (let k = 0; k < 140; k++) { const x = -2.2 + ((k * 0.6180339) % 1) * 3.9, y = -2.24 + ((k * 0.7548776) % 1) * 0.74; c.fillRect(x, y, 0.018, 0.018); }   // grano de la espuma
+    c.restore();
+    for (let k = 0; k < 3; k++) { const x = -1.14 + k * 0.5, y = -1.76, r = 0.15;
+      c.fillStyle = 'rgba(235,250,250,.22)'; c.beginPath(); c.arc(x, y + 0.03, r + 0.02, Math.PI, 0); c.closePath(); c.fill();
+      const g = c.createLinearGradient(0, y - r, 0, y); g.addColorStop(0, '#020506'); g.addColorStop(1, '#13232a');
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, r, Math.PI, 0); c.closePath(); c.fill(); }
+  }
+  // v218: escotilla de acceso: la brazola (el cuello sobre el que asienta la tapa), la bisagra a popa, la tapa con su
+  // canto y el volante de cierre de latón visto de canto: el semiaro de detrás más oscuro, el eje y el de delante.
+  { const x0 = -0.95, x1 = -0.33, yb = -2.22, yt = -2.4, vx = -0.63, vy = -2.52;   // a popa del foco auxiliar (T2+), que antes la tapaba
+    const gk = c.createLinearGradient(0, yt, 0, yb); gk.addColorStop(0, EC.joroba[0]); gk.addColorStop(1, EC.joroba[1]);
+    c.fillStyle = gk; c.beginPath(); c.moveTo(x0 + 0.03, yb); c.lineTo(x0 + 0.07, yt); c.lineTo(x1 - 0.07, yt); c.lineTo(x1 - 0.03, yb); c.closePath(); c.fill();
+    c.strokeStyle = '#0c191d'; c.lineWidth = 0.04; c.stroke();
+    c.fillStyle = 'rgba(0,8,12,.35)'; c.fillRect(x0 + 0.05, yb - 0.05, x1 - x0 - 0.1, 0.05);
+    const gt = c.createLinearGradient(0, yt - 0.06, 0, yt + 0.05); gt.addColorStop(0, '#53707a'); gt.addColorStop(1, '#22343a');
+    c.fillStyle = gt; rr(c, x0, yt - 0.06, x1 - x0, 0.1, 0.035); c.fill(); c.strokeStyle = '#0c191d'; c.lineWidth = 0.035; c.stroke();
+    c.fillStyle = 'rgba(225,248,250,.3)'; c.fillRect(x0 + 0.05, yt - 0.05, x1 - x0 - 0.1, 0.02);
+    c.fillStyle = '#7a5c32'; c.beginPath(); c.arc(x0 + 0.01, yt - 0.01, 0.05, 0, 6.283); c.fill(); c.strokeStyle = '#1a150e'; c.lineWidth = 0.022; c.stroke();
+    c.fillStyle = 'rgba(255,232,180,.5)'; c.beginPath(); c.arc(x0 + 0.0, yt - 0.025, 0.017, 0, 6.283); c.fill();
+    c.strokeStyle = '#4e3a20'; c.lineWidth = 0.035; c.beginPath(); c.ellipse(vx, vy, 0.19, 0.045, 0, Math.PI, 2 * Math.PI); c.stroke();
+    c.strokeStyle = '#2e2414'; c.lineWidth = 0.035; c.beginPath(); c.moveTo(vx, yt - 0.06); c.lineTo(vx, vy); c.stroke();
+    c.strokeStyle = '#a37f48'; c.lineWidth = 0.05; c.beginPath(); c.ellipse(vx, vy, 0.19, 0.045, 0, 0, Math.PI); c.stroke();
+    c.strokeStyle = 'rgba(255,232,180,.65)'; c.lineWidth = 0.016; c.beginPath(); c.ellipse(vx, vy + 0.004, 0.17, 0.034, 0, 0.35, 1.5); c.stroke();
+    c.fillStyle = '#c9a96e'; c.beginPath(); c.arc(vx, vy, 0.028, 0, 6.283); c.fill(); }
+  piezasChasis(c, chV, DT, EC);   // v218: parte 2
+  // v218: la cúpula de la proa es transparente: se recorta del casco y por ella se ve el agua de detrás
+  c.save(); c.globalCompositeOperation = 'destination-out'; c.fill(CUPULA); c.restore();
+}
+// v218: la cabina es una cúpula de acrílico en la proa, como en los sumergibles de pilotaje con burbuja (Triton,
+// U-Boat Worx): el cristal ES la proa, sin chapa alrededor, y se une al casco por un aro de brida a popa (de canto, con
+// su fila de pernos) y una brida baja sobre la que asienta. Por ser transparente se recorta del casco y se ve el agua de
+// detrás. Encima, lo propio de un acrílico tan grueso: el tinte, el canto que atrapa la luz, reflejos que siguen la curva,
+// el borde que refleja más y algo de sarro. Nada de esto se mueve: se pinta una vez y se pega encima del interior.
+const CUPULA = (() => { const p = new Path2D(); p.moveTo(1.3, -1.543); p.lineTo(3.25, -1.48); p.quadraticCurveTo(4.0, -1.0, 4.6, 0.05); p.quadraticCurveTo(4.57, 0.4, 4.38, 0.62); p.lineTo(1.3, 0.62); p.closePath(); return p; })();
+const PERNOS_CABINA = (() => {
+  const pts = [];
+  for (let y = -1.36; y < 0.6; y += 0.245) pts.push([1.3, y]);   // aro de popa
+  for (let x = 1.62; x < 4.3; x += 0.27) pts.push([x, 0.66]);     // brida baja
+  const hue = new Path2D(), cab = new Path2D(), luz = new Path2D();
+  for (const [x, y] of pts) { hue.moveTo(x + 0.048, y); hue.arc(x, y, 0.048, 0, 6.283); cab.moveTo(x + 0.032, y); cab.arc(x, y, 0.032, 0, 6.283);
+    luz.moveTo(x + 0.002, y - 0.012); luz.arc(x - 0.01, y - 0.012, 0.012, 0, 6.283); }
+  return { hue, cab, luz };
+})();
+const CACHE_MARCO = new Map(), MARCO_CAJA = { x: 0.9, y: -1.9, w: 3.9, h: 2.8 };
+// v218: la personalidad mecánica de cada chasis (13.6): lo que lleva montado según el trabajo para el que se hizo y un
+// detalle de veterano coherente con su historia (el Explorador es el de Mikel; los otros cuatro salen de los planos de
+// los sumergibles de pruebas del Consorcio). Todo va en la imagen del casco, en caché: no cuesta nada por fotograma.
+function piezasChasis(c, chV, DT, EC) {
+  const perno = (x, y, r = 0.028) => { c.fillStyle = 'rgba(0,8,10,.45)'; c.beginPath(); c.arc(x + 0.01, y + 0.012, r, 0, 6.283); c.fill();
+    c.fillStyle = '#8c9696'; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill(); c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.arc(x - 0.008, y - 0.01, r * 0.4, 0, 6.283); c.fill(); };
+  if (chV === 'explorador') {
+    // Sumergible de investigación: una sonda CTD (conductividad, temperatura y profundidad, lo primero que lleva
+    // cualquier sumergible científico) sujeta con dos abrazaderas al costado de popa, con su cable al casco.
+    { const x0 = -4.25, x1 = -3.45, y = 0.36, r = 0.085;
+      c.strokeStyle = '#111619'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(x1, y); c.quadraticCurveTo(x1 + 0.3, y + 0.02, x1 + 0.35, y + 0.2); c.stroke();
+      c.fillStyle = 'rgba(0,8,10,.35)'; rr(c, x0 + 0.03, y - r + 0.05, x1 - x0, 2 * r, r); c.fill();
+      const g = c.createLinearGradient(0, y - r, 0, y + r); g.addColorStop(0, '#d2d8d6'); g.addColorStop(0.4, '#8e9898'); g.addColorStop(1, '#3d4547');
+      c.fillStyle = g; rr(c, x0, y - r, x1 - x0, 2 * r, r); c.fill(); c.strokeStyle = '#0c191d'; c.lineWidth = 0.025; c.stroke();
+      c.fillStyle = '#d9692b'; rr(c, x0 - 0.02, y - r - 0.01, 0.16, 2 * r + 0.02, 0.05); c.fill();   // tapa naranja del sensor
+      c.fillStyle = 'rgba(255,220,180,.45)'; c.fillRect(x0 + 0.01, y - r + 0.005, 0.1, 0.022);
+      for (const x of [x0 + 0.27, x1 - 0.17]) { c.fillStyle = '#20292c'; c.fillRect(x - 0.035, y - r - 0.035, 0.07, 2 * r + 0.07); perno(x, y - r - 0.012, 0.016); } }
+    // Detalle de veterano: un parche soldado a mano (borde con su cordón de soldadura) y, junto al aro de la cabina,
+    // las inmersiones contadas a palotes con rotulador de pintura, como hacen los pilotos.
+    { const pa = new Path2D(); pa.moveTo(-3.97, -0.33); pa.lineTo(-3.36, -0.37); pa.lineTo(-3.31, 0.03); pa.lineTo(-3.93, 0.06); pa.closePath();
+      c.save(); c.translate(0.025, 0.035); c.fillStyle = 'rgba(0,8,10,.32)'; c.fill(pa); c.restore();
+      c.fillStyle = EC.casco[2]; c.fill(pa); c.fillStyle = 'rgba(230,250,250,.1)'; c.fill(pa);
+      c.save(); c.setLineDash([0.026, 0.016]); c.strokeStyle = 'rgba(48,36,26,.9)'; c.lineWidth = 0.038; c.stroke(pa); c.restore();
+      c.strokeStyle = 'rgba(214,196,166,.32)'; c.lineWidth = 0.012; c.stroke(pa);
+      perno(-3.85, -0.24, 0.022); perno(-3.42, -0.27, 0.022); perno(-3.4, -0.04, 0.022); perno(-3.83, -0.02, 0.022);
+      c.strokeStyle = 'rgba(232,228,214,.72)'; c.lineWidth = 0.018; c.beginPath();
+      for (let gI = 0; gI < 3; gI++) { const bx = 0.6 + gI * 0.15; for (let k = 0; k < 4; k++) { c.moveTo(bx + k * 0.025, -1.26); c.lineTo(bx + k * 0.025 + 0.004, -1.09); } c.moveTo(bx - 0.015, -1.12); c.lineTo(bx + 0.095, -1.23); }
+      for (const x of [1.05, 1.075]) { c.moveTo(x, -1.26); c.lineTo(x + 0.004, -1.09); } c.stroke(); }
+  } else if (chV === 'polivalente') {
+    // TS-4 «Nereida», vehículo de intervención: todo su equipo es hidráulico. Un patín tubular para posarse a trabajar
+    // sin apoyar los depósitos, el bloque de válvulas con su compensador y las mangueras a las dos herramientas de proa.
+    // De veterano, una manguera remendada con cinta.
+    const yS = 1.02 + DT[2] + 0.13, xa = DT[0] + 0.15, xb = DT[0] + DT[1] - 0.15;
+    c.strokeStyle = '#141b1d'; c.lineWidth = 0.1; c.beginPath();
+    for (const x of [xa + 0.45, xb - 0.45]) { c.moveTo(x - 0.22, 1.12); c.lineTo(x, yS); c.moveTo(x + 0.22, 1.12); c.lineTo(x, yS); } c.stroke();
+    c.strokeStyle = EC.casco[2]; c.lineWidth = 0.06; c.stroke();
+    { const g = c.createLinearGradient(0, yS - 0.07, 0, yS + 0.07); g.addColorStop(0, EC.casco[0]); g.addColorStop(0.5, EC.casco[1]); g.addColorStop(1, EC.casco[3]);
+      c.fillStyle = '#141b1d'; rr(c, xa - 0.14, yS - 0.11, xb - xa + 0.28, 0.22, 0.11); c.fill();
+      c.fillStyle = g; rr(c, xa - 0.12, yS - 0.09, xb - xa + 0.24, 0.18, 0.09); c.fill();
+      c.fillStyle = 'rgba(255,250,230,.4)'; c.fillRect(xa, yS - 0.06, xb - xa, 0.025);
+      c.fillStyle = 'rgba(20,16,10,.6)'; for (let x = xa + 0.6; x < xb - 0.3; x += 0.9) c.fillRect(x, yS - 0.09, 0.035, 0.18); }   // uniones del tubo
+    // mangueras (detrás del bloque): a la Garra y al Taladro, con la de la Garra remendada
+    const mang = (pts, cinta) => { c.strokeStyle = '#0d1012'; c.lineWidth = 0.075; c.beginPath(); c.moveTo(...pts[0]); c.bezierCurveTo(...pts[1], ...pts[2], ...pts[3]); c.stroke();
+      c.strokeStyle = 'rgba(160,175,180,.35)'; c.lineWidth = 0.015; c.beginPath(); c.moveTo(pts[0][0], pts[0][1] - 0.02); c.bezierCurveTo(pts[1][0], pts[1][1] - 0.02, pts[2][0], pts[2][1] - 0.02, pts[3][0], pts[3][1] - 0.02); c.stroke();
+      if (cinta) { const t = 0.45, u = 1 - t, bx = u * u * u * pts[0][0] + 3 * u * u * t * pts[1][0] + 3 * u * t * t * pts[2][0] + t * t * t * pts[3][0], by = u * u * u * pts[0][1] + 3 * u * u * t * pts[1][1] + 3 * u * t * t * pts[2][1] + t * t * t * pts[3][1];
+        c.fillStyle = '#9a9a92'; c.save(); c.translate(bx, by); c.rotate(0.15); rr(c, -0.1, -0.055, 0.2, 0.11, 0.025); c.fill(); c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(-0.09, -0.05, 0.18, 0.02);
+        c.strokeStyle = 'rgba(60,60,55,.6)'; c.lineWidth = 0.008; c.beginPath(); for (const dx of [-0.05, 0, 0.05]) { c.moveTo(dx, -0.055); c.lineTo(dx + 0.01, 0.055); } c.stroke(); c.restore(); } };
+    mang([[1.05, 0.88], [1.7, 0.9], [2.2, 1.05], [2.48, 1.2]], true);
+    mang([[1.05, 0.98], [2.0, 1.12], [3.2, 1.16], [3.95, 1.1]], false);
+    { const g = c.createLinearGradient(0, 0.76, 0, 1.06); g.addColorStop(0, '#5c666a'); g.addColorStop(1, '#22292b');   // bloque de válvulas
+      c.fillStyle = 'rgba(0,8,10,.4)'; rr(c, 0.5, 0.8, 0.6, 0.3, 0.04); c.fill();
+      c.fillStyle = g; rr(c, 0.46, 0.76, 0.6, 0.29, 0.04); c.fill(); c.strokeStyle = '#0c1214'; c.lineWidth = 0.025; c.stroke();
+      c.fillStyle = 'rgba(230,240,240,.25)'; c.fillRect(0.5, 0.775, 0.52, 0.02);
+      for (const x of [0.6, 0.76, 0.92]) { c.fillStyle = '#15191a'; c.beginPath(); c.arc(x, 0.9, 0.045, 0, 6.283); c.fill(); c.fillStyle = '#b7894a'; c.beginPath(); c.arc(x, 0.9, 0.028, 0, 6.283); c.fill(); }
+      const gc = c.createLinearGradient(0, 0.79, 0, 1.0); gc.addColorStop(0, '#f0c64a'); gc.addColorStop(1, '#8a6a1c');   // compensador amarillo
+      c.fillStyle = gc; rr(c, -0.12, 0.8, 0.52, 0.2, 0.1); c.fill(); c.strokeStyle = '#2a2008'; c.lineWidth = 0.022; c.stroke();
+      c.strokeStyle = 'rgba(40,30,8,.55)'; c.lineWidth = 0.014; c.beginPath(); for (let x = -0.02; x < 0.32; x += 0.06) { c.moveTo(x, 0.81); c.lineTo(x + 0.02, 0.99); } c.stroke();
+      c.fillStyle = 'rgba(255,245,200,.45)'; c.fillRect(-0.06, 0.82, 0.4, 0.025); }
+  } else if (chV === 'ligero') {
+    // TS-7 «Galatea», el ágil: casco liso (sin remaches en las costuras), propulsores de túnel a proa y popa para girar
+    // en el sitio (un tubo que atraviesa el casco, con su rejilla) y, de veterano de un sumergible de pruebas, las dianas
+    // de fotogrametría que usaban las cámaras del Consorcio para medir cuánto se deformaba el casco con la presión.
+    for (const [x, y, r] of [[3.17, 0.93, 0.12], [-4.12, 0.62, 0.13]]) {
+      c.fillStyle = 'rgba(230,240,240,.25)'; c.beginPath(); c.arc(x, y, r + 0.035, 0, 6.283); c.fill();
+      c.fillStyle = '#20282a'; c.beginPath(); c.arc(x, y, r + 0.02, 0, 6.283); c.fill();
+      const g = c.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r); g.addColorStop(0, '#1a2326'); g.addColorStop(1, '#030607');
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill();
+      c.fillStyle = 'rgba(150,170,172,.5)'; c.beginPath(); c.arc(x, y, r * 0.28, 0, 6.283); c.fill();   // buje de la hélice dentro del túnel
+      c.strokeStyle = '#6b7678'; c.lineWidth = 0.022; c.beginPath(); for (const a of [0, 1.047, 2.094]) { c.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r); c.lineTo(x - Math.cos(a) * r, y - Math.sin(a) * r); } c.stroke(); }
+    for (const [x, y] of [[-3.65, -0.12], [0.82, -0.98], [-1.75, -1.22]]) { const r = 0.105;
+      c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.arc(x + 0.012, y + 0.015, r, 0, 6.283); c.fill();
+      c.fillStyle = '#f1f0e8'; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill();
+      c.fillStyle = '#1b1d1e'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, 0, Math.PI / 2); c.closePath(); c.fill(); c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, Math.PI, Math.PI * 1.5); c.closePath(); c.fill();
+      c.strokeStyle = '#1b1d1e'; c.lineWidth = 0.014; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.stroke(); }
+  } else if (chV === 'carguero') {
+    // TS-9 «Doris», submarino de obra: defensas de goma a lo largo del costado (se arrima a contenedores y estructuras)
+    // y cinchas de carga naranjas sobre la bodega. De veterano, las defensas abolladas y rozadas de tanto atracar.
+    { const x0 = -4.3, x1 = 0.95, y0 = 0.47, h = 0.21;
+      c.fillStyle = 'rgba(0,6,8,.4)'; rr(c, x0 + 0.03, y0 + 0.05, x1 - x0, h, h / 2); c.fill();
+      const g = c.createLinearGradient(0, y0, 0, y0 + h); g.addColorStop(0, '#4a4f50'); g.addColorStop(0.35, '#232729'); g.addColorStop(1, '#0d0f10');
+      c.fillStyle = g; rr(c, x0, y0, x1 - x0, h, h / 2); c.fill();
+      c.fillStyle = 'rgba(210,220,220,.22)'; c.fillRect(x0 + 0.1, y0 + 0.035, x1 - x0 - 0.2, 0.025);
+      c.fillStyle = '#060707'; for (let x = x0 + 0.55; x < x1 - 0.2; x += 0.6) c.fillRect(x, y0, 0.035, h);   // tramos
+      c.fillStyle = 'rgba(170,165,150,.18)'; for (const [x, w] of [[-3.6, 0.3], [-1.9, 0.5], [-0.4, 0.22], [0.4, 0.3]]) c.fillRect(x, y0 + 0.07, w, 0.05);   // roces
+      for (const x of [-2.75, -0.95]) { c.fillStyle = 'rgba(0,0,0,.55)'; c.beginPath(); c.ellipse(x, y0 + 0.09, 0.13, 0.06, 0, 0, 6.283); c.fill();   // abolladuras
+        c.strokeStyle = 'rgba(200,205,200,.3)'; c.lineWidth = 0.015; c.beginPath(); c.ellipse(x, y0 + 0.1, 0.13, 0.06, 0, 0.2, 2.9); c.stroke(); } }
+    for (const x of [DT[0] + DT[1] * 0.27, DT[0] + DT[1] * 0.64]) {   // cinchas de carga sobre la bodega
+      c.fillStyle = '#c4581f'; c.fillRect(x - 0.07, 1.0, 0.14, DT[2] + 0.05);
+      c.fillStyle = 'rgba(255,200,150,.3)'; c.fillRect(x - 0.07, 1.0, 0.03, DT[2] + 0.05);
+      c.strokeStyle = 'rgba(80,30,10,.5)'; c.lineWidth = 0.008; c.beginPath(); for (let y = 1.04; y < 1.0 + DT[2]; y += 0.05) { c.moveTo(x - 0.06, y); c.lineTo(x + 0.06, y + 0.02); } c.stroke();
+      c.fillStyle = '#8f9798'; rr(c, x - 0.1, 1.0 + DT[2] * 0.42, 0.2, 0.14, 0.03); c.fill(); c.fillStyle = '#2a3032'; c.fillRect(x - 0.06, 1.0 + DT[2] * 0.42 + 0.04, 0.12, 0.06); }
+  } else if (chV === 'acorazado') {
+    // TS-12 «Psámate»: de veterano, tres zarpazos largos de fauna en una placa, con el acero vivo en el fondo del surco.
+    c.save(); c.lineCap = 'round';
+    for (let k = 0; k < 3; k++) { const dx = k * 0.1, dy = k * 0.05;
+      c.strokeStyle = 'rgba(8,10,12,.75)'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(-3.75 + dx, -1.12 + dy); c.quadraticCurveTo(-3.25 + dx, -0.98 + dy, -2.7 + dx, -0.55 + dy); c.stroke();
+      c.strokeStyle = 'rgba(225,232,232,.55)'; c.lineWidth = 0.012; c.beginPath(); c.moveTo(-3.73 + dx, -1.132 + dy); c.quadraticCurveTo(-3.24 + dx, -0.995 + dy, -2.7 + dx, -0.565 + dy); c.stroke(); }
+    c.restore();
+  }
+}
+function pegarMarco(c, chV, DT) {
+  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b))), clave = px + '|' + chV, K = MARCO_CAJA;
+  let spr = CACHE_MARCO.get(clave);
+  if (!spr) {
+    if (CACHE_MARCO.size > 10) CACHE_MARCO.clear();
+    spr = document.createElement('canvas'); spr.width = Math.ceil(K.w * px); spr.height = Math.ceil(K.h * px);
+    const g = spr.getContext('2d'); g.scale(px, px); g.translate(-K.x, -K.y); g.lineJoin = 'round'; g.lineCap = 'round';
+    marcoCabina(g, chV, DT); CACHE_MARCO.set(clave, spr);
+  }
+  c.drawImage(spr, K.x, K.y, K.w, K.h);
+}
+function marcoCabina(c, chV, DT) {
+  const sil = siluetaSub(chV, DT), V = CUPULA;
+  // --- el acrílico ---
+  c.save(); c.clip(V);
+  const gv = c.createLinearGradient(1.3, -1.5, 4.5, 0.6); gv.addColorStop(0, 'rgba(120,200,192,.12)'); gv.addColorStop(1, 'rgba(14,52,56,.26)');
+  c.fillStyle = gv; c.fillRect(1.2, -1.6, 3.5, 2.3);   // tinte verdoso de un cristal tan grueso
+  const gr = c.createLinearGradient(0, -1.55, 0, -0.75); gr.addColorStop(0, 'rgba(205,242,246,.2)'); gr.addColorStop(1, 'rgba(205,242,246,0)');
+  c.fillStyle = gr; c.fillRect(1.2, -1.6, 3.5, 0.85);   // la luz de arriba, reflejada en la parte alta
+  const gf = c.createRadialGradient(3.0, -0.35, 0.9, 3.0, -0.35, 1.75); gf.addColorStop(0, 'rgba(215,245,250,0)'); gf.addColorStop(1, 'rgba(215,245,250,.2)');
+  c.fillStyle = gf; c.fillRect(1.2, -1.6, 3.5, 2.3);   // el borde de la cúpula, más de canto, refleja más
+  const gs = c.createLinearGradient(0, 0.25, 0, 0.62); gs.addColorStop(0, 'rgba(190,198,176,0)'); gs.addColorStop(1, 'rgba(190,198,176,.12)');
+  c.fillStyle = gs; c.fillRect(1.2, 0.25, 3.5, 0.4);   // sarro en la parte baja
+  c.strokeStyle = 'rgba(230,250,255,.1)'; c.lineWidth = 0.3; c.beginPath(); c.moveTo(2.95, -1.3); c.quadraticCurveTo(3.7, -0.88, 4.2, 0.0); c.stroke();
+  c.strokeStyle = 'rgba(242,253,255,.5)'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(3.05, -1.27); c.quadraticCurveTo(3.74, -0.86, 4.22, -0.04); c.stroke();
+  c.strokeStyle = 'rgba(230,250,255,.16)'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(2.8, -1.12); c.quadraticCurveTo(3.42, -0.76, 3.86, -0.02); c.stroke();
+  c.strokeStyle = 'rgba(230,250,255,.1)'; c.lineWidth = 0.14; c.beginPath(); c.moveTo(1.7, -1.33); c.lineTo(2.6, -1.32); c.stroke();
+  c.strokeStyle = 'rgba(235,250,255,.07)'; c.lineWidth = 0.01;   // rayas finas del uso
+  c.beginPath(); c.moveTo(2.1, 0.1); c.quadraticCurveTo(2.5, 0.0, 2.75, 0.15); c.moveTo(3.4, 0.35); c.lineTo(3.72, 0.2); c.moveTo(1.75, -0.3); c.quadraticCurveTo(1.9, -0.45, 2.1, -0.5); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(3.2, -1.2, 0.055, 0.022, 0.55, 0, 6.283); c.fill();
+  c.strokeStyle = 'rgba(175,235,225,.26)'; c.lineWidth = 0.3; c.stroke(V);   // el canto del acrílico, que atrapa la luz
+  c.strokeStyle = 'rgba(235,255,250,.4)'; c.lineWidth = 0.09; c.stroke(V);
+  const gw = c.createLinearGradient(1.42, 0, 1.75, 0); gw.addColorStop(0, 'rgba(0,8,10,.38)'); gw.addColorStop(1, 'rgba(0,8,10,0)');
+  c.fillStyle = gw; c.fillRect(1.42, -1.6, 0.33, 2.3);   // sombra del aro sobre el cristal
+  c.restore();
+  // contorno exterior de la cúpula (es la silueta del submarino en la proa)
+  c.strokeStyle = '#0c191d'; c.lineWidth = 0.1; c.beginPath(); c.moveTo(1.3, -1.543); c.lineTo(3.25, -1.48); c.quadraticCurveTo(4.0, -1.0, 4.6, 0.05); c.quadraticCurveTo(4.57, 0.4, 4.38, 0.62); c.stroke();
+  // --- brida baja: la cúpula asienta sobre ella ---
+  c.save(); c.clip(sil);
+  const gb = c.createLinearGradient(0, 0.56, 0, 0.76); gb.addColorStop(0, '#a5865a'); gb.addColorStop(0.45, '#6a5333'); gb.addColorStop(1, '#2e2518');
+  c.fillStyle = 'rgba(0,6,8,.4)'; c.fillRect(1.2, 0.72, 3.5, 0.08);   // su sombra en el casco
+  c.fillStyle = gb; c.fillRect(1.2, 0.56, 3.5, 0.2);
+  c.fillStyle = '#070809'; c.fillRect(1.2, 0.555, 3.5, 0.025);   // junta de goma con el cristal
+  c.fillStyle = 'rgba(255,232,180,.35)'; c.fillRect(1.2, 0.585, 3.5, 0.018);
+  c.strokeStyle = '#1a150e'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(1.2, 0.76); c.lineTo(4.7, 0.76); c.stroke();
+  c.restore();
+  // --- aro de popa: la brida que une la cúpula al casco, vista de canto ---
+  const ar = new Path2D(); ar.moveTo(1.16, 0.76); ar.lineTo(1.16, -1.56); ar.quadraticCurveTo(1.16, -1.64, 1.24, -1.64); ar.lineTo(1.38, -1.64); ar.quadraticCurveTo(1.46, -1.64, 1.46, -1.56); ar.lineTo(1.46, 0.76); ar.closePath();
+  const ga = c.createLinearGradient(1.16, 0, 1.46, 0); ga.addColorStop(0, '#5c4a2e'); ga.addColorStop(0.3, '#a68859'); ga.addColorStop(0.55, '#7d6440'); ga.addColorStop(1, '#3a2f1e');
+  c.fillStyle = 'rgba(0,6,8,.35)'; c.fillRect(1.08, -1.6, 0.08, 2.36);   // sombra sobre el casco, a popa
+  c.fillStyle = ga; c.fill(ar); c.strokeStyle = '#1a150e'; c.lineWidth = 0.04; c.stroke(ar);
+  c.fillStyle = '#070809'; c.fillRect(1.455, -1.56, 0.025, 2.17);   // junta de goma con el cristal
+  c.fillStyle = 'rgba(255,236,190,.4)'; c.fillRect(1.22, -1.6, 0.03, 2.3);   // arista con luz
+  c.fillStyle = 'rgba(255,236,190,.5)'; c.fillRect(1.2, -1.63, 0.22, 0.025);
+  const P = PERNOS_CABINA; c.fillStyle = 'rgba(10,7,3,.7)'; c.fill(P.hue); c.fillStyle = '#9a7a48'; c.fill(P.cab); c.fillStyle = 'rgba(255,238,200,.6)'; c.fill(P.luz);
+  if (chV === 'acorazado') {   // v218: jaula de barras sobre la cúpula: protege el acrílico de golpes y mordiscos
+    const barra = trazo => { c.save(); c.translate(0.04, 0.05); c.strokeStyle = 'rgba(0,6,8,.35)'; c.lineWidth = 0.14; c.beginPath(); trazo(); c.stroke(); c.restore();   // sombra sobre el cristal
+      c.strokeStyle = '#080c0e'; c.lineWidth = 0.16; c.beginPath(); trazo(); c.stroke();
+      c.strokeStyle = '#3e474c'; c.lineWidth = 0.11; c.beginPath(); trazo(); c.stroke();
+      c.strokeStyle = '#6b767c'; c.lineWidth = 0.045; c.save(); c.translate(-0.02, -0.022); c.beginPath(); trazo(); c.stroke();
+      c.strokeStyle = 'rgba(230,236,238,.45)'; c.lineWidth = 0.014; c.translate(-0.01, -0.01); c.beginPath(); trazo(); c.stroke(); c.restore(); };
+    barra(() => { c.moveTo(3.0, -1.47); c.lineTo(3.0, 0.6); });
+    barra(() => { c.moveTo(3.3, -1.42); c.quadraticCurveTo(3.98, -0.95, 4.43, 0.05); c.quadraticCurveTo(4.42, 0.38, 4.26, 0.6); });
+    barra(() => { c.moveTo(3.0, -0.45); c.lineTo(4.35, -0.45); });
+    for (const [x, y] of [[3.0, -1.47], [3.0, 0.6], [4.26, 0.6], [3.3, -1.42]]) { c.fillStyle = '#0a0f11'; rr(c, x - 0.07, y - 0.05, 0.14, 0.1, 0.02); c.fill(); c.fillStyle = '#7d878d'; rr(c, x - 0.055, y - 0.04, 0.11, 0.07, 0.015); c.fill(); }
+  }
+}
+// v218: los estados se leen en el propio submarino (parte 4). Todo en coordenadas del submarino y con guardas, porque
+// en la base y en el Taller no hay casco, estrés ni batería. Lo que cambia con el tiempo son pocos trazos: barato.
+//  - Casco dañado: abolladuras con su borde de luz y arañazos con el metal vivo; salen más cuanto peor está el casco.
+//  - Estrés alto: burbujas finas que escapan por las costuras (más chorros cuanto más estrés).
+//  - Turbo: el motor forzado se calienta (las ranuras de la góndola brillan) y la hélice cavita (estela blanca).
+//  - Lastre: un nivel de cristal en el depósito, con el agua a la altura del lastre que llevas.
+const ABOLLADURAS = [[-3.55, -0.78, 0.3, 0.19, -0.3], [-1.9, 0.32, 0.27, 0.15, 0.2], [0.2, -0.98, 0.22, 0.14, 0.5], [-4.25, 0.22, 0.21, 0.16, 0],
+  [-0.55, 0.45, 0.28, 0.13, -0.15], [-2.6, -1.17, 0.2, 0.12, 0.1], [0.78, 0.12, 0.19, 0.15, 0.3], [-3.15, 0.88, 0.25, 0.11, 0]];
+const FUGAS = [[-2.9, -0.47], [-1.15, -0.5], [0.65, 0.2], [-2.9, 0.62], [-4.3, -0.45], [0.65, -0.9]];
+// Las abolladuras no se mueven: se pintan una vez por resolución, chasis y nivel de daño (medio en medio) y se pegan.
+const CACHE_ABOLL = new Map();
+function pegarAbolladuras(c, chV, sil, nf) {
+  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b))), clave = px + '|' + chV + '|' + nf, K = CASCO_CAJA;
+  let spr = CACHE_ABOLL.get(clave);
+  if (!spr) {
+    if (CACHE_ABOLL.size > 12) CACHE_ABOLL.clear();
+    spr = document.createElement('canvas'); spr.width = Math.ceil(K.w * px); spr.height = Math.ceil(K.h * px);
+    const g = spr.getContext('2d'); g.scale(px, px); g.translate(-K.x, -K.y); g.lineJoin = 'round'; g.lineCap = 'round';
+    abolladuras(g, sil, nf); CACHE_ABOLL.set(clave, spr);
+  }
+  c.drawImage(spr, K.x, K.y, K.w, K.h);
+}
+function abolladuras(c, sil, nf) {
+    const n = Math.min(ABOLLADURAS.length, Math.ceil(nf));
+    c.save(); c.clip(sil);
+    for (let k = 0; k < n; k++) { const [x, y, rx, ry, rot] = ABOLLADURAS[k];
+      c.save(); c.translate(x, y); c.rotate(rot); c.globalAlpha = Math.min(1, nf - k);
+      // la abolladura es cóncava: con la luz de arriba, su pared de arriba queda en sombra (media luna oscura) y el fondo
+      // y la pared de abajo se iluminan. Alrededor salta la pintura y por dentro cruzan los surcos del golpe.
+      c.fillStyle = 'rgba(0,6,8,.1)'; c.beginPath(); c.ellipse(0, 0, rx * 1.12, ry * 1.15, 0, 0, 6.283); c.fill();   // la chapa se hunde también un poco alrededor
+      c.save(); c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, 6.283); c.clip();
+      const gd = c.createLinearGradient(0, -ry, 0, ry); gd.addColorStop(0, 'rgba(0,5,7,.5)'); gd.addColorStop(0.45, 'rgba(0,5,7,.16)'); gd.addColorStop(1, 'rgba(0,5,7,.05)');
+      c.fillStyle = gd; c.fillRect(-rx, -ry, 2 * rx, 2 * ry);
+      const gl = c.createRadialGradient(0, ry * 0.35, 0, 0, ry * 0.35, rx * 0.9); gl.addColorStop(0, 'rgba(215,236,238,.3)'); gl.addColorStop(0.6, 'rgba(160,200,205,.12)'); gl.addColorStop(1, 'rgba(160,200,205,0)');
+      c.fillStyle = gl; c.beginPath(); c.ellipse(0, ry * 0.35, rx * 0.9, ry * 0.8, 0, 0, 6.283); c.fill();
+      for (let q = 0; q < 2; q++) { const o = (q - 0.5) * ry * 0.5;   // surcos del golpe, solo dentro
+        c.strokeStyle = 'rgba(0,4,6,.4)'; c.lineWidth = 0.016; c.beginPath(); c.moveTo(-rx * 0.55, o - ry * 0.15); c.lineTo(rx * 0.5, o + ry * 0.15); c.stroke();
+        c.strokeStyle = 'rgba(225,232,228,.7)'; c.lineWidth = 0.009; c.beginPath(); c.moveTo(-rx * 0.55, o - ry * 0.15 - 0.008); c.lineTo(rx * 0.5, o + ry * 0.15 - 0.008); c.stroke(); }
+      c.restore();
+      c.strokeStyle = 'rgba(235,248,248,.4)'; c.lineWidth = 0.022; c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 3.5, 6.0); c.stroke();   // el borde de arriba, doblado, coge luz
+      c.strokeStyle = 'rgba(0,5,7,.25)'; c.lineWidth = 0.016; c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0.3, 2.85); c.stroke();
+      for (let q = 0; q < 6; q++) { const a = 0.4 + q * 1.0 + k * 0.7, px = Math.cos(a) * rx * 1.05, py = Math.sin(a) * ry * 1.08, w = 0.045 + 0.025 * ((q + k) % 3);   // pintura saltada
+        c.fillStyle = q % 2 ? 'rgba(150,62,40,.85)' : 'rgba(205,214,208,.7)'; c.beginPath(); c.moveTo(px - w * 0.3, py - w * 0.2); c.lineTo(px + w, py - w * 0.45); c.lineTo(px + w * 0.5, py + w * 0.5); c.lineTo(px - w * 0.2, py + w * 0.3); c.closePath(); c.fill(); }
+      c.restore(); }
+    c.restore();
+}
+function dibujarEstadosSub(c, s, I, chV, DT, sil) {
+  const t = I.t || 0;
+  const dmg = typeof I.casco === 'number' ? clamp(1 - I.casco / 100, 0, 1) : 0;
+  if (dmg > 0.06) pegarAbolladuras(c, chV, sil, Math.round(dmg * ABOLLADURAS.length * 2) / 2);   // en caché por nivel de daño
+  const es = typeof I.estres === 'number' ? clamp((I.estres - 35) / 55, 0, 1) : 0, nFug = Math.ceil(es * FUGAS.length) + (dmg > 0.65 ? 2 : 0);
+  if (nFug > 0) {
+    for (let i = 0; i < Math.min(nFug, FUGAS.length); i++) { const [x, y] = FUGAS[i];
+      const gm = c.createLinearGradient(0, y, 0, y + 0.45); gm.addColorStop(0, 'rgba(0,6,8,.35)'); gm.addColorStop(1, 'rgba(0,6,8,0)');
+      c.fillStyle = gm; c.beginPath(); c.ellipse(x, y + 0.18, 0.035, 0.22, 0, 0, 6.283); c.fill();   // la costura rezuma: mancha húmeda que baja
+      c.fillStyle = 'rgba(230,250,252,.7)'; c.beginPath(); c.arc(x, y, 0.025, 0, 6.283); c.fill();   // el poro
+      for (let b = 0; b < 6; b++) { const ph = (t * (0.55 + 0.08 * i) + b / 6 + i * 0.37) % 1, bx = x + Math.sin(ph * 7 + i) * 0.07 * ph, by = y - 0.04 - ph * 1.5, r = 0.022 + 0.035 * ph;
+        c.globalAlpha = (1 - ph * ph) * (0.6 + 0.4 * es);
+        c.fillStyle = 'rgba(200,235,242,.25)'; c.beginPath(); c.arc(bx, by, r, 0, 6.283); c.fill();
+        c.strokeStyle = 'rgba(235,252,255,.85)'; c.lineWidth = 0.01; c.stroke();
+        c.fillStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.arc(bx - r * 0.35, by - r * 0.35, r * 0.25, 0, 6.283); c.fill(); }
+      c.globalAlpha = 1; }
+  }
+  if (typeof s.lastre === 'number' && DT) {   // nivel del lastre en el depósito
+    const x = DT[0] + DT[1] - DT[2] * 0.42 - 0.3, y0 = 1.02 + DT[2] * 0.2, h = DT[2] * 0.6;
+    c.fillStyle = '#7a5c32'; rr(c, x - 0.065, y0 - 0.05, 0.13, h + 0.1, 0.03); c.fill();
+    c.fillStyle = '#0a1416'; c.fillRect(x - 0.04, y0, 0.08, h);
+    const nv = clamp(s.lastre, 0, 1) * h; if (nv > 0.005) { c.fillStyle = 'rgba(70,170,175,.85)'; c.fillRect(x - 0.04, y0 + h - nv, 0.08, nv); c.fillStyle = 'rgba(200,250,250,.8)'; c.fillRect(x - 0.04, y0 + h - nv, 0.08, 0.012); }
+    c.fillStyle = 'rgba(235,250,252,.35)'; c.fillRect(x - 0.03, y0 + 0.01, 0.015, h - 0.02);
+    c.fillStyle = '#c9a96e'; for (const yy of [y0 - 0.025, y0 + h + 0.025]) { c.beginPath(); c.arc(x, yy, 0.02, 0, 6.283); c.fill(); }
+  }
+  const turbo = typeof entrada !== 'undefined' && entrada.turbo && s.empuja && I.eq && !I.eq.sinTurbo && I.bateria > 0 && !(I.fallo && I.fallo.motor > 0);
+  if (turbo) {
+    const p = 0.75 + 0.25 * Math.sin(t * 23), mot = (I.eq && I.eq.motorId) || 'serie';
+    c.save(); c.globalCompositeOperation = 'lighter';
+    const gk = c.createLinearGradient(0, -0.75, 0, 0.75); gk.addColorStop(0, `rgba(255,120,40,${0.25 * p})`); gk.addColorStop(0.5, `rgba(255,170,70,${0.55 * p})`); gk.addColorStop(1, `rgba(255,120,40,${0.25 * p})`);
+    c.fillStyle = gk; for (let k = 0; k < 4; k++) { rr(c, -5.55 + k * 0.28, -0.75, 0.13, 1.5, 0.05); c.fill(); }   // ranuras al rojo
+    c.restore();
+    const xh = mot === 'velocidad' ? -6.75 : mot === 'eficiencia' ? -6.95 : -6.4;   // cavitación: la hélice forzada arranca burbujas
+    for (let b = 0; b < 26; b++) { const ph = (t * 1.8 + b * 0.0385) % 1, sp = (((Math.sin(b * 78.233 + Math.floor(t * 1.8 + b * 0.0385) * 12.9898) * 43758.5453) % 1) + 1) % 1 * 2 - 1, bx = xh - ph * 2.6, by = sp * (0.2 + ph * 0.75) + Math.sin(t * 9 + b) * 0.03, r = 0.025 + 0.05 * ph * Math.abs(Math.sin(b * 4.1));
+      c.globalAlpha = (1 - ph) * 0.8; c.fillStyle = 'rgba(210,240,248,.3)'; c.beginPath(); c.arc(bx, by, r, 0, 6.283); c.fill(); c.strokeStyle = 'rgba(240,252,255,.8)'; c.lineWidth = 0.01; c.stroke(); }
+    c.globalAlpha = 1; c.save();
+    c.restore();
+  }
+}
+// Escarcha en el acrílico con frío (dentro de la cúpula): ramas de hielo que crecen desde las esquinas. Se calculan una
+// vez (siempre las mismas) y solo cambia su opacidad.
+const ESCARCHA = (() => {
+  const p = new Path2D(); let sd = 23; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  // helecho de hielo: un tallo corto con barbas cortas a los dos lados, a 60°, como crece la escarcha en un cristal frío
+  const pluma = (x, y, a, l) => { const n = 6; for (let k = 0; k <= n; k++) { const f = k / n, bx = x + Math.cos(a) * l * f, by = y + Math.sin(a) * l * f, bl = l * 0.32 * (1 - f * 0.8);
+      if (k) { p.moveTo(x + Math.cos(a) * l * (k - 1) / n, y + Math.sin(a) * l * (k - 1) / n); p.lineTo(bx, by); }
+      for (const sg of [-1, 1]) { const b2 = a + sg * 1.05; p.moveTo(bx, by); p.lineTo(bx + Math.cos(b2) * bl, by + Math.sin(b2) * bl); } } };
+  for (const [x, y, a0, nn] of [[1.48, 0.6, -0.9, 7], [1.48, -1.52, 0.7, 6], [4.38, 0.6, -2.4, 5], [2.5, 0.6, -1.5, 5], [3.3, -1.5, 2.0, 5], [1.48, -0.5, 0.0, 4], [4.0, -0.75, 2.6, 4]])
+    for (let k = 0; k < nn; k++) { const a = a0 + (rnd() - 0.5) * 1.6, d = rnd() * 0.12; pluma(x + Math.cos(a) * d, y + Math.sin(a) * d, a, 0.1 + rnd() * 0.16); }
+  return p;
+})();
+function escarchaCabina(c, fr) {
+  const gf = c.createRadialGradient(2.9, -0.45, 0.6, 2.9, -0.45, 1.9); gf.addColorStop(0, 'rgba(220,236,242,0)'); gf.addColorStop(1, `rgba(220,236,242,${(0.42 * fr).toFixed(3)})`);
+  c.fillStyle = gf; c.fillRect(1.2, -1.6, 3.5, 2.3);   // vaho que avanza desde los bordes
+  c.strokeStyle = `rgba(238,250,253,${(0.5 * fr).toFixed(3)})`; c.lineWidth = 0.008; c.stroke(ESCARCHA);
+  for (const [x, y] of [[1.48, 0.6], [1.48, -1.52], [4.38, 0.6], [3.3, -1.5]]) { const g = c.createRadialGradient(x, y, 0, x, y, 0.45); g.addColorStop(0, `rgba(235,246,250,${(0.35 * fr).toFixed(3)})`); g.addColorStop(1, 'rgba(235,246,250,0)'); c.fillStyle = g; c.fillRect(x - 0.45, y - 0.45, 0.9, 0.9); }   // la escarcha se espesa en las esquinas
+}
+// Taladro en sobrecarga: la broca se pone al rojo de la punta hacia atrás (latiendo) y el agua hierve a su alrededor.
+function calorTaladro(c, t) {
+  const T = TALADRO, p = 0.8 + 0.2 * Math.sin(t * 19);
+  c.save(); c.globalCompositeOperation = 'lighter';
+  const g = c.createLinearGradient(T.x0, 0, T.punta, 0); g.addColorStop(0, 'rgba(255,90,30,0)'); g.addColorStop(0.45, `rgba(255,110,40,${(0.35 * p).toFixed(3)})`); g.addColorStop(1, `rgba(255,190,90,${(0.7 * p).toFixed(3)})`);
+  c.fillStyle = g; c.beginPath(); c.moveTo(T.x0, T.y - T.r); c.lineTo(T.punta, T.y - 0.02); c.lineTo(T.punta, T.y + 0.02); c.lineTo(T.x0, T.y + T.r); c.closePath(); c.fill();
+  c.restore();
+  for (let b = 0; b < 8; b++) { const ph = (t * 1.4 + b / 8) % 1, h = (((Math.sin(b * 78.233) * 43758.5453) % 1) + 1) % 1, bx = T.x0 + 0.2 + h * (T.punta - T.x0 - 0.2) + Math.sin(ph * 8 + b) * 0.04, by = T.y - 0.1 - ph * 0.9, r = 0.02 + 0.03 * ph;
+    c.globalAlpha = (1 - ph) * 0.8; c.strokeStyle = 'rgba(240,250,255,.8)'; c.lineWidth = 0.01; c.beginPath(); c.arc(bx, by, r, 0, 6.283); c.stroke(); }   // el agua hierve
+  c.globalAlpha = 1;
 }
 function dibujarSub(x, y, E, s, I, c = ctx) {   // c: contexto donde dibujar (juego o escena de la base)
   c.save(); c.translate(x, y); c.scale(E * (s.derecha ? 1 : -1), E);
@@ -8322,7 +8736,8 @@ function dibujarSub(x, y, E, s, I, c = ctx) {   // c: contexto donde dibujar (ju
   dibujarCargaColgada(c, I, s);
 
   // --- Hélice y timón (detrás de todo) ---
-  dibujarHelice(c, s.helice || 0, s.heliceW ?? 2);
+  const motV = (I.eq && I.eq.motorId) || 'serie';   // v218: la popa cambia con el motor
+  dibujarHelice(c, s.helice || 0, s.heliceW ?? 2, motV);
   const chV = (I.eq && I.eq.chasis) || 'explorador';
   const DT = chV === 'polivalente' ? [-4.0, 6.0, 0.88, [-3.0, -1.4, 0.2, 1.4]] : chV === 'ligero' ? [-2.9, 4.4, 0.52, [-1.6, 0.0]]
     : chV === 'carguero' ? [-4.3, 6.2, 1.15, [-3.2, -1.7, -0.2, 1.3]] : chV === 'acorazado' ? [-3.8, 5.8, 0.8, [-2.6, -0.9, 0.8]] : [-3.6, 5.6, 0.7, [-2.7, -1.0, 0.7]];
@@ -8353,42 +8768,33 @@ function dibujarSub(x, y, E, s, I, c = ctx) {   // c: contexto donde dibujar (ju
       c.restore();
     }
   }
+  dibujarEstadosSub(c, s, I, chV, DT, siluetaSub(chV, DT));   // v218: daños, estrés, lastre y turbo
+  const falloE = !!(I.fallo && I.fallo.luces > 0);
+  if (falloE) { c.fillStyle = 'rgba(10,7,4,.78)'; c.beginPath(); c.arc(-0.75, -0.95, 0.25, 0, 6.283); c.fill(); }   // v218: sin corriente, el ojo de buey se apaga
   if (FS.ventral) { c.fillStyle = (luzOn && I.ventral) ? '#fff6d2' : '#4d5556'; c.beginPath(); c.ellipse(2.8, 1.43, 0.24, 0.1, 0, 0, 6.283); c.fill(); }
   { const on = Math.sin((I.t || 0) * 2.6) > 0.55; c.fillStyle = on ? '#ff5a45' : '#6a2a22'; c.beginPath(); c.arc(-1.75, -3.08, 0.07, 0, 6.283); c.fill();
     if (on) pintarSprite(c, SPR_SUB.rojo, -1.75, -3.08, 0.35, 0.35, 0.8); }
   if (FS.ventral) dibujarFocoAux(c, luzOn);   // T2+: segundo proyector, más pequeño, sobre la joroba
-  dibujarFoco(c, luzOn, I.t || 0);
+  if (FS.rojo) dibujarSensorSigilo(c, luzOn, I.t || 0); else dibujarFoco(c, luzOn, I.t || 0);   // v218: el sensor, pieza propia
   if (FS.trasero) dibujarFocoTrasero(c, luzOn);   // T3: foco hacia atrás, sobre la popa
 
   // --- Cabina acristalada ---
-  const vidrio = new Path2D();
-  vidrio.moveTo(1.3, -1.38); vidrio.lineTo(3.1, -1.33); vidrio.quadraticCurveTo(3.8, -0.8, 4.2, 0.05); vidrio.lineTo(3.95, 0.62); vidrio.lineTo(1.3, 0.62); vidrio.closePath();
+  const vidrio = CUPULA;   // v218: la cabina es una cúpula de acrílico que forma la proa
   c.save(); c.clip(vidrio);
   { const n = v => typeof v === 'number' ? v : null;   // en la base y el menú no hay temperatura, CO2 ni golpes
     dibujarCabina(c, I.t || 0, clamp((s.vy || 0) / 10, -1, 1), {   // la palanca va hacia delante al bajar
       frio: n(I.temp) === null ? 0 : clamp((15 - I.temp) / 4, 0, 1),            // aliento visible desde 15 °C; del todo a 11 °C
       sueno: n(I.co2) === null ? 0 : clamp((I.co2 - BAL.co2.inicioEfecto) / (BAL.co2.critico - BAL.co2.inicioEfecto), 0, 1),
-      golpe: clamp((I.sacudida || 0) / 0.3, 0, 1) }); }
+      golpe: clamp((I.sacudida || 0) / 0.3, 0, 1), fallo: !!(I.fallo && I.fallo.luces > 0) }); }
   c.restore();
-  c.strokeStyle = '#1a150e'; c.lineWidth = 0.27; c.stroke(vidrio);   // v211: marco con volumen
-  { const gfm = c.createLinearGradient(0, -1.45, 0, 0.7); gfm.addColorStop(0, '#6e5c3e'); gfm.addColorStop(0.5, '#4a3d29'); gfm.addColorStop(1, '#2f2719');
-    c.strokeStyle = gfm; c.lineWidth = 0.17; c.stroke(vidrio); }
-  c.strokeStyle = 'rgba(255,228,170,.22)'; c.lineWidth = 0.035; c.stroke(vidrio);
-  c.strokeStyle = 'rgba(214,176,112,.55)'; c.lineWidth = 0.04;   // v166: bisel de latón del marco (canto de arriba)
-  c.beginPath(); c.moveTo(1.3, -1.46); c.lineTo(3.1, -1.41); c.quadraticCurveTo(3.85, -0.86, 4.27, 0.0); c.stroke();
-  { const rv = new Path2D(); for (let k = 0; k <= 6; k++) { const xx = 1.45 + k * 0.27; rv.moveTo(xx + 0.03, -1.38 + k * 0.008); rv.arc(xx, -1.38 + k * 0.008, 0.03, 0, 6.283); }
-    c.fillStyle = '#c9a96e'; c.fill(rv); }
-  c.strokeStyle = '#1a150e'; c.lineWidth = 0.14; c.beginPath(); c.moveTo(2.75, -1.34); c.lineTo(2.75, 0.62); c.stroke();   // montante (v211: con volumen)
-  c.strokeStyle = '#4f4129'; c.lineWidth = 0.09; c.stroke(); c.strokeStyle = 'rgba(255,228,170,.24)'; c.lineWidth = 0.025; c.beginPath(); c.moveTo(2.735, -1.3); c.lineTo(2.735, 0.58); c.stroke();
-  c.fillStyle = '#9c7a45'; for (const yy of [-1.1, -0.5, 0.1]) { c.beginPath(); c.arc(2.75, yy, 0.04, 0, 6.283); c.fill(); }   // remaches del montante
-
+  pegarMarco(c, chV, DT);   // v218: cúpula de acrílico: canto, reflejos, brida baja y aro de popa con sus pernos (en caché)
   // --- Placas de blindaje según tier (el sprite refleja el equipo, GDD 13.3) ---
   if (I.niv && I.niv.blindaje > 0) dibujarBlindajeSub(c, I.niv.blindaje);   // v211: con relieve y pernos (mismas placas)
 
   // --- Electrodos del pulso disuasorio en la proa ---
   if (I.eq && I.eq.tienePulso) dibujarEmisorPulso(c, I);
   // --- Taladro: siempre visible si va montado en la proa; gira y suelta chispas mientras extrae ---
-  if (I.eq ? I.eq.tieneTaladro : I.minado) dibujarTaladro(c, I);
+  if (I.eq ? I.eq.tieneTaladro : I.minado) { dibujarTaladro(c, I); if (I.minado && I.minado.estado === 'sobre') calorTaladro(c, I.t || 0); }   // v218: al rojo en sobrecarga
   // --- Garra: plegada bajo la panza; se estira al recoger ---
   if (I.eq && I.eq.tieneGarra) dibujarGarra(c, I);
   c.restore();
@@ -8421,22 +8827,21 @@ function dibujarBlindajeSub(c, tier) {
 // Piloto sentado mirando a proa, con cascos, una mano en la palanca; consola inclinada con pantallas que
 // le iluminan la cara de cian; plafón cálido en el techo; y encima, el cristal con su tinte y sus reflejos.
 function dibujarCabina(c, t, mando = 0, est = null) {
-  // pared del fondo: penumbra azulada, más oscura abajo
-  const gp = c.createLinearGradient(0, -1.4, 0, 0.65); gp.addColorStop(0, '#22343a'); gp.addColorStop(1, '#0d171a');
-  c.fillStyle = gp; c.fillRect(1.2, -1.45, 3.2, 2.1);
-  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 0.07;   // cuadernas del interior
-  for (const x of [1.55, 2.35]) { c.beginPath(); c.moveTo(x, -1.4); c.lineTo(x, 0.62); c.stroke(); }
-  c.fillStyle = 'rgba(255,255,255,.04)'; c.fillRect(1.3, -0.95, 1.4, 0.06);
-  // plafón del techo y su luz cálida
-  c.fillStyle = '#3a3122'; rr(c, 2.0, -1.36, 0.42, 0.1, 0.04); c.fill();
-  const gl = c.createRadialGradient(2.2, -1.25, 0, 2.2, -1.25, 1.5); gl.addColorStop(0, 'rgba(255,200,130,.45)'); gl.addColorStop(1, 'rgba(255,200,130,0)');
-  c.fillStyle = gl; c.fillRect(0.7, -2.75, 3, 3);
-  c.fillStyle = '#ffe2b0'; rr(c, 2.05, -1.27, 0.32, 0.04, 0.02); c.fill();
-  // panel de instrumentos del techo, sobre la cabeza del piloto
-  c.fillStyle = '#172226'; c.beginPath(); c.moveTo(2.55, -1.34); c.lineTo(3.25, -1.32); c.lineTo(3.05, -1.05); c.lineTo(2.6, -1.08); c.closePath(); c.fill();
-  const parp = Math.sin(t * 3.1) > 0.2;
-  c.fillStyle = parp ? '#ffb347' : '#6b4a20'; c.beginPath(); c.arc(2.75, -1.18, 0.035, 0, 6.283); c.fill();
-  c.fillStyle = '#66d690'; c.beginPath(); c.arc(2.88, -1.17, 0.035, 0, 6.283); c.fill();
+  // v218: detrás del piloto no hay pared: el agua, vista a través de la cúpula, algo velada por el acrílico
+  const gp = c.createLinearGradient(0, -1.55, 0, 0.65); gp.addColorStop(0, 'rgba(20,44,50,.35)'); gp.addColorStop(1, 'rgba(6,14,16,.62)');
+  c.fillStyle = gp; c.fillRect(1.2, -1.6, 3.5, 2.3);
+  // v218: el suelo de la cabina visto de canto (chapa estriada) sobre el que van el asiento y la consola
+  c.fillStyle = '#161d20'; c.fillRect(1.3, 0.5, 3.2, 0.14);
+  c.fillStyle = 'rgba(190,220,222,.16)'; c.fillRect(1.3, 0.5, 3.2, 0.02);
+  c.fillStyle = 'rgba(0,0,0,.35)'; for (let x = 1.4; x < 4.4; x += 0.12) c.fillRect(x, 0.53, 0.05, 0.02);
+  // v218: aplique de luz cálida en el aro de popa (en una cúpula no hay techo del que colgar un plafón)
+  c.fillStyle = '#2b2418'; rr(c, 1.44, -1.36, 0.16, 0.26, 0.04); c.fill();
+  const gl = c.createRadialGradient(1.7, -1.2, 0, 1.7, -1.2, 1.5); gl.addColorStop(0, 'rgba(255,200,130,.45)'); gl.addColorStop(1, 'rgba(255,200,130,0)');
+  if (!(est && est.fallo)) { c.fillStyle = gl; c.fillRect(0.2, -2.7, 3, 3); }
+  c.fillStyle = est && est.fallo ? '#3a3328' : '#ffe2b0'; rr(c, 1.57, -1.32, 0.04, 0.18, 0.02); c.fill();
+  const parp = Math.sin(t * 3.1) > 0.2;   // pilotos de estado, ahora en la consola
+  c.fillStyle = parp ? '#ffb347' : '#6b4a20'; c.beginPath(); c.arc(3.78, 0.2, 0.032, 0, 6.283); c.fill();
+  c.fillStyle = '#66d690'; c.beginPath(); c.arc(3.88, 0.27, 0.032, 0, 6.283); c.fill();
   // asiento: pedestal, cojín, respaldo reclinado y reposacabezas
   c.fillStyle = '#20282b'; c.fillRect(1.9, 0.32, 0.12, 0.3); c.fillRect(1.72, 0.56, 0.5, 0.06);
   c.fillStyle = '#4a3020'; rr(c, 1.66, 0.2, 0.66, 0.14, 0.06); c.fill();
@@ -8452,7 +8857,7 @@ function dibujarCabina(c, t, mando = 0, est = null) {
   // Se mueve poco: respira, parpadea, mira de vez en cuando a la consola y la palanca sigue al submarino (mando: −1…1).
   // Y cuenta lo que pasa a bordo sin texto (est): con frío se le ve el aliento y tirita; con el CO2 alto le entra
   // sueño (cabecea, como en la hipercapnia real); con una embestida, el golpe lo sacude en el asiento.
-  const E2 = est || {}, frio = E2.frio || 0, sueno = E2.sueno || 0, golpe = E2.golpe || 0;
+  const E2 = est || {}, frio = E2.frio || 0, sueno = E2.sueno || 0, golpe = E2.golpe || 0, falloC = !!E2.fallo;
   const tirita = frio > 0.4 ? Math.sin(t * 47) * 0.004 * frio : 0, sac = golpe * Math.sin(t * 60) * 0.03;
   const resp = Math.sin(t * (1.4 + 0.8 * frio)) * 0.012;
   const ciclo = t % 9.5, mira = sueno > 0 ? 0 : ciclo > 7.2 && ciclo < 8.8 ? Math.sin((ciclo - 7.2) / 1.6 * Math.PI) : 0;   // vistazo a la consola
@@ -8603,44 +9008,62 @@ function dibujarCabina(c, t, mando = 0, est = null) {
   c.fillStyle = '#1a2427'; c.beginPath(); c.moveTo(2.95, 0.62); c.lineTo(3.05, 0.08); c.lineTo(3.55, -0.12); c.lineTo(4.05, 0.3); c.lineTo(4.0, 0.62); c.closePath(); c.fill();
   c.strokeStyle = 'rgba(150,200,205,.18)'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(3.05, 0.08); c.lineTo(3.55, -0.12); c.stroke();
   c.save(); c.translate(3.08, 0.05); c.rotate(-0.38);
-  const brillo = 0.75 + 0.25 * Math.sin(t * 7.3) * Math.sin(t * 2.1);
+  const brillo = falloC ? (Math.sin(t * 37) * Math.sin(t * 5.3) > 0.7 ? 0.35 : 0.04) : 0.75 + 0.25 * Math.sin(t * 7.3) * Math.sin(t * 2.1);   // v218: sin corriente, pantallas apagadas que parpadean
   c.fillStyle = `rgba(82,227,212,${0.85 * brillo})`; c.fillRect(0, -0.1, 0.24, 0.1);   // pantalla principal (sonar)
   c.strokeStyle = 'rgba(8,30,30,.8)'; c.lineWidth = 0.015; c.beginPath(); c.moveTo(0.02, -0.05); c.lineTo(0.22, -0.05); c.moveTo(0.12, -0.095); c.lineTo(0.12, -0.005); c.stroke();
   c.fillStyle = 'rgba(233,180,60,.9)'; c.fillRect(0.3, -0.08, 0.1, 0.07);                 // indicador ámbar
   c.restore();
   c.fillStyle = 'rgba(102,214,144,.85)'; c.beginPath(); c.arc(3.75, 0.08, 0.03, 0, 6.283); c.fill();
   // luz de las pantallas sobre la cara y el pecho del piloto
-  const gs = c.createRadialGradient(3.15, -0.05, 0, 3.15, -0.05, 1.3); gs.addColorStop(0, 'rgba(82,227,212,.22)'); gs.addColorStop(1, 'rgba(82,227,212,0)');
+  const gs = c.createRadialGradient(3.15, -0.05, 0, 3.15, -0.05, 1.3); gs.addColorStop(0, `rgba(82,227,212,${falloC ? 0.03 : 0.22})`); gs.addColorStop(1, 'rgba(82,227,212,0)');
   c.fillStyle = gs; c.fillRect(1.8, -1.35, 2.7, 2.7);
-  // cristal: tinte y reflejos (siguen la curva de la proa)
-  const gv = c.createLinearGradient(1.3, -1.4, 4.2, 0.6); gv.addColorStop(0, 'rgba(140,205,215,.16)'); gv.addColorStop(1, 'rgba(20,55,65,.32)');
-  c.fillStyle = gv; c.fillRect(1.2, -1.45, 3.2, 2.1);
-  c.strokeStyle = 'rgba(230,250,255,.28)'; c.lineWidth = 0.1; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(2.95, -1.2); c.quadraticCurveTo(3.55, -0.8, 3.9, -0.15); c.stroke();
-  c.strokeStyle = 'rgba(230,250,255,.14)'; c.lineWidth = 0.05;
-  c.beginPath(); c.moveTo(2.8, -1.05); c.quadraticCurveTo(3.35, -0.7, 3.65, -0.1); c.stroke();
-  c.strokeStyle = 'rgba(230,250,255,.1)'; c.lineWidth = 0.18; c.beginPath(); c.moveTo(1.45, -1.25); c.lineTo(2.1, -1.27); c.stroke();
+  if (falloC) {   // v218: luz roja de emergencia (a pilas) que late; tiñe la cabina y al piloto
+    const pr = 0.6 + 0.4 * Math.max(0, Math.sin(t * 3.2));
+    const ge = c.createRadialGradient(1.6, -0.3, 0, 1.6, -0.3, 2.2); ge.addColorStop(0, `rgba(230,40,30,${(0.32 * pr).toFixed(3)})`); ge.addColorStop(1, 'rgba(230,40,30,0)');
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(1.2, -1.6, 3.5, 2.3); c.fillStyle = ge; c.fillRect(1.2, -1.6, 3.5, 2.3);
+    c.fillStyle = `rgba(255,70,50,${pr.toFixed(3)})`; rr(c, 1.48, -0.42, 0.07, 0.14, 0.02); c.fill();
+  }
+  if (frio > 0.05) escarchaCabina(c, frio);   // v218: con frío, vaho y escarcha en el acrílico
 }
-// Hélice de tres palas vista de lado. Gira alrededor del eje horizontal del submarino, así que de perfil
+// v218: la popa cambia con el motor montado (punto Popa, 9.x). Cada uno con la propulsión que tendría de verdad:
+//  - de serie: la hélice de latón de tres palas de siempre;
+//  - Velocidad: hélice de cuatro palas dentro de una tobera (la tobera Kort de los remolcadores y los ROV: más empuje);
+//  - Estabilidad: la hélice de popa (de cuatro palas) y dos propulsores orientables bajo el casco, uno a cada costado
+//    (babor y estribor: de lado solo se ve el que da a la cámara), con su hélice pequeña a la vista. Es lo que usan los
+//    vehículos de intervención para quedarse quietos contra la corriente;
+//  - Eficiencia: cola afilada (menos resistencia) y una hélice grande de cinco palas que gira despacio (más diámetro y
+//    menos vueltas gastan menos);
+//  - Módulo de Carga extra: la hélice de serie y la cesta de carga colgada bajo la popa (va en la imagen del casco).
+// Hélice de N palas vista de lado. Gira alrededor del eje horizontal del submarino, así que de perfil
 // cada pala se ve como su proyección: larga cuando apunta arriba o abajo y corta y ancha (le vemos la cara)
 // cuando apunta hacia nosotros o se aleja. Las palas de detrás se pintan antes del buje y más oscuras.
 // Al girar deprisa las palas se difuminan en un disco (como en una foto con poca velocidad de obturación);
 // así además se evita el efecto «rueda de carro» de ver las palas a saltos.
-function dibujarHelice(c, ang, w) {
-  const X = -6.02, L = 0.8;   // eje de la hélice y largo de pala (m)
+function dibujarHelice(c, ang, w, mot = 'serie') {
+  if (mot === 'estabilidad') {   // la hélice de popa y, bajo el casco, la del propulsor orientable de este costado
+    heliceUna(c, ang, w, -6.02, 0.82, 4, 0.24, 1);
+    c.save(); c.translate(0, ESTAB_POD.y); heliceUna(c, -ang * 1.3 + 0.7, w, ESTAB_POD.x0 - 0.17, 0.42, 3, 0.13, 0.92, ESTAB_POD.x0 + 0.05, 0.055); c.restore();
+    return; }
+  if (mot === 'eficiencia') { heliceUna(c, ang * 0.6, w * 0.6, -6.58, 0.98, 5, 0.3, 0.92); return; }   // grande y lenta, tras la cola afilada
+  if (mot === 'velocidad') { heliceUna(c, ang, w, -6.25, 0.82, 4, 0.22, 1); return; }
+  heliceUna(c, ang, w, -6.02, 0.8, 3, 0.26, 1);
+}
+const ESTAB_POD = { x0: -4.95, x1: -3.95, y: 1.55, r: 0.2 };   // cápsula del propulsor orientable (Estabilidad)
+function heliceUna(c, ang, w, X, L, n, CUERDA, tono, xEje = -5.72, rEje = 0.09) {
   const blur = clamp((Math.abs(w) - 7) / 13, 0, 1);
   // eje que sale de la góndola
-  c.fillStyle = '#26363b'; c.fillRect(X + 0.05, -0.09, 0.32, 0.18);
-  const palas = [0, 1, 2].map(k => { const th = ang + k * 2.0944; return { y: Math.cos(th), z: Math.sin(th) }; });
+  c.fillStyle = '#26363b'; c.fillRect(X + 0.05, -rEje, xEje - X - 0.05, 2 * rEje);
+  c.fillStyle = 'rgba(200,225,230,.18)'; c.fillRect(X + 0.05, -rEje * 0.9, xEje - X - 0.05, rEje * 0.33);
+  const palas = Array.from({ length: n }, (_, k) => { const th = ang + k * 6.2832 / n; return { y: Math.cos(th), z: Math.sin(th) }; });
   // Cada pala es una elipse con dos ejes: el radial (del buje a la punta, se acorta con cos θ) y la cuerda,
   // que está girada el ángulo de paso PASO respecto al plano de giro. Proyectada de lado, la cuerda tiene
   // siempre algo de ancho en x (sin PASO) y una parte vertical que cambia con sin θ. Todo varía de forma
   // continua con el ángulo, así que la pala nunca da saltos.
-  const PASO = 0.6, CUERDA = 0.26;   // ángulo de paso (rad) y media cuerda (m)
+  const PASO = 0.6;   // ángulo de paso (rad)
   const pala = p => {
     const my = p.y * L * 0.55, uy = p.y * L * 0.48 + Math.sign(p.y || 1) * 0.05;   // centro y semieje radial
     const vx = Math.sin(PASO) * CUERDA, vy = -Math.cos(PASO) * p.z * CUERDA;       // semieje de la cuerda
-    const luz = 0.55 + 0.45 * p.z;   // las que vienen hacia nosotros, más claras
+    const luz = (0.55 + 0.45 * p.z) * tono;   // las que vienen hacia nosotros, más claras
     c.fillStyle = `rgb(${Math.round(95 + 85 * luz)},${Math.round(76 + 70 * luz)},${Math.round(50 + 45 * luz)})`;
     c.save(); c.transform(vx, vy, 0, uy, X, my); c.beginPath(); c.arc(0, 0, 1, 0, 6.283); c.restore();
     c.fill(); c.strokeStyle = 'rgba(30,22,12,.55)'; c.lineWidth = 0.035; c.stroke();
@@ -8659,8 +9082,9 @@ function dibujarHelice(c, ang, w) {
     c.beginPath(); c.ellipse(X, 0, 0.16, L, 0, 0, 6.283); c.stroke();
   }
   // buje con su cono (apunta hacia atrás)
-  const gb = c.createLinearGradient(0, -0.22, 0, 0.22); gb.addColorStop(0, '#c9a96e'); gb.addColorStop(1, '#5e4a2e');
-  c.fillStyle = gb; c.beginPath(); c.moveTo(X + 0.12, -0.21); c.quadraticCurveTo(X - 0.38, -0.12, X - 0.4, 0); c.quadraticCurveTo(X - 0.38, 0.12, X + 0.12, 0.21); c.closePath(); c.fill();
+  const gb = c.createLinearGradient(0, -0.22 * Math.min(1, L / 0.8), 0, 0.22 * Math.min(1, L / 0.8)); gb.addColorStop(0, '#c9a96e'); gb.addColorStop(1, '#5e4a2e');
+  const kb = Math.min(1, L / 0.8);   // el buje, a la escala de la hélice
+  c.fillStyle = gb; c.beginPath(); c.moveTo(X + 0.12 * kb, -0.21 * kb); c.quadraticCurveTo(X - 0.38 * kb, -0.12 * kb, X - 0.4 * kb, 0); c.quadraticCurveTo(X - 0.38 * kb, 0.12 * kb, X + 0.12 * kb, 0.21 * kb); c.closePath(); c.fill();
   c.strokeStyle = 'rgba(30,22,12,.6)'; c.lineWidth = 0.04; c.stroke();
   c.save(); c.globalAlpha = 1 - 0.75 * blur;
   for (const p of palas) if (p.z >= 0) pala(p);
@@ -9043,6 +9467,29 @@ function dibujarFocoAux(c, encendido) {
   c.strokeStyle = '#0c1518'; c.lineWidth = 0.04; c.stroke();
   c.fillStyle = '#7a5c32'; c.fillRect(x1 - 0.03, y - 0.19, 0.08, 0.38);
   c.fillStyle = encendido ? '#fff3c8' : '#31403f'; c.beginPath(); c.ellipse(x1 + 0.06, y, 0.045, 0.15, 0, 0, 6.283); c.fill();
+}
+// v218: el Sensor de sigilo es una pieza propia, no el foco con otro color: una cabeza de sensores compacta (cámara de
+// poca luz con su iluminador rojo, que la fauna apenas ve) en el mismo punto Dorsal y la misma horquilla del foco.
+// Cuerpo anodizado oscuro con aletas de disipación, la franja roja que la identifica, una cúpula de cristal rojo
+// oscuro con el anillo de LED y, encima, el hidrófono (un disco pequeño con su cable).
+function dibujarSensorSigilo(c, on, t) {
+  c.fillStyle = '#1d2b2f'; c.beginPath(); c.moveTo(1.05, -2.2); c.lineTo(1.5, -2.2); c.lineTo(1.62, -1.7); c.lineTo(1.0, -1.7); c.closePath(); c.fill();
+  c.strokeStyle = '#151d20'; c.lineWidth = 0.07; c.beginPath(); c.moveTo(1.12, -1.95); c.quadraticCurveTo(0.85, -1.9, 0.8, -2.22); c.stroke();
+  const y = FOCO.y, x0 = 1.14, x1 = 1.86, h = 0.19;
+  const g = c.createLinearGradient(0, y - h, 0, y + h); g.addColorStop(0, '#6a7378'); g.addColorStop(0.3, '#3a4247'); g.addColorStop(0.75, '#1c2124'); g.addColorStop(1, '#101416');
+  c.fillStyle = g; rr(c, x0, y - h, x1 - x0, 2 * h, 0.07); c.fill(); c.strokeStyle = '#080b0c'; c.lineWidth = 0.04; c.stroke();
+  c.strokeStyle = 'rgba(4,6,7,.8)'; c.lineWidth = 0.03; c.beginPath(); for (const x of [1.24, 1.31, 1.38]) { c.moveTo(x, y - h + 0.04); c.lineTo(x, y + h - 0.04); } c.stroke();   // aletas de disipación
+  c.fillStyle = '#9b2a22'; c.fillRect(1.56, y - h, 0.06, 2 * h); c.fillStyle = 'rgba(255,190,170,.35)'; c.fillRect(1.56, y - h, 0.06, 0.04);   // franja roja
+  c.fillStyle = 'rgba(230,236,240,.25)'; c.fillRect(x0 + 0.06, y - h + 0.03, x1 - x0 - 0.14, 0.025);
+  c.fillStyle = '#0b0e0f'; rr(c, x1 - 0.04, y - h - 0.035, 0.1, 2 * h + 0.07, 0.03); c.fill();   // bisel
+  const gl = c.createRadialGradient(FOCO.x - 0.05, y - 0.05, 0, FOCO.x - 0.02, y, 0.19); gl.addColorStop(0, on ? '#ff6a50' : '#4a1612'); gl.addColorStop(0.45, on ? '#a3221a' : '#240808'); gl.addColorStop(1, '#0e0303');
+  c.fillStyle = gl; c.beginPath(); c.ellipse(FOCO.x - 0.03, y, 0.08, 0.17, 0, 0, 6.283); c.fill();   // cúpula de cristal rojo
+  c.fillStyle = 'rgba(255,220,210,.5)'; c.beginPath(); c.ellipse(FOCO.x - 0.04, y - 0.08, 0.02, 0.04, 0, 0, 6.283); c.fill();
+  const parp = 0.55 + 0.45 * Math.sin(t * 2.2);
+  for (let k = 0; k < 5; k++) { const yy = y - 0.15 + k * 0.075; c.fillStyle = on ? `rgba(255,70,55,${(0.5 + 0.5 * parp).toFixed(3)})` : '#3a1210'; c.beginPath(); c.arc(x1 + 0.01, yy, 0.016, 0, 6.283); c.fill(); }   // anillo de LED
+  c.strokeStyle = '#11171a'; c.lineWidth = 0.035; c.beginPath(); c.moveTo(1.36, y - h); c.quadraticCurveTo(1.3, y - h - 0.08, 1.42, y - h - 0.1); c.stroke();
+  c.fillStyle = '#1a2023'; rr(c, 1.4, y - h - 0.17, 0.22, 0.09, 0.04); c.fill(); c.fillStyle = '#9c7a45'; c.fillRect(1.4, y - h - 0.1, 0.22, 0.02);   // hidrófono
+  c.fillStyle = 'rgba(230,236,240,.3)'; c.fillRect(1.43, y - h - 0.16, 0.16, 0.015);
 }
 function dibujarFoco(c, encendido, t) {
   // horquilla y pivote anclados a la joroba
@@ -18691,12 +19138,15 @@ function mostrarConsejo(id) {
   el.addEventListener('click', cerrar);   // tocar la ficha (o la ✕) la cierra antes
   consejoActivo = { id, el, hasta: performance.now() + dur, cerrar };
 }
+// v218: como mucho 14 letras: es lo que cabe pintado en su plancha del costado a tamaño normal (con letras muy anchas,
+// como la M o la W, se estrecha un poco para no salirse nunca de la plancha)
+const LARGO_NOMBRE_SUB = 14;
 // Nombre del submarino (v147, del epílogo de la novela): «No tenía nombre. —El nombre se lo pondrá quien lo pilote».
 // Se pide una vez en la base (se puede dejar para más tarde y cambiar en Opciones o en el Muelle)
 function mostrarNombreSub() {
   modal(`<h2>${TR("El sumergible nuevo")}</h2>
     <p class="pagina">${TR("Mikel lo diseñó en dos años y lo construyó en uno, en el taller de Pasaia. No tenía nombre.")}<br>${TR("—El nombre se lo pondrá quien lo pilote —le dijo a Ruth—. Es una costumbre nueva. Me la acabo de inventar.")}</p>
-    <label class="check" for="nom-sub" style="display:grid;gap:6px">${TR("Nombre")} <input id="nom-sub" type="text" maxlength="24" autocomplete="off" value="${escapar(G.nombreSub || '')}" placeholder="${TR("Sin nombre")}"></label>
+    <label class="check" for="nom-sub" style="display:grid;gap:6px">${TR("Nombre")} <input id="nom-sub" type="text" maxlength="${LARGO_NOMBRE_SUB}" autocomplete="off" value="${escapar(G.nombreSub || '')}" placeholder="${TR("Sin nombre")}"></label>
     <div class="acciones"><button class="boton" type="button" data-accion="nombreSub:luego">${TR("Más tarde")}</button><button class="boton prim" type="button" data-accion="nombreSub:ok">${TR("Ponerle nombre")}</button></div>`);
   const inp = document.getElementById('nom-sub');
   if (inp) { setTimeout(() => inp.focus(), 50); inp.addEventListener('keydown', e => { if (e.key === 'Enter') document.querySelector('#capa [data-accion="nombreSub:ok"]').click(); }); }
@@ -21544,6 +21994,7 @@ function htmlBalance() {
         <li>Kraken Abisal redibujado (v215; lo pidió el autor; solo visual; cambia GDD 10.5, «Aspecto»): Magnapinna con anatomía de calamar real. Brazos con un tramo grueso y musculoso con ventosas, codo redondeado y filamento que se afila; nacen bajo la cabeza. Uno lleva un cable de acero viejo enrollado y otro es un muñón que vuelve a crecer. Aletas con fibras, cromatóforos y un desgarro cicatrizado; manto con branquias y glándula digestiva translúcidas, cicatrices de ventosas y raspaduras; ojos laterales con pliegue de piel y anillo plateado; pico solo al morder. Estados en el animal: al avisar y atacar enrojece en oleadas y bate más deprisa; aturdido palidece y cierra la pupila. El agarre: la maza del brazo rodea el casco en vuelta y media, con ventosas, sombra de presión y la punta enroscada sobre la chapa. Mismas medidas, puntos, estados y dificultad.</li>
         <li>Guardián del Abismo redibujado (v216; lo pidió el autor; solo visual; cambia GDD 10.6, «Su cuerpo»): sigue sin ojos, boca ni extremos, como en la novela, pero es la pared de un cuerpo anillado vivo. Anillos de músculo con pliegues irregulares que rodean el cuerpo y festonean el borde, y una onda de contracción (peristaltismo) que los junta y separa. Piel vieja con manchas, arrugas, grano y poros. El cristal crece en agujas desde el fondo de los pliegues, con la piel hinchada alrededor y algunos partidos. Cicatrices con relieve: anillos de ventosas, el mordisco de un dormilón, arañazos de roca y una herida vieja; un tubo del bastidor del T-2 clavado en un pliegue, con hilos y anfípodos. Los estados se leen en el cuerpo: en cada pulso de la llamada una ola de luz lo recorre; inquieto, la onda se acelera, los anillos se aprietan y el cristal titila; en la carga va estirado y oscuro; calmado, despacio y con brillo fijo. Mismas medidas, puntos, estados y dificultad.</li>
         <li>Calamar de las Profundidades Medias redibujado (v217; lo pidió el autor; solo visual; cambia GDD 10.3, «Aspecto»): calamar gigante con la anatomía real. Manto en torpedo con collar sobre la nuca, cabeza propia con el sifón debajo, aletas pequeñas en corazón, corona de ocho brazos que se afilan con quilla y la cara de dentro pálida con ventosas en copa. Ojo negro con un anillo fino de plata, como en la novela; pico de quitina en la membrana bucal. Tentáculos con volumen y mazas de cuatro hileras; en el agarre, las mazas doblan sobre el casco y aprietan, dejando huellas en la pintura. Piel con cromatóforos de varios tamaños y rozaduras; cicatrices con relieve (anillos de ventosa, rastrillos de dientes de cachalote), aleta mordida y un brazo sin punta. Estados en el animal: al avisar, oleadas de rojo y pupila dilatada; al lanzar, los brazos se abren como un paraguas; aturdido, casi blanco, pupila cerrada y brazos lacios. Mismas medidas, puntos, estados y dificultad.</li>
+        <li>Submarinos rehechos, los cinco chasis (v218; lo pidió el autor; solo visual salvo el nombre; cambia GDD 13.6, «Aspecto», y 14.6, «Submarino»): mismas medidas, choques, anclajes, estados y juego. Cabina: cúpula de acrílico que forma la proa (como los Triton), transparente (se ve el agua de detrás), unida al casco por un aro de brida de latón a popa y una brida baja, con su canto, reflejos y sarro; dentro, aplique en el aro, suelo de chapa y pilotos en la consola. Casco: volumen de cilindro, chapas que abomban, remaches solo en las costuras y pintados, cantos pelados y brillo especular cortado en las juntas; escotilla con brazola, bisagra y volante, a popa del foco auxiliar. El nombre va en una sola plancha larga, centrado, con las franjas de cada chasis más abajo, y tiene como mucho 14 caracteres. Cada chasis con su equipo y un detalle de veterano: Explorador (de Mikel) con sonda CTD, parche soldado y palotes de inmersiones; los cuatro del Consorcio con la joroba de espuma sintáctica y agujeros de media luna; Polivalente con patín, bloque hidráulico, compensador y una manguera con cinta; Ligero liso, con propulsores de túnel y dianas de fotogrametría; Carguero con defensas de goma abolladas y cinchas de carga; Acorazado con jaula sobre la cúpula y zarpazos en una placa. La popa cambia con el motor: de serie, tobera con hélice de cuatro palas (Velocidad), hélice de popa más un propulsor orientable bajo cada costado (Estabilidad), cola afilada con hélice grande y lenta (Eficiencia) y cesta de carga (Módulo de Carga). Sensor de sigilo como pieza propia. Estados en el casco: abolladuras según el daño, burbujas por las costuras con estrés, vaho y escarcha en la cúpula con frío, ranuras al rojo y estela de cavitación con turbo, nivel de lastre en el depósito, broca al rojo en sobrecarga y cabina a oscuras con luz roja de emergencia en el fallo eléctrico.</li>
       </ul>
     </section>`;
 }
@@ -21705,7 +22156,7 @@ function accionBase(b) {
     case 'nombreSub': {
       if (x === 'pedir') { mostrarNombreSub(); return; }
       if (x === 'luego') { G.nombrePreguntado = true; guardar(); document.getElementById('capa').hidden = true; renderBase(); return; }
-      const v = ((document.getElementById('nom-sub') || {}).value || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+      const v = ((document.getElementById('nom-sub') || {}).value || '').replace(/\s+/g, ' ').trim().slice(0, LARGO_NOMBRE_SUB);
       G.nombrePreguntado = true; if (v) { G.nombreSub = v; toast(`«${v}»`, 'oro'); }
       guardar(); document.getElementById('capa').hidden = true; renderBase(); return;
     }
