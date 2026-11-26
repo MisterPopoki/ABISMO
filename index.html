@@ -1964,7 +1964,7 @@ body.tactil .hud-botones #h-pausa.btc{padding:4px 9px}
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie"><span>Partida única · se guarda en este dispositivo</span> · <span class="menu-ver">v257</span></p>
+      <p class="menu-pie"><span>Partida única · se guarda en este dispositivo</span> · <span class="menu-ver">v258</span></p>
     </div>
   </div>
 
@@ -4332,7 +4332,10 @@ const Sonido = {
    «snapshot» del mixer para el ducking.
    --------------------------------------------------------------------- */
 const Voz = {
-  CLIPS: { es: ['ruth-intro', 'ruth-tuto-veta', 'ruth-tuto-extraer', 'ruth-tuto-suelta', 'ruth-tuto-manten', 'ruth-tuto-subir'] },
+  CLIPS: { es: ['ruth-intro', 'ruth-tuto-veta', 'ruth-tuto-veta-ayuda', 'ruth-tuto-extraer', 'ruth-tuto-suelta', 'ruth-tuto-manten', 'ruth-tuto-subir',
+                 'ruth-tuto-esclusa', 'ruth-tuto-fin', 'ruth-base-meta', 'ruth-base-encargo', 'ruth-base-bucea',
+                 'ruth-ayuda-luces', 'ruth-ayuda-limite', 'ruth-ayuda-fauna', 'ruth-ayuda-sonar', 'ruth-ayuda-baliza', 'ruth-ayuda-fabrica', 'ruth-ayuda-vende',
+                 'ruth-perdida'] },   // v258: todas las de Ruth en español
   ESPERA_MAX: 6,   // segundos que una frase puede esperar turno antes de descartarse
   bufs: {}, pidiendo: {}, actual: null, cola: null, tCola: 0, hablando: false, cadena: null,
   hay(id) { return (this.CLIPS[IDIOMA] || []).includes(id); },
@@ -22827,7 +22830,7 @@ setInterval(() => {
   if (modo === 'base' && libre && !faseTutoBase()) {   // v255: durante el tutorial de la base, sin los consejos largos de la base
     const R = G.registro || [];
     if (!R.length) consejo('base');
-    else { if (R.some(r => r.resultado === 'vuelta')) consejo('vuelta'); if (R.some(r => r.resultado !== 'vuelta')) consejo('perdida'); }
+    else { if (R.some(r => r.resultado === 'vuelta')) consejo('vuelta'); if (R.some(r => r.resultado !== 'vuelta')) { consejo('perdida'); Voz.decir('ruth-perdida'); } }   // v258
   }
   if (modo === 'base' && libre && !consejoActivo && !colaConsejos.length && tocaAvisoCopia()) { mostrarAvisoCopia(); return; }   // v226
   if (consejoActivo && consejoActivo.id === 'copia' && modo !== 'base') consejoActivo.cerrar();
