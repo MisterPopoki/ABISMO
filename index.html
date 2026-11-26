@@ -1971,7 +1971,7 @@ body.tactil .hud-botones #h-pausa.btc{padding:4px 9px}
         <button class="menu-bt" type="button" data-menu="opciones">Opciones</button>
       </nav>
       </div>
-      <p class="menu-pie"><span>Partida única · se guarda en este dispositivo</span> · <span class="menu-ver">v259</span></p>
+      <p class="menu-pie"><span>Partida única · se guarda en este dispositivo</span> · <span class="menu-ver">v267</span></p>
     </div>
   </div>
 
@@ -7234,89 +7234,187 @@ function dibujarT2(sx, sy, E, D, suelo) {
   });
   ctx.restore();
 }
-// Perséfone (novela): esfera de titanio para dos, flotador blanco encima, brazos naranjas, cestas y patines.
-// Inclinada hacia babor, enterrada hasta la mitad; el ojo de buey de proa, limpio. Sin luces.
+// Perséfone (novela; remozada en la v264 al nivel de las estaciones): esfera de titanio para dos bajo un flotador
+// blanco de espuma sintáctica, brazos naranjas, dos cestas y patines. Inclinada hacia babor y enterrada hasta la mitad
+// por la «manta de barro que no dejaba de crecer»; el ojo de buey de proa, limpio («el sedimento había resbalado por la
+// curva delantera de la esfera sin quedarse, como la nieve en un tejado muy empinado»), y el superior, tapado. Los
+// propulsores, ahogados en sedimento («los propulsores dejaron de gritar y empezaron a toser, y después se callaron»).
+// La cesta de estribor, la que Mikel apretó demasiado, con el soporte vencido. Las placas de lastre, todas soltadas, en
+// el suelo. Sin luces. Mismo sitio, tamaño e inclinación que antes: el registro de las cámaras (en su soporte), el de voz
+// y la placa del Trieste (en la cesta de babor) siguen donde estaban. Se pinta una vez (estampaNovela).
 function dibujarPersefone(sx, sy, E, D, suelo) {
   const f = D.lado;   // la proa mira hacia el agujero
   ctx.save(); ctx.translate(sx(D.persX), sy(suelo - 1.1)); ctx.scale(-f * E, E); ctx.rotate(0.12); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  estampaNovela('persefone', [-5.8, -4.2, 5.6, 1.8], c => {
-    const r = mulberry32(hash2(G.semilla + 7474, 3));
-    // propulsores de popa en sus toberas
-    for (const y of [-1.75, -0.55]) { c.fillStyle = '#3c3f3c'; rr(c, -5.15, y - 0.42, 1.1, 0.84, 0.18); c.fill(); c.fillStyle = '#121413'; c.fillRect(-5.2, y - 0.3, 0.16, 0.6);
-      c.fillStyle = '#5a5a52'; c.beginPath(); c.moveTo(-5.15, y); c.lineTo(-5.22, y - 0.28); c.lineTo(-5.12, y - 0.26); c.closePath(); c.fill(); c.beginPath(); c.moveTo(-5.15, y); c.lineTo(-5.2, y + 0.28); c.lineTo(-5.1, y + 0.24); c.closePath(); c.fill();   // palas
-      c.strokeStyle = 'rgba(150,150,140,.4)'; c.lineWidth = 0.015; c.beginPath(); for (let k = -2; k <= 2; k++) { c.moveTo(-5.24, y + k * 0.12); c.lineTo(-5.1, y + k * 0.12); } c.stroke();
-      c.strokeStyle = 'rgba(200,205,200,.18)'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(-5.1, y - 0.38); c.lineTo(-4.1, y - 0.38); c.stroke(); c.fillStyle = '#2a2c29'; c.fillRect(-4.15, y - 0.12, 0.25, 0.24); }
-    // carenado blanco: el flotador de espuma sintáctica
-    const cuerpo = new Path2D(); cuerpo.moveTo(-4.2, 0.9); cuerpo.lineTo(-4.3, -1.8); cuerpo.quadraticCurveTo(-4.2, -2.9, -3.1, -3.0); cuerpo.lineTo(1.6, -3.0);
-    cuerpo.quadraticCurveTo(3.3, -2.9, 3.8, -1.3); cuerpo.lineTo(3.2, 0.9); cuerpo.closePath();
-    let g = c.createLinearGradient(0, -3, 0, 1); g.addColorStop(0, '#ecebe2'); g.addColorStop(0.6, '#cfcdc2'); g.addColorStop(1, '#9d9b91');
-    c.fillStyle = g; c.fill(cuerpo);
-    c.save(); c.clip(cuerpo);
-    c.fillStyle = '#c75a1f'; c.fillRect(-4.4, -1.45, 8.4, 0.3);   // la franja naranja
-    c.fillStyle = 'rgba(255,190,150,.25)'; c.fillRect(-4.4, -1.45, 8.4, 0.07);
-    c.strokeStyle = 'rgba(60,60,55,.35)'; c.lineWidth = 0.04; c.beginPath(); for (const x of [-1.2, 1.4]) { c.moveTo(x, -3); c.lineTo(x + 0.04, 0.9); } c.stroke();   // juntas del carenado
-    c.fillStyle = 'rgba(60,60,55,.4)'; for (const x of [-2.9, -1.4, 0.0, 1.2]) for (const y of [-2.75, -0.2]) { c.beginPath(); c.arc(x, y, 0.035, 0, 6.283); c.fill(); }
-    // los arañazos del golpe de los 9.700: titanio y pintura blanca y naranja arrancados en tiras largas
-    c.lineCap = 'round';
-    for (let k = 0; k < 7; k++) { const y0 = -0.9 + k * 0.17 + r() * 0.08, x0 = -3.6 + r() * 0.8, L = 3.2 + r() * 2.6;
-      c.strokeStyle = 'rgba(80,82,80,.38)'; c.lineWidth = 0.04 + r() * 0.03; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + L * 0.5, y0 - 0.25, x0 + L, y0 - 0.1 - r() * 0.3); c.stroke();
-      c.strokeStyle = 'rgba(245,245,240,.35)'; c.lineWidth = 0.02; c.beginPath(); c.moveTo(x0, y0 - 0.04); c.quadraticCurveTo(x0 + L * 0.5, y0 - 0.29, x0 + L, y0 - 0.14 - r() * 0.3); c.stroke(); }
-    c.fillStyle = 'rgba(30,30,28,.3)'; c.fillRect(-4.4, 0.3, 8.4, 0.7);   // la panza, sucia
-    for (const [x, y, R] of [[-4.15, -2.4, 0.15], [3.55, -1.6, 0.14], [-0.6, -0.65, 0.18], [1.9, -0.95, 0.12]]) { c.fillStyle = 'rgba(200,196,178,.9)'; c.beginPath(); for (let q = 0; q < 7; q++) { const a = q / 7 * 6.283, d = R * (0.6 + r() * 0.5); q ? c.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7) : c.moveTo(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7); } c.closePath(); c.fill(); c.strokeStyle = 'rgba(90,90,80,.4)'; c.lineWidth = 0.012; c.stroke(); }   // la espuma asoma donde saltó la pintura
-    for (let k = 0; k < 14; k++) { const x = -4 + r() * 7.5, y = -2.9 + r() * 3.6, L = 0.3 + r() * 0.6; const gg = c.createLinearGradient(x, y, x, y + L); gg.addColorStop(0, 'rgba(110,104,90,.28)'); gg.addColorStop(1, 'rgba(110,104,90,0)'); c.fillStyle = gg; c.fillRect(x, y, 0.05 + r() * 0.05, L); }   // limo que ha chorreado
+  estampaNovela('persefone', [-5.9, -4.4, 5.7, 1.8], c => {
+    const r = mulberry32(hash2(G.semilla + 7474, 3)), caja = { x0: -5.9, x1: 5.7, y0: -4.4, y1: 1.8 };
+    const NAR = ['#e07a3a', '#b8622b', '#5a2a10'], TI = ['#d3d8d4', '#8f958f', '#3e4440'];
+    // 1. detrás de todo: la cesta de estribor (la del otro costado), con el soporte vencido, y el patín de estribor
+    c.save(); c.translate(-3.9, 0.35); c.rotate(0.28);
+    estTubo(c, -0.9, -0.3, 0.9, -0.3, 0.08, ['#6c706a', '#45483f', '#1f211d']); estTubo(c, -0.9, 0.3, 0.9, 0.3, 0.08, ['#6c706a', '#45483f', '#1f211d']);
+    c.strokeStyle = 'rgba(90,94,88,.75)'; c.lineWidth = 0.025; c.beginPath(); for (let x = -0.8; x < 0.9; x += 0.2) { c.moveTo(x, -0.3); c.lineTo(x, 0.3); } for (let y = -0.15; y < 0.3; y += 0.15) { c.moveTo(-0.9, y); c.lineTo(0.9, y); } c.stroke();
     c.restore();
-    bqBorde(c, cuerpo, 0, 1, 5, 0.5, '255,255,250', 0.06); bqBorde(c, cuerpo, 0, -1, 6, 0.9, '20,24,22', 0.07); bqBorde(c, cuerpo, -1, 0, 4, 0.6, '20,24,22', 0.05);
-    c.strokeStyle = 'rgba(40,40,36,.7)'; c.lineWidth = 0.07; c.stroke(cuerpo);
-    // el soporte donde va sujeto el cilindro de las cámaras (el cilindro se dibuja aparte mientras siga ahí)
-    tuboN(c, [[-3.05, -0.55], [-3.05, -1.2], [-1.75, -1.2], [-1.75, -0.55]], 0.1, '#5a5d59', 'rgba(220,225,220,.35)', '#2a2c2a');
-    for (const x of [-2.9, -1.9]) { c.fillStyle = '#3a3c3a'; c.fillRect(x - 0.08, -1.32, 0.16, 0.5); }
-    // la manta de sedimento que la dejó en el fondo, con su canto claro
-    c.fillStyle = 'rgba(128,126,116,.94)'; c.beginPath(); c.moveTo(-4.3, -2.5); c.quadraticCurveTo(-3.6, -3.5, -2, -3.35); c.quadraticCurveTo(-0.4, -3.6, 1.2, -3.3); c.quadraticCurveTo(2.6, -3.2, 3.1, -2.6); c.quadraticCurveTo(2.4, -2.7, 1.6, -2.8); c.quadraticCurveTo(0.4, -2.95, -0.8, -2.85); c.quadraticCurveTo(-2.4, -2.95, -3.2, -2.7); c.quadraticCurveTo(-3.9, -2.6, -4.3, -2.5); c.closePath(); c.fill();
-    c.strokeStyle = 'rgba(214,214,204,.6)'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(-4.3, -2.5); c.quadraticCurveTo(-3.6, -3.5, -2, -3.35); c.quadraticCurveTo(-0.4, -3.6, 1.2, -3.3); c.quadraticCurveTo(2.6, -3.2, 3.1, -2.6); c.stroke();
-    // la torreta de la escotilla (por ahí se entra a la esfera), con su antena de radio y la luz de destellos
-    c.fillStyle = '#d6d4ca'; rr(c, 0.55, -3.55, 1.2, 0.55, 0.12); c.fill(); c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(0.55, -3.1, 1.2, 0.1);
-    c.fillStyle = 'rgba(128,126,116,.9)'; c.beginPath(); c.ellipse(1.15, -3.55, 0.62, 0.1, 0, Math.PI, 0); c.fill();
-    c.strokeStyle = '#3a3c38'; c.lineWidth = 0.035; c.beginPath(); c.moveTo(1.55, -3.55); c.lineTo(1.75, -4.1); c.stroke(); c.fillStyle = '#3a3c38'; c.beginPath(); c.arc(1.76, -4.12, 0.04, 0, 6.283); c.fill();
-    // la luz fija de arriba, apagada
-    c.fillStyle = '#3b3e3a'; c.beginPath(); c.arc(-1.8, -3.35, 0.28, Math.PI, 0); c.fill(); c.fillStyle = 'rgba(200,205,200,.25)'; c.beginPath(); c.arc(-1.85, -3.42, 0.12, Math.PI, 0); c.fill();
-    // los focos de proa: uno en su soporte, apagado; del otro solo queda el soporte doblado y el cable cortado
-    c.fillStyle = '#3e413d'; rr(c, 2.75, -3.05, 0.5, 0.36, 0.08); c.fill(); c.fillStyle = '#0c0f0e'; c.beginPath(); c.arc(3.22, -2.87, 0.14, 0, 6.283); c.fill();
-    c.strokeStyle = '#4a4d49'; c.lineWidth = 0.09; c.beginPath(); c.moveTo(3.4, -1.9); c.lineTo(3.85, -2.05); c.lineTo(4.05, -2.4); c.stroke();
-    c.strokeStyle = '#1c1c1a'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(3.5, -1.85); c.quadraticCurveTo(3.95, -1.6, 4.15, -1.75); c.stroke();
-    // la esfera de titanio, delante y abajo: nueve centímetros de pared, su cordón de soldadura y el ojo de buey limpio
-    g = c.createRadialGradient(1.8, -0.75, 0.1, 2.3, -0.15, 1.35); g.addColorStop(0, '#c9cec9'); g.addColorStop(0.55, '#8f958f'); g.addColorStop(1, '#4a504c'); c.fillStyle = g; c.beginPath(); c.arc(2.3, -0.15, 1.3, 0, 6.283); c.fill();
-    c.strokeStyle = 'rgba(40,46,44,.5)'; c.lineWidth = 0.05; c.beginPath(); c.ellipse(2.3, -0.15, 0.32, 1.3, 0, 0, 6.283); c.stroke();   // la soldadura de los dos hemisferios
-    c.strokeStyle = 'rgba(230,236,232,.25)'; c.lineWidth = 0.025; c.beginPath(); c.ellipse(2.26, -0.15, 0.32, 1.3, 0, 2.2, 4.1); c.stroke();
-    c.fillStyle = 'rgba(128,126,116,.9)'; c.beginPath(); c.arc(2.3, -0.15, 1.31, 3.55, 5.0); c.quadraticCurveTo(2.0, -1.0, 1.2, -0.75); c.closePath(); c.fill();   // el barro que quedó arriba (el resto resbaló)
-    c.strokeStyle = 'rgba(30,34,32,.6)'; c.lineWidth = 0.06; c.beginPath(); c.arc(2.3, -0.15, 1.3, 0, 6.283); c.stroke();
-    c.fillStyle = '#5c625e'; c.beginPath(); c.arc(3.3, -0.3, 0.55, 0, 6.283); c.fill();   // el aro del ojo de buey
-    c.fillStyle = '#04070a'; c.beginPath(); c.arc(3.3, -0.3, 0.42, 0, 6.283); c.fill();   // dentro no se ve nada
-    c.strokeStyle = '#c9ccc5'; c.lineWidth = 0.07; c.stroke();
-    c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.ellipse(3.15, -0.47, 0.12, 0.06, -0.6, 0, 6.283); c.fill();
-    c.fillStyle = '#3a3e3b'; for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283; c.beginPath(); c.arc(3.3 + Math.cos(a) * 0.49, -0.3 + Math.sin(a) * 0.49, 0.025, 0, 6.283); c.fill(); }
-    // brazos naranjas plegados delante, con sus articulaciones
-    tuboN(c, [[3.3, 0.7], [4.4, 0.35]], 0.2, '#b8622b', 'rgba(255,190,140,.45)', '#5a2a10'); tuboN(c, [[4.4, 0.35], [4.75, 1.0]], 0.17, '#b8622b', 'rgba(255,190,140,.45)', '#5a2a10');
-    c.fillStyle = '#4a4d49'; c.beginPath(); c.arc(4.4, 0.35, 0.12, 0, 6.283); c.fill();
-    c.strokeStyle = '#151515'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(3.3, 0.6); c.bezierCurveTo(3.8, 0.55, 4.1, 0.2, 4.45, 0.22); c.bezierCurveTo(4.8, 0.3, 4.85, 0.7, 4.82, 0.95); c.stroke();   // los cordones hidráulicos
-    c.strokeStyle = '#6a6c66'; c.lineWidth = 0.08; c.beginPath(); c.moveTo(4.75, 1.0); c.lineTo(4.55, 1.32); c.moveTo(4.75, 1.0); c.lineTo(5.02, 1.27); c.stroke();
-    // la cesta de babor, delante, bajo la esfera (ahí va atornillada la placa del Trieste)
-    c.strokeStyle = '#5a5c56'; c.lineWidth = 0.07; c.strokeRect(1.5, 0.12, 1.9, 0.6);
-    c.strokeStyle = 'rgba(120,122,116,.7)'; c.lineWidth = 0.025; c.beginPath(); for (let x = 1.7; x < 3.4; x += 0.22) { c.moveTo(x, 0.12); c.lineTo(x, 0.72); } for (let y = 0.3; y < 0.72; y += 0.2) { c.moveTo(1.5, y); c.lineTo(3.4, y); } c.stroke();
-    c.fillStyle = 'rgba(232,226,210,.85)'; for (const [x, y, a] of [[-2.8, -3.38, 0.1], [0.2, -3.5, -0.2], [2.1, -3.2, 0.4], [-3.9, -2.55, 1.0]]) { c.save(); c.translate(x, y); c.rotate(a); c.beginPath(); c.ellipse(0, 0, 0.08, 0.035, 0, 0, 6.283); c.fill(); c.restore(); }   // anfípodos encima
-    // hilos pálidos tendidos por encima, «como una tumba cubierta de hiedra»
-    c.strokeStyle = 'rgba(222,232,226,.32)'; c.lineWidth = 0.025; c.beginPath();
-    for (let k = 0; k < 8; k++) { const x0 = -4 + k * 1.05 + r() * 0.3; c.moveTo(x0, -3.3); c.bezierCurveTo(x0 + 0.5, -2.2, x0 - 0.2, -0.8, x0 + 0.4 + r() * 0.5, 1.3); }
+    estTubo(c, -3.4, -0.6, -3.65, 0.05, 0.09, ['#6c706a', '#45483f', '#1f211d']); estTubo(c, -3.65, 0.05, -3.25, 0.2, 0.09, ['#6c706a', '#45483f', '#1f211d']);   // soporte doblado
+    c.fillStyle = 'rgba(120,60,30,.6)'; c.beginPath(); c.arc(-3.65, 0.05, 0.06, 0, 6.283); c.fill();
+    // 2. los propulsores de popa: tobera con aro, rejilla y palas; el de abajo, ahogado en sedimento
+    for (const [k, y] of [[0, -1.75], [1, -0.55]]) {
+      c.fillStyle = estGradV(c, y - 0.46, y + 0.46, ['#61655f', '#3a3d39', '#181a18']); rr(c, -5.25, y - 0.46, 1.25, 0.92, 0.2); c.fill();
+      c.strokeStyle = 'rgba(8,10,8,.7)'; c.lineWidth = 0.04; c.stroke();
+      c.fillStyle = estGradV(c, y - 0.5, y + 0.5, ['#7c807a', '#4a4d48', '#1e201d']); c.fillRect(-5.35, y - 0.5, 0.16, 1.0); c.fillRect(-4.2, y - 0.5, 0.12, 1.0);   // aros de la tobera
+      c.fillStyle = '#0c0e0c'; c.beginPath(); c.ellipse(-5.27, y, 0.08, 0.4, 0, 0, 6.283); c.fill();                      // la boca
+      if (k === 0) { c.fillStyle = '#4b4d46'; for (const a of [-0.32, 0, 0.3]) { c.beginPath(); c.ellipse(-5.27, y + a, 0.05, 0.11, 0.4, 0, 6.283); c.fill(); } }   // palas
+      else { c.fillStyle = '#8e8f86'; c.beginPath(); c.ellipse(-5.27, y + 0.08, 0.07, 0.34, 0, 0, 6.283); c.fill(); c.fillStyle = 'rgba(200,200,190,.5)'; c.fillRect(-5.33, y - 0.28, 0.12, 0.05); }   // ahogado en barro
+      c.strokeStyle = 'rgba(160,162,152,.45)'; c.lineWidth = 0.018; c.beginPath(); for (let q = -3; q <= 3; q++) { c.moveTo(-5.36, y + q * 0.11); c.lineTo(-5.19, y + q * 0.11); } c.stroke();   // rejilla
+      for (const x of [-5.27, -4.14]) for (const d of [-0.42, 0.42]) estPerno(c, x, y + d, 0.035);
+      c.fillStyle = '#2a2c29'; c.fillRect(-4.1, y - 0.14, 0.3, 0.28);                                                          // motor
+    }
+    // 3. el flotador de espuma sintáctica: perfil de sumergible, paneles atornillados, franja naranja y cantos comidos
+    const cuerpo = new Path2D(); cuerpo.moveTo(-4.2, 0.55); cuerpo.lineTo(-4.32, -1.7); cuerpo.bezierCurveTo(-4.3, -2.75, -3.75, -3.1, -2.9, -3.12);
+    cuerpo.lineTo(1.0, -3.18); cuerpo.bezierCurveTo(2.6, -3.15, 3.55, -2.8, 3.95, -2.05); cuerpo.quadraticCurveTo(4.15, -1.6, 3.85, -1.2); cuerpo.lineTo(3.2, 0.55); cuerpo.closePath();
+    c.fillStyle = estGradV(c, -3.2, 0.6, ['#f1efe6', '#d4d2c6', '#8e8c82']); c.fill(cuerpo);
+    c.save(); c.clip(cuerpo);
+    const gl = c.createLinearGradient(-4.3, 0, 4.1, 0); gl.addColorStop(0, 'rgba(0,0,0,.22)'); gl.addColorStop(0.15, 'rgba(0,0,0,0)'); gl.addColorStop(0.85, 'rgba(0,0,0,0)'); gl.addColorStop(1, 'rgba(0,0,0,.25)');
+    c.fillStyle = gl; c.fillRect(-4.4, -3.3, 8.6, 4);                                                                          // los costados se curvan
+    c.fillStyle = 'rgba(255,255,250,.45)'; c.fillRect(-4.4, -2.92, 8.6, 0.12);                                                 // brillo del lomo
+    c.fillStyle = estGradV(c, -1.48, -1.12, ['#e98a48', '#c75a1f', '#7d3410']); c.fillRect(-4.4, -1.48, 8.6, 0.36);             // la franja naranja
+    bqDesconchones(c, -4.4, 4.2, -1.48, -1.12, 10, r, ['rgba(220,214,196,.7)', 'rgba(120,60,24,.5)'], 0.3);
+    for (const x of [-2.75, -1.1, 0.55, 2.15]) { c.fillStyle = 'rgba(60,60,54,.4)'; c.fillRect(x, -3.3, 0.04, 3.9); c.fillStyle = 'rgba(255,255,250,.35)'; c.fillRect(x + 0.04, -3.3, 0.025, 3.9);   // juntas de los paneles
+      for (let y = -2.85; y < 0.4; y += 0.42) { if (y > -1.55 && y < -1.05) continue; estPerno(c, x - 0.1, y, 0.03); } }
+    c.fillStyle = 'rgba(60,60,54,.35)'; c.fillRect(-4.4, -2.05, 8.6, 0.035); c.fillRect(-4.4, -0.42, 8.6, 0.035);            // juntas horizontales
+    // los arañazos del golpe de los 9.700: titanio y pintura blanca y naranja arrancados en tiras largas
+    for (let k = 0; k < 8; k++) { const y0 = -0.95 + k * 0.16 + r() * 0.08, x0 = -3.7 + r() * 0.8, L = 3.0 + r() * 2.8, cy = -0.25 - r() * 0.15, dy = -0.1 - r() * 0.3;
+      c.strokeStyle = 'rgba(70,72,68,.42)'; c.lineWidth = 0.045 + r() * 0.03; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + L * 0.5, y0 + cy, x0 + L, y0 + dy); c.stroke();
+      c.strokeStyle = 'rgba(255,255,250,.4)'; c.lineWidth = 0.018; c.beginPath(); c.moveTo(x0, y0 - 0.045); c.quadraticCurveTo(x0 + L * 0.5, y0 + cy - 0.045, x0 + L, y0 + dy - 0.045); c.stroke(); }
+    bqDesconchones(c, -4.3, 4.1, -3.2, 0.5, 18, r, ['rgba(206,190,140,.75)', 'rgba(170,150,100,.6)', 'rgba(90,90,82,.35)'], 0.4);   // la espuma amarillenta que asoma
+    for (let k = 0; k < 16; k++) { const x = -4 + r() * 7.6, y = -2.9 + r() * 3.2, L = 0.3 + r() * 0.7, gg = c.createLinearGradient(x, y, x, y + L);   // churretes de barro
+      gg.addColorStop(0, 'rgba(110,106,92,.3)'); gg.addColorStop(1, 'rgba(110,106,92,0)'); c.fillStyle = gg; c.fillRect(x - 0.03, y, 0.06, L); }
+    c.fillStyle = 'rgba(30,30,28,.32)'; c.fillRect(-4.4, 0.0, 8.6, 0.6);                                                       // la panza, sucia
+    c.restore();
+    estBorde(c, cuerpo, 0, 1, 5, 0.45, '255,255,250', 0.05, caja); estBorde(c, cuerpo, 0, -1, 6, 0.8, '20,24,22', 0.06, caja); estBorde(c, cuerpo, -1, 0, 4, 0.5, '20,24,22', 0.05, caja);
+    c.strokeStyle = 'rgba(40,40,36,.75)'; c.lineWidth = 0.06; c.stroke(cuerpo);
+    // 4. el soporte del cilindro de las cámaras (el cilindro se dibuja aparte mientras siga ahí)
+    estTubo(c, -3.05, -0.55, -3.05, -1.2, 0.1, ['#8a8e88', '#5a5d59', '#2a2c2a']); estTubo(c, -3.05, -1.2, -1.75, -1.2, 0.1, ['#8a8e88', '#5a5d59', '#2a2c2a']); estTubo(c, -1.75, -1.2, -1.75, -0.55, 0.1, ['#8a8e88', '#5a5d59', '#2a2c2a']);
+    for (const x of [-2.9, -1.9]) { estChapa(c, x - 0.09, -1.34, 0.18, 0.5, ['#5a5e5a', '#3a3c3a', '#1c1d1c']); estPerno(c, x, -1.24, 0.035); }
+    // 5. torreta de la escotilla con su antena y la luz de destellos (apagada); la luz fija de arriba; los focos de proa
+    c.fillStyle = estGradV(c, -3.62, -3.08, ['#efede4', '#c9c7bc', '#8e8c82']); rr(c, 0.5, -3.62, 1.3, 0.56, 0.12); c.fill(); c.strokeStyle = 'rgba(40,40,36,.6)'; c.lineWidth = 0.04; c.stroke();
+    c.fillStyle = estGradV(c, -3.78, -3.6, ['#9aa09c', '#5c625e', '#2e322f']); c.fillRect(0.62, -3.78, 1.06, 0.18);
+    for (const x of [0.7, 1.15, 1.6]) estPerno(c, x, -3.69, 0.03);
+    c.strokeStyle = '#3a3c38'; c.lineWidth = 0.035; c.beginPath(); c.moveTo(1.6, -3.78); c.lineTo(1.82, -4.3); c.stroke(); c.fillStyle = '#3a3c38'; c.beginPath(); c.arc(1.83, -4.32, 0.045, 0, 6.283); c.fill();   // antena
+    c.fillStyle = '#2c302d'; c.fillRect(0.72, -3.98, 0.16, 0.2); c.fillStyle = 'rgba(200,210,215,.35)'; c.beginPath(); c.arc(0.8, -3.98, 0.1, Math.PI, 0); c.fill();   // destellos, apagada
+    c.fillStyle = '#3b3e3a'; c.beginPath(); c.arc(-1.8, -3.17, 0.28, Math.PI, 0); c.fill(); c.fillStyle = 'rgba(200,205,200,.25)'; c.beginPath(); c.arc(-1.85, -3.24, 0.12, Math.PI, 0); c.fill();
+    c.save(); c.translate(3.0, -2.95); c.rotate(0.35); c.fillStyle = '#20231f'; c.fillRect(-0.08, -0.05, 0.16, 0.25);   // foco de proa, en su horquilla, apagado
+    c.fillStyle = estGradCil(c, -0.3, 0.3, ['#7a7e78', '#3e413d', '#191b19']); c.fillRect(-0.3, -0.42, 0.6, 0.42);
+    c.strokeStyle = 'rgba(8,10,8,.6)'; c.lineWidth = 0.03; c.beginPath(); for (let q = 0; q < 3; q++) { c.moveTo(-0.3, -0.34 + q * 0.1); c.lineTo(0.3, -0.34 + q * 0.1); } c.stroke();
+    c.fillStyle = '#0c0f0e'; c.fillRect(-0.27, -0.5, 0.54, 0.09); c.fillStyle = 'rgba(150,200,220,.3)'; c.fillRect(-0.2, -0.49, 0.16, 0.03); c.restore();
+    estTubo(c, 3.45, -1.95, 3.85, -2.05, 0.09, ['#6c706a', '#45483f', '#1f211d']); estTubo(c, 3.85, -2.05, 4.1, -2.45, 0.09, ['#6c706a', '#45483f', '#1f211d']);   // del otro, el soporte doblado
+    c.strokeStyle = '#1c1c1a'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(3.55, -1.9); c.quadraticCurveTo(3.95, -1.62, 4.18, -1.78); c.stroke();
+    c.strokeStyle = '#b0663a'; c.lineWidth = 0.015; c.beginPath(); c.moveTo(4.18, -1.78); c.lineTo(4.24, -1.74); c.moveTo(4.18, -1.78); c.lineTo(4.22, -1.84); c.stroke();   // el cable cortado
+    // 6. la esfera de titanio, delante y abajo: cordón de soldadura, aro de pernos, el ojo de buey de proa (limpio) y el
+    //    superior (tapado de barro)
+    const cx = 2.3, cy = -0.6, R = 1.4, sph = new Path2D(); sph.arc(cx, cy, R, 0, 6.283);
+    // el hueco del flotador donde va encajada la esfera: oscuro, con el bastidor de titanio y las mangueras dentro
+    const hueco = new Path2D(); hueco.moveTo(0.42, 0.6); hueco.lineTo(0.48, -1.2); hueco.bezierCurveTo(0.6, -2.15, 1.4, -2.45, 2.35, -2.42);
+    hueco.bezierCurveTo(3.25, -2.4, 3.8, -2.0, 3.9, -1.5); hueco.lineTo(3.55, 0.6); hueco.closePath();
+    c.fillStyle = estGradV(c, -2.45, 0.6, ['#262a27', '#151816', '#080a09']); c.fill(hueco);
+    c.save(); c.clip(hueco);
+    for (const [x0, y0, x1, y1] of [[0.7, -2.2, 0.7, 0.6], [0.7, -1.9, 3.6, -2.1], [0.7, -0.2, 3.6, 0.2], [0.7, -1.9, 1.6, 0.6]]) estTubo(c, x0, y0, x1, y1, 0.14, ['#5c625e', '#3a3f3c', '#1a1d1b']);   // bastidor
+    const mg = new Path2D(); mg.moveTo(0.6, -1.0); mg.bezierCurveTo(1.0, -2.0, 1.9, -2.3, 2.8, -2.2); estCable(c, mg, 0.09, '#1d1f1d', false);
+    c.restore();
+    estBorde(c, hueco, 0, 1, 5, 0.35, '0,0,0', 0.12, caja);   // el flotador hace sombra dentro del hueco
+    c.strokeStyle = 'rgba(232,228,214,.85)'; c.lineWidth = 0.09; c.stroke(hueco);            // canto del flotador: el grosor de la espuma
+    c.strokeStyle = 'rgba(60,58,50,.55)'; c.lineWidth = 0.03; c.save(); c.translate(0.05, 0.06); c.stroke(hueco); c.restore();
+    bqDesconchones(c, 0.4, 3.9, -2.45, -1.9, 5, r, ['rgba(206,190,140,.8)'], 0.25);
+    // cinturón de titanio bajo el ecuador, con sus orejetas atornilladas al bastidor
+    const yb = cy + 0.5, rxb = Math.sqrt(R * R - 0.25);
+    const gs = c.createRadialGradient(cx - R * 0.4, cy - R * 0.45, R * 0.1, cx, cy, R * 1.05); gs.addColorStop(0, TI[0]); gs.addColorStop(0.55, TI[1]); gs.addColorStop(1, TI[2]);
+    c.fillStyle = gs; c.fill(sph);
+    c.save(); c.clip(sph);
+    const sold = new Path2D(); sold.ellipse(cx - 0.1, cy, R * 0.28, R, 0, 0, 6.283);
+    c.strokeStyle = 'rgba(40,46,44,.5)'; c.lineWidth = 0.08; c.stroke(sold); c.strokeStyle = 'rgba(235,240,236,.3)'; c.lineWidth = 0.025; c.save(); c.translate(-0.03, -0.03); c.stroke(sold); c.restore();
+    for (let k = 0; k < 16; k++) { const a = Math.PI / 2 + (k + 0.5) / 16 * Math.PI; estPerno(c, cx - 0.1 + Math.cos(a) * R * 0.28 - 0.1, cy + Math.sin(a) * R * 0.94, 0.03); }   // pernos junto al cordón
+    c.fillStyle = 'rgba(255,255,250,.3)'; c.beginPath(); c.ellipse(cx - R * 0.45, cy - R * 0.5, R * 0.3, R * 0.16, -0.6, 0, 6.283); c.fill();
+    c.restore();
+    c.save(); c.clip(sph);   // sombra del flotador sobre la parte alta de la esfera (va metida en el hueco)
+    const gsh = c.createLinearGradient(0, cy - R, 0, cy - R * 0.25); gsh.addColorStop(0, 'rgba(0,0,0,.55)'); gsh.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gsh; c.fillRect(cx - R, cy - R, 2 * R, R);
+    c.restore();
+    estBorde(c, sph, -0.6, -0.6, 5, 0.6, '10,14,12', 0.08, caja);
+    c.strokeStyle = 'rgba(24,28,26,.7)'; c.lineWidth = 0.06; c.stroke(sph);
+    const cint = new Path2D(); cint.ellipse(cx, yb, rxb, 0.2, 0, 0, Math.PI);
+    c.strokeStyle = '#2a2f2c'; c.lineWidth = 0.2; c.stroke(cint); c.strokeStyle = '#8d948f'; c.lineWidth = 0.13; c.stroke(cint);
+    c.strokeStyle = 'rgba(235,240,236,.45)'; c.lineWidth = 0.035; c.save(); c.translate(0, -0.05); c.stroke(cint); c.restore();
+    for (const u of [0.2, 0.5, 0.8]) { const a = u * Math.PI, x = cx + Math.cos(a) * rxb, y = yb + Math.sin(a) * 0.2;
+      estChapa(c, x - 0.12, y - 0.06, 0.24, 0.26, ['#8d948f', '#5a605c', '#2a2f2c']); estPerno(c, x, y + 0.08, 0.035); }
+    estTubo(c, cx - rxb - 0.05, yb, 0.5, yb + 0.05, 0.13, ['#8d948f', '#5a605c', '#2a2f2c']);   // del cinturón al bastidor
+    for (const a of [2.4, 2.65]) { const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; c.fillStyle = '#2a2e2c'; c.beginPath(); c.arc(x, y, 0.13, 0, 6.283); c.fill(); c.fillStyle = '#6a706c'; c.beginPath(); c.arc(x - 0.03, y - 0.03, 0.06, 0, 6.283); c.fill(); }   // pasamuros
+    const ojo = (x, y, Ro, limpio) => {
+      c.fillStyle = estGradV(c, y - Ro, y + Ro, ['#a6aca8', '#5f6662', '#2c312e']); c.beginPath(); c.arc(x, y, Ro, 0, 6.283); c.fill();
+      for (let q = 0; q < 10; q++) { const a = q * 0.628; estPerno(c, x + Math.cos(a) * Ro * 0.82, y + Math.sin(a) * Ro * 0.82, Ro * 0.07); }
+      c.fillStyle = '#3d4441'; c.beginPath(); c.arc(x, y, Ro * 0.66, 0, 6.283); c.fill();                                    // asiento cónico
+      if (limpio) { const gw = c.createRadialGradient(x - Ro * 0.12, y - Ro * 0.12, 0, x, y, Ro * 0.55); gw.addColorStop(0, '#16202a'); gw.addColorStop(1, '#020406'); c.fillStyle = gw; }
+      else c.fillStyle = '#86877e';
+      c.beginPath(); c.arc(x + Ro * 0.04, y + Ro * 0.03, Ro * 0.55, 0, 6.283); c.fill();
+      if (limpio) { c.strokeStyle = 'rgba(200,225,235,.5)'; c.lineWidth = Ro * 0.07; c.beginPath(); c.arc(x, y, Ro * 0.42, 3.5, 4.5); c.stroke();
+        c.strokeStyle = 'rgba(200,225,235,.18)'; c.lineWidth = Ro * 0.04; c.beginPath(); c.arc(x + Ro * 0.04, y + Ro * 0.03, Ro * 0.55, 0, 6.283); c.stroke(); }   // el acrílico grueso
+      else { c.fillStyle = 'rgba(200,200,190,.55)'; c.beginPath(); c.ellipse(x - Ro * 0.1, y - Ro * 0.25, Ro * 0.4, Ro * 0.15, 0, 0, 6.283); c.fill(); }
+    };
+    // el barro que quedó arriba de la esfera (el resto resbaló por la curva) y tapa el ojo de buey superior
+    c.save(); c.clip(hueco);   // barro escurrido al hueco, detrás y encima de la esfera: tapa el ojo superior
+    const bar = new Path2D(); bar.arc(cx, cy, R + 0.02, 2.9, 4.75); bar.lineTo(2.0, -2.42); bar.lineTo(0.45, -2.42); bar.lineTo(0.45, cy + Math.sin(2.9) * R + 0.4); bar.closePath();
+    c.fillStyle = estGradV(c, -2.45, -0.2, ['#9c9b90', '#82807a', '#5c5b54']); c.fill(bar);
+    c.fillStyle = 'rgba(70,68,60,.45)'; c.beginPath(); for (let k = 0; k < 50; k++) { const x = 0.5 + r() * 1.8, y = -2.4 + r() * 1.9, Rg = 0.015 + r() * 0.02; c.moveTo(x + Rg, y); c.arc(x, y, Rg, 0, 6.283); } c.fill();
+    c.restore();
+    c.strokeStyle = 'rgba(214,214,204,.5)'; c.lineWidth = 0.04; c.beginPath(); c.arc(cx, cy, R + 0.02, 3.4, 4.7); c.stroke();
+    ojo(cx + Math.cos(-0.12) * R * 0.78, cy + Math.sin(-0.12) * R * 0.78, 0.55, true);
+    ojo(cx + Math.cos(-2.05) * R * 0.8, cy + Math.sin(-2.05) * R * 0.8, 0.3, false);
+    // 7. los brazos naranjas plegados delante: hombro, dos tramos con cilindro hidráulico, muñeca y pinza
+    { const H = [3.45, 0.55], C = [4.45, 0.15], M = [4.8, 0.85];
+      estTubo(c, 3.75, 0.25, 4.3, 0.42, 0.07, ['#eef2f2', '#a9b1b3', '#4e5558']);                                            // vástago
+      estTubo(c, ...H, ...C, 0.22, NAR); estTubo(c, ...C, ...M, 0.18, NAR);
+      for (const [x, y, Rr] of [[...H, 0.17], [...C, 0.14]]) { c.fillStyle = estGradV(c, y - Rr, y + Rr, ['#7c807a', '#45484a', '#1c1e1d']); c.beginPath(); c.arc(x, y, Rr, 0, 6.283); c.fill(); estPerno(c, x, y, Rr * 0.4); }
+      c.strokeStyle = '#151515'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(3.35, 0.45); c.bezierCurveTo(3.8, 0.4, 4.1, 0.0, 4.5, 0.02); c.bezierCurveTo(4.85, 0.12, 4.9, 0.55, 4.88, 0.8); c.stroke();
+      estTubo(c, 4.8, 0.85, 4.58, 1.2, 0.07, ['#8a8e88', '#5a5d59', '#2a2c2a']); estTubo(c, 4.8, 0.85, 5.08, 1.15, 0.07, ['#8a8e88', '#5a5d59', '#2a2c2a']);   // pinza
+    }
+    // 8. la cesta de babor, delante y bajo la esfera: tubos y malla (ahí va atornillada la placa del Trieste)
+    estTubo(c, 1.45, 0.12, 3.45, 0.12, 0.08, ['#8a8e88', '#5a5d59', '#2a2c2a']); estTubo(c, 1.45, 0.75, 3.45, 0.75, 0.08, ['#8a8e88', '#5a5d59', '#2a2c2a']);
+    for (const x of [1.45, 3.45]) estTubo(c, x, 0.12, x, 0.75, 0.08, ['#8a8e88', '#5a5d59', '#2a2c2a']);
+    c.strokeStyle = 'rgba(120,124,118,.75)'; c.lineWidth = 0.022; c.beginPath(); for (let x = 1.65; x < 3.45; x += 0.2) { c.moveTo(x, 0.12); c.lineTo(x, 0.75); } for (let y = 0.28; y < 0.75; y += 0.16) { c.moveTo(1.45, y); c.lineTo(3.45, y); } c.stroke();
+    // 9. la manta de barro de encima: gruesa, con su grano y el canto claro, y los hilos posados
+    const manta = new Path2D(); manta.moveTo(-4.3, -2.45); manta.bezierCurveTo(-4.1, -3.55, -3.2, -3.6, -2.1, -3.45); manta.bezierCurveTo(-1.2, -3.75, 0.2, -3.7, 0.5, -3.45);
+    manta.lineTo(1.8, -3.42); manta.bezierCurveTo(2.6, -3.5, 3.35, -3.15, 3.6, -2.7); manta.bezierCurveTo(3.1, -2.95, 2.2, -3.0, 1.0, -3.05); manta.lineTo(-2.9, -3.0); manta.bezierCurveTo(-3.7, -2.95, -4.15, -2.7, -4.3, -2.45); manta.closePath();
+    c.fillStyle = estGradV(c, -3.75, -2.9, ['#a3a297', '#848276', '#5f5e55']); c.fill(manta);
+    c.save(); c.clip(manta); c.fillStyle = 'rgba(70,68,60,.5)'; c.beginPath(); for (let k = 0; k < 160; k++) { const x = -4.3 + r() * 8, y = -3.8 + r() * 0.9, Rg = 0.015 + r() * 0.025; c.moveTo(x + Rg, y); c.arc(x, y, Rg, 0, 6.283); } c.fill(); c.restore();
+    c.strokeStyle = 'rgba(222,222,212,.6)'; c.lineWidth = 0.045; c.beginPath(); c.moveTo(-4.3, -2.45); c.bezierCurveTo(-4.1, -3.55, -3.2, -3.6, -2.1, -3.45); c.bezierCurveTo(-1.2, -3.75, 0.2, -3.7, 0.5, -3.45); c.moveTo(1.8, -3.42); c.bezierCurveTo(2.6, -3.5, 3.35, -3.15, 3.6, -2.7); c.stroke();
+    c.fillStyle = 'rgba(232,226,210,.85)'; for (const [x, y, a] of [[-2.8, -3.5, 0.1], [0.1, -3.6, -0.2], [2.4, -3.35, 0.4], [-3.95, -2.9, 1.0]]) { c.save(); c.translate(x, y); c.rotate(a); c.beginPath(); c.ellipse(0, 0, 0.08, 0.035, 0, 0, 6.283); c.fill(); c.restore(); }   // anfípodos muertos
+    c.strokeStyle = 'rgba(224,234,228,.4)'; c.lineWidth = 0.022; c.beginPath();   // hilos posados en curvas, «como una tumba cubierta de hiedra»
+    for (let k = 0; k < 9; k++) { const x0 = -4.1 + k * 0.95 + r() * 0.3, x1 = Math.min(3.5, x0 + 0.6 + r() * 1.4), y0 = -3.35 - r() * 0.2; c.moveTo(x0, y0); c.bezierCurveTo(x0 + 0.2, y0 + 0.9 + r() * 0.6, x1 - 0.2, y0 + 1.1 + r() * 0.8, x1, y0 + 0.2 + r() * 0.3); }
+    for (let k = 0; k < 4; k++) { const x0 = -3.6 + k * 1.9 + r() * 0.4; c.moveTo(x0, -3.3); c.bezierCurveTo(x0 + 0.3, -2.2, x0 - 0.2, -0.9, x0 + 0.4 + r() * 0.5, 1.3); }
     c.stroke();
   });
   ctx.restore();
-  // el sedimento que la entierra hasta la mitad (por delante, tapa los patines), con su bulto y el canto claro
+  // el sedimento que la entierra hasta la mitad (por delante, tapa los patines): bulto con grano, ondas y canto claro,
+  // las puntas de los patines asomando y las placas de lastre que Lucía soltó, medio enterradas a los lados
   ctx.save(); ctx.translate(sx(D.persX), sy(suelo + 0.15)); ctx.scale(-f * E, E);
-  estampaNovela('persefoneSed', [-6.4, -1.6, 6.4, 0.3], c => {
+  estampaNovela('persefoneSed', [-6.6, -1.7, 6.6, 0.4], c => {
     const r = mulberry32(hash2(G.semilla + 7575, 4));
-    c.fillStyle = '#9a9b92'; c.beginPath(); c.ellipse(0, 0, 5.9, 1.25, 0, Math.PI, 2 * Math.PI); c.fill();
-    c.fillStyle = 'rgba(190,190,180,.5)'; c.beginPath(); c.ellipse(-0.8, -0.05, 4.2, 0.7, 0, Math.PI, 2 * Math.PI); c.fill();
-    c.strokeStyle = 'rgba(225,225,215,.55)'; c.lineWidth = 0.05; c.beginPath(); for (let k = 0; k <= 24; k++) { const a = Math.PI + k / 24 * Math.PI, x = Math.cos(a) * 5.9, y = Math.sin(a) * 1.25 + (k % 24 ? (r() - 0.5) * 0.08 : 0); k ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
-    c.fillStyle = 'rgba(120,120,112,.5)'; for (let k = 0; k < 18; k++) { const x = (r() - 0.5) * 10, yM = -Math.sqrt(Math.max(0, 1 - (x / 5.9) ** 2)) * 1.25; c.beginPath(); c.arc(x, yM * (0.2 + r() * 0.7), 0.03 + r() * 0.04, 0, 6.283); c.fill(); }
+    for (const [x, rot] of [[-5.0, -0.5], [4.55, 0.45]]) {   // puntas de los patines, curvadas hacia arriba
+      c.save(); c.translate(x, -0.55); c.rotate(rot); estTubo(c, -0.45, 0, 0.45, 0, 0.12, ['#6c706a', '#45483f', '#1f211d']); c.restore(); }
+    const mon = new Path2D(); mon.moveTo(-6.0, 0.05); for (let k = 0; k <= 30; k++) { const a = Math.PI + k / 30 * Math.PI, x = Math.cos(a) * 6.0, y = Math.sin(a) * 1.28 + (k % 30 ? (r() - 0.5) * 0.06 : 0); mon.lineTo(x, y); } mon.closePath();
+    c.fillStyle = estGradV(c, -1.3, 0.1, ['#aeaea4', '#9a9b92', '#7d7e76']); c.fill(mon);
+    c.save(); c.clip(mon);
+    c.fillStyle = 'rgba(200,200,190,.45)'; c.beginPath(); c.ellipse(-0.8, -0.1, 4.3, 0.75, 0, Math.PI, 2 * Math.PI); c.fill();
+    c.strokeStyle = 'rgba(120,120,110,.4)'; c.lineWidth = 0.025; c.beginPath();   // ondas que dejó el barro al asentarse
+    for (let k = 0; k < 7; k++) { const y = -0.15 - k * 0.15, w = 5.5 * Math.sqrt(Math.max(0.05, 1 - ((y) / 1.28) ** 2)); c.moveTo(-w * (0.4 + r() * 0.3), y); c.quadraticCurveTo(0, y - 0.06, w * (0.3 + r() * 0.4), y + 0.02); }
+    c.stroke();
+    c.fillStyle = 'rgba(96,96,88,.5)'; c.beginPath(); for (let k = 0; k < 220; k++) { const x = (r() - 0.5) * 11.6, y = -r() * 1.3, Rg = 0.015 + r() * 0.03; c.moveTo(x + Rg, y); c.arc(x, y, Rg, 0, 6.283); } c.fill();
+    c.fillStyle = 'rgba(235,235,225,.35)'; c.beginPath(); for (let k = 0; k < 60; k++) { const x = (r() - 0.5) * 11, y = -r() * 1.2; c.rect(x, y, 0.03, 0.03); } c.fill();
+    c.restore();
+    c.strokeStyle = 'rgba(228,228,218,.6)'; c.lineWidth = 0.05; c.beginPath(); for (let k = 0; k <= 30; k++) { const a = Math.PI + k / 30 * Math.PI, x = Math.cos(a) * 6.0, y = Math.sin(a) * 1.28; k ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+    // las placas de lastre, todas soltadas, en dos montones medio enterrados
+    for (const [x0, s] of [[-5.9, 1], [5.2, -1]]) for (let k = 0; k < 3; k++) {
+      const x = x0 + s * k * 0.35 + (r() - 0.5) * 0.2, y = 0.05 - k * 0.06, a = (r() - 0.5) * 0.5;
+      c.save(); c.translate(x, y); c.rotate(a); estChapa(c, -0.4, -0.12, 0.8, 0.14, ['#6e6a5c', '#4a463c', '#25221d']);
+      c.fillStyle = 'rgba(130,70,30,.5)'; c.fillRect(-0.3, -0.1, 0.12, 0.1); c.restore();
+    }
+    for (const [x, d] of [[-5.9, -1], [5.4, 1]]) bqDuna(c, x + d * 0.3, 0.1, 0.9, 0.16, d, r);
   });
   ctx.restore();
 }
@@ -8387,6 +8485,7 @@ function destelloRescate(t) { const f = (t % 2.5) / 2.5; return f < 0.06 ? 1 - f
 function pecioRescate(R) { const p = posRescate(R), [gx, gy] = gravedadPecio(p.rot, p.derecha); let h = 7; for (const ch of R.id) h = Math.imul(h, 31) + ch.charCodeAt(0) | 0;
   return { sem: hash2(G.semilla | 0, h), prof: p.y, anos: 1, gx, gy, id: R.id, sinFoco: R.id === 'ts7', inundada: R.id === 'ts7' }; }
 function spriteRescate(R, E) {
+  E = escAcople(E);   // v267: a la escala del acercamiento máximo, se estampa reducido (kAcople)
   const clave = R.id + E.toFixed(3); if (R._spr && R._sprK === clave) return R._spr;
   const W = 17, Hm = 7, cv = document.createElement('canvas'); cv.width = Math.ceil(W * E); cv.height = Math.ceil(Hm * E);
   const c = cv.getContext('2d');
@@ -8399,7 +8498,7 @@ function dibujarRescates(sx, sy, E, yTop, yBot, t) {
     const p = posRescate(R); if (p.y < yTop - 12 || p.y > yBot + 12) continue;
     const spr = spriteRescate(R, E);
     ctx.save(); ctx.translate(sx(p.x), sy(p.y)); ctx.rotate(p.rot); if (!p.derecha) ctx.scale(-1, 1);
-    ctx.drawImage(spr, -spr.width / 2, -spr.height / 2);
+    { const kq = kAcople(); ctx.drawImage(spr, -spr.width * kq / 2, -spr.height * kq / 2, spr.width * kq, spr.height * kq); }
     ctx.restore();
     if (p.suelo) {   // v219: el sedimento amontonado contra el casco: con bultos, su canto claro y algo de pedrisco
       const rq = mulberry32(R.desde * 7 + 3), cx = sx(p.x), cy = sy(p.y + 1.85), cima = [];
@@ -8634,7 +8733,7 @@ function terminarInmersion(resultado, causa) {
 const cv = document.getElementById('lienzo'), ctx = cv.getContext('2d');
 const luzCv = document.createElement('canvas'), lctx = luzCv.getContext('2d');
 const RES_LUZ = 0.5;   // fracción de resolución de la capa de oscuridad
-const cam = { x: 0, y: 0, esc: 8 };
+const cam = { x: 0, y: 0, esc: 8, base: 8, zoom: 1 };   // v266: esc = base (según la pantalla) × zoom (acople)
 const area = { top: 0, bottom: 0 };
 let dpr = 1, W = 0, H = 0;
 const nieve = [];
@@ -8657,7 +8756,8 @@ function medirArea() {
     area.bottom = tac.hidden ? h : tac.getBoundingClientRect().top + 14;
   } else { area.top = 0; area.bottom = hud.getBoundingClientRect().top; }
   const altoLibre = Math.max(120, area.bottom - area.top);
-  cam.esc = clamp(Math.min(altoLibre / 70, innerWidth / 56), 3, 14);   // píxeles CSS por metro
+  cam.base = clamp(Math.min(altoLibre / 70, innerWidth / 56), 3, 14);   // píxeles CSS por metro
+  cam.esc = cam.base * (cam.zoom || 1);
   colocarFlotantes();
 }
 /* v239 (M5) · FRANJAS FIJAS. Todo lo que flota sobre el juego va en una de dos columnas y se apila midiendo su
@@ -8696,13 +8796,48 @@ function vigilarFlotantes(dt) {
   if (f !== FIRMA_FLOTANTES) { FIRMA_FLOTANTES = f; colocarFlotantes(); }
 }
 
+/* v266 · LA CÁMARA SE ACERCA AL ACOPLARSE. Cerca de una estación o de un taller clandestino (y despacio), la cámara se
+   acerca poco a poco (×1,5 en PC, ×1,25 en el móvil, que ya ve la estación más grande) y encuadra entre el submarino
+   y la estación, para que se vea el detalle. Al alejarse vuelve sola. Nunca con un jefe ni con un encuadre especial.
+   El zoom va por escalones finos (1/32): así los dibujos guardados por escala (pecios, repisas) se rehacen unas pocas
+   veces en el acercamiento, no en cada fotograma. En Unity: un CinemachineTargetGroup con el submarino y la estación,
+   y el tamaño ortográfico de la cámara interpolado. */
+const zoomAcopleMax = () => document.body.classList.contains('tactil') ? 1.25 : 1.5;
+// v267: las estaciones y los talleres se pintan SIEMPRE a la escala del acercamiento máximo (y se estampan reducidos
+// cuando la cámara está lejos). Así, al acercarse, el dibujo guardado ya vale y no hay que repintarlo en mitad del
+// acercamiento (antes costaba unos 18 ms en un fotograma, un pequeño tirón).
+function escAcople(E) { return modo === 'inmersion' ? E / (cam.zoom || 1) * zoomAcopleMax() : E; }
+const kAcople = () => modo === 'inmersion' ? (cam.zoom || 1) / zoomAcopleMax() : 1;   // cuánto se reduce al estamparlo
+function pxCacheZoom(T) { return Math.max(4, Math.round(Math.hypot(T.a, T.b) * (modo === 'inmersion' ? zoomAcopleMax() / (cam.zoom || 1) : 1))); }
+function objetivoAcople(s) {
+  if (inm.jefe || (inm.camY !== undefined && inm.camY !== null)) return null;
+  let mejor = null, md = 1e9;
+  if (inm.enCueva) for (const T of talleresSecretos()) {
+    const d = Math.hypot(T.dock.x - s.x, T.dock.y - s.y); if (d < md) { md = d; mejor = { d, c: enTaller(T, -2.4, -3.5) }; }
+  }
+  for (const m of Fosa.mesetas()) {
+    if (!estacionDe(m) || Math.abs(m.y - s.y) > 45) continue;
+    const q = puntoAcople(m), d = Math.hypot(q.x - s.x, q.y - s.y); if (d < md) { md = d; mejor = { d, c: enMundo(m, 0, -8.5) }; }
+  }
+  return mejor;
+}
 function actualizarCamara(dt) {
   const s = inm.sub;
-  cam.x += (s.x - cam.x) * Math.min(1, dt * 5);
+  // v266: cuánto acercar (0 lejos … 1 junto al acople), despacio: a toda velocidad no se acerca
+  const ob = objetivoAcople(s), vel = Math.hypot(s.vx, s.vy);
+  const k = ob ? clamp((26 - ob.d) / 14, 0, 1) * clamp((4 - vel) / 2, 0, 1) : 0;
+  const Z = 1 + (zoomAcopleMax() - 1) * k * k * (3 - 2 * k);
+  cam.zoomS = (cam.zoomS || 1) + (Z - (cam.zoomS || 1)) * Math.min(1, dt * 1.8);
+  const zq = Math.round(cam.zoomS * 32) / 32;
+  if (zq !== cam.zoom) { cam.zoom = zq; cam.esc = cam.base * zq; }
+  const kc = (cam.zoomS - 1) / (zoomAcopleMax() - 1);   // cuánto encuadrar hacia la estación
+  const cx = ob && kc > 0.01 ? lerp(s.x, ob.c.x, 0.4 * kc) : s.x;
+  cam.x += (cx - cam.x) * Math.min(1, dt * 5);
   // Cerca del fondo, la cámara sube un poco: así el suelo queda abajo y no media pantalla de roca
   const alto = (area.bottom - area.top) / cam.esc, f = clamp(1 - (fondoReal() - s.y) / (alto * 0.5), 0, 1), oy = f * alto * 0.22;
   const ty = (inm.camY !== undefined && inm.camY !== null ? inm.camY : s.y - oy) + (bodegaUI.abierta ? bodegaUI.dy : 0);   // un momento del juego puede pedir otro encuadre (el final)
-  cam.y += (ty - cam.y) * Math.min(1, dt * (inm.camY != null ? 1.5 : 5));
+  const ty2 = ob && kc > 0.01 && inm.camY == null ? lerp(ty, ob.c.y, 0.35 * kc) : ty;   // v266
+  cam.y += (ty2 - cam.y) * Math.min(1, dt * (inm.camY != null ? 1.5 : 5));
 }
 
 // Zona que la luz puede iluminar: el agua de la fosa y de las cuevas, más un borde de 2,5 m de roca
@@ -9612,7 +9747,7 @@ const OXIDO_SUB = [11, 29, 47].map(semilla => {
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => CACHE_CASCO.clear());   // el nombre, con la letra buena en cuanto cargue
 const CASCO_CAJA = { x: -6.8, y: -3.6, w: 11.7, h: 6.3 };   // v218: más ancha por la tobera del motor de Velocidad
 function pegarCasco(c, chV, DT, FS, rot, der, I) {
-  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b)));
+  const T = c.getTransform(), px = pxCacheZoom(T);
   const mot = (I && I.eq && I.eq.motorId) || 'serie';
   const clave = `${px}|${chV}|${FS.ventral ? 1 : 0}|${rot}|${rot ? (der ? 1 : 0) : 1}|${mot}`;
   let spr = CACHE_CASCO.get(clave);
@@ -10140,7 +10275,7 @@ function piezasChasis(c, chV, DT, EC) {
   }
 }
 function pegarMarco(c, chV, DT) {
-  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b))), clave = px + '|' + chV, K = MARCO_CAJA;
+  const T = c.getTransform(), px = pxCacheZoom(T), clave = px + '|' + chV, K = MARCO_CAJA;
   let spr = CACHE_MARCO.get(clave);
   if (!spr) {
     if (CACHE_MARCO.size > 10) CACHE_MARCO.clear();
@@ -10218,7 +10353,7 @@ const FUGAS = [[-2.9, -0.47], [-1.15, -0.5], [0.65, 0.2], [-2.9, 0.62], [-4.3, -
 // Las abolladuras no se mueven: se pintan una vez por resolución, chasis y nivel de daño (medio en medio) y se pegan.
 const CACHE_ABOLL = new Map();
 function pegarAbolladuras(c, chV, sil, nf) {
-  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b))), clave = px + '|' + chV + '|' + nf, K = CASCO_CAJA;
+  const T = c.getTransform(), px = pxCacheZoom(T), clave = px + '|' + chV + '|' + nf, K = CASCO_CAJA;
   let spr = CACHE_ABOLL.get(clave);
   if (!spr) {
     if (CACHE_ABOLL.size > 12) CACHE_ABOLL.clear();
@@ -10986,7 +11121,7 @@ const CACHE_TALADRO = new Map(), TALADRO_CAJA = { x: 2.9, y: 0.78, w: 3.55, h: 0
 function dibujarTaladro(c, I) {
   const tier = clamp((I.niv && I.niv.taladro) | 0, 0, 2), mi = I.minado;
   if (mi) { figuraTaladro(c, tier, I, mi); return; }
-  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b))), clave = `${px}|${tier}`;
+  const T = c.getTransform(), px = pxCacheZoom(T), clave = `${px}|${tier}`;
   let spr = CACHE_TALADRO.get(clave);
   if (!spr) {
     if (CACHE_TALADRO.size > 8) CACHE_TALADRO.clear();
@@ -11133,7 +11268,7 @@ function dibujarGarra(c, I) {
   const tier = clamp((I.niv && I.niv.garra) | 0, 0, 2), rc = I.recogiendo, popa = !!(I.eq && (I.eq.tieneTaladro || I.eq.tienePulso));   // v178: también con el pulso
   if (rc) { figuraGarra(c, tier, clamp(rc.t / (BAL.recoleccion.tiempoOrganico / ((I.eq && I.eq.garra && I.eq.garra.rapidez) || 1)), 0, 1), popa); return; }
   if (I.llevaCabo) { figuraGarra(c, tier, 0.6, popa); return; }   // v204: sujetando el cabo del SOS
-  const T = c.getTransform(), px = Math.max(4, Math.round(Math.hypot(T.a, T.b))), clave = `${px}|${tier}|${popa ? 1 : 0}`, K = popa ? GARRA_CAJA_POPA : GARRA_CAJA;
+  const T = c.getTransform(), px = pxCacheZoom(T), clave = `${px}|${tier}|${popa ? 1 : 0}`, K = popa ? GARRA_CAJA_POPA : GARRA_CAJA;
   let spr = CACHE_GARRA.get(clave);
   if (!spr) {
     if (CACHE_GARRA.size > 8) CACHE_GARRA.clear();
@@ -12649,16 +12784,6 @@ function viga(c, x0, y0, x1, y1) {   // perfil en I: ala superior e inferior má
   c.fillStyle = ACERO.linea; c.fillRect(x0, y0, x1 - x0, 0.14); c.fillRect(x0, y1 - 0.14, x1 - x0, 0.14);
   c.strokeStyle = ACERO.linea; c.lineWidth = 0.08; c.strokeRect(x0, y0, x1 - x0, y1 - y0);
 }
-function patasBancada(c, xs, yDeck, ancho) {
-  for (const x of xs) {
-    c.fillStyle = ACERO.medio; c.fillRect(x - ancho / 2, yDeck, ancho, -yDeck);
-    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x + ancho / 2 - 0.16, yDeck, 0.16, -yDeck);
-    c.fillStyle = ACERO.oscuro; c.beginPath(); c.ellipse(x, -0.05, ancho * 1.5, 0.32, 0, Math.PI, 0); c.fill();   // zapata medio hundida
-  }
-  c.strokeStyle = ACERO.medio; c.lineWidth = 0.16; c.beginPath();   // cruces de arriostramiento entre patas
-  for (let i = 0; i + 1 < xs.length; i += 2) { const a = xs[i], b = xs[i + 1]; c.moveTo(a, yDeck + 0.3); c.lineTo(b, -0.4); c.moveTo(b, yDeck + 0.3); c.lineTo(a, -0.4); }
-  c.stroke();
-}
 // Bastidor de baterías: armario con puertas, asas, rejillas y chorreones de óxido. pintura = color del armario
 function bastidor(c, x0, y0, x1, y1, pintura, sombra) {
   const g = c.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, pintura); g.addColorStop(1, sombra);
@@ -12675,36 +12800,6 @@ function bastidor(c, x0, y0, x1, y1, pintura, sombra) {
   c.fillStyle = '#c9a227'; c.fillRect(x0, y1 - 0.32, x1 - x0, 0.32);   // franja de aviso
   c.fillStyle = '#1b1b14'; for (let x = x0 + 0.1; x < x1 - 0.2; x += 0.6) { c.beginPath(); c.moveTo(x, y1); c.lineTo(x + 0.3, y1 - 0.32); c.lineTo(x + 0.5, y1 - 0.32); c.lineTo(x + 0.2, y1); c.fill(); }
 }
-// Esfera habitable sobre su cuna. lado del collarín: ángulo (rad) en el que sale; ojo: ángulo del ojo de buey
-function esferaHabitable(c, cx, cy, R, angCollar, angOjo, encendida, t, pintura) {
-  // cuna
-  c.fillStyle = ACERO.oscuro; c.beginPath(); c.moveTo(cx - R * 0.85, cy + R + 0.6); c.lineTo(cx - R * 0.55, cy + R * 0.7); c.lineTo(cx + R * 0.55, cy + R * 0.7); c.lineTo(cx + R * 0.85, cy + R + 0.6); c.closePath(); c.fill();
-  // collarín de acoplamiento: tubo corto con brida
-  c.save(); c.translate(cx, cy); c.rotate(angCollar);
-  c.fillStyle = ACERO.medio; c.fillRect(R - 0.4, -1.15, 1.6, 2.3);
-  c.fillStyle = ACERO.claro; c.fillRect(R + 1.05, -1.4, 0.3, 2.8);
-  c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(R - 0.4, 0.75, 1.6, 0.4);
-  for (const y of [-1.2, -0.4, 0.4, 1.2]) { c.fillStyle = '#7d8a8f'; c.beginPath(); c.arc(R + 1.2, y, 0.08, 0, 6.283); c.fill(); }
-  c.restore();
-  // casco esférico
-  const ge = c.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.15, cx, cy, R * 1.05);
-  ge.addColorStop(0, pintura[0]); ge.addColorStop(0.7, pintura[1]); ge.addColorStop(1, pintura[2]);
-  c.fillStyle = ge; c.beginPath(); c.arc(cx, cy, R, 0, 6.283); c.fill();
-  c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 0.12; c.stroke();
-  c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 0.08; c.beginPath(); c.ellipse(cx, cy, R, R * 0.22, 0, 0, 6.283); c.stroke();   // soldadura ecuatorial
-  c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.arc(cx + R * 0.2, cy + R * 0.15, R * 0.92, 0.2, 2.4); c.fill();
-  // penetradores (pasamuros de cables) y rejilla de los depuradores
-  c.fillStyle = ACERO.oscuro; for (const a of [2.6, 2.85, 3.1]) { c.beginPath(); c.arc(cx + Math.cos(a) * R, cy + Math.sin(a) * R, 0.22, 0, 6.283); c.fill(); }
-  // ojo de buey (con luz dentro si la estación está encendida)
-  const ox = cx + Math.cos(angOjo) * R * 0.74, oy = cy + Math.sin(angOjo) * R * 0.74;
-  c.fillStyle = encendida ? '#d9a35a' : '#0b1114'; c.beginPath(); c.arc(ox, oy, 0.82, 0, 6.283); c.fill();
-  if (encendida) { const gl = c.createRadialGradient(ox, oy, 0, ox, oy, 0.8); gl.addColorStop(0, 'rgba(255,230,170,.95)'); gl.addColorStop(1, 'rgba(200,120,50,.6)'); c.fillStyle = gl; c.fill(); }
-  else { c.fillStyle = 'rgba(160,210,230,.18)'; c.beginPath(); c.arc(ox - 0.25, oy - 0.25, 0.3, 0, 6.283); c.fill(); }
-  c.strokeStyle = '#8a7246'; c.lineWidth = 0.2; c.beginPath(); c.arc(ox, oy, 0.86, 0, 6.283); c.stroke();
-  for (let k = 0; k < 8; k++) { const a = k * 0.785; c.fillStyle = '#6b5a3a'; c.beginPath(); c.arc(ox + Math.cos(a) * 0.86, oy + Math.sin(a) * 0.86, 0.07, 0, 6.283); c.fill(); }
-  // sedimento posado encima (tres años de nieve marina)
-  c.fillStyle = 'rgba(92,86,72,.75)'; c.beginPath(); c.ellipse(cx - 0.2, cy - R + 0.12, R * 0.62, 0.36, 0, Math.PI, 0); c.fill();
-}
 // Mástil con dos focos (uno hacia dentro, otro hacia fuera). Encendidos: lente blanca; apagados: cristal oscuro
 function mastilFocos(c, x, yBase, yTop, encendida) {
   c.fillStyle = ACERO.medio; c.fillRect(x - 0.18, yTop, 0.36, yBase - yTop);
@@ -12718,15 +12813,6 @@ function mastilFocos(c, x, yBase, yTop, encendida) {
     c.restore();
   }
   c.fillStyle = ACERO.claro; c.fillRect(x - 0.7, yTop - 0.25, 1.4, 0.3);
-}
-// Bastidor de izado: la pirámide que colgaba del cable («lámpara de catedral») y el grillete de arriba
-function bastidorIzado(c, x0, x1, yDeck, yApex) {
-  c.strokeStyle = '#3d4b51'; c.lineWidth = 0.26; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(x0, yDeck); c.lineTo(0, yApex); c.lineTo(x1, yDeck);
-  c.moveTo(x0 * 0.45, yDeck); c.lineTo(0, yApex); c.lineTo(x1 * 0.45, yDeck); c.stroke();
-  c.lineWidth = 0.18; c.beginPath(); const yb = yDeck + (yApex - yDeck) * 0.55; c.moveTo(x0 * 0.45, yb); c.lineTo(x1 * 0.45, yb); c.stroke();
-  c.fillStyle = '#4b5a60'; c.beginPath(); c.arc(0, yApex, 0.55, 0, 6.283); c.fill();
-  c.strokeStyle = '#2a3437'; c.lineWidth = 0.18; c.beginPath(); c.arc(0, yApex - 0.7, 0.45, 0, 6.283); c.stroke();   // grillete
 }
 // Ventosas de calamar en la pintura (novela, cap. 6): coronas de arañazos alrededor de cada círculo
 function ventosas(c, puntos) {
@@ -12745,124 +12831,782 @@ function placaNombre(c, id, x, y, flip) {   // nombre pintado a plantilla en la 
 }
 function t1X(m) { return -m.W * (m.barco.pos || 0.55) + 4.5; }   // la T-1, caída al pie de la pared junto a Estigia (x local, m del mundo)
 function balizasLeteo(m) { const pos = m.barco.pos || 0.55; return [-m.W * pos + 3, m.W * (1 - pos) - 1.5]; }   // x local (m del mundo)
-function dibujarEstacion(id, t, flip, m) {
+/* ---------------------------------------------------------------------
+   v260 · ESTACIONES A OTRO NIVEL (1.ª parte: Caronte). Mismo método que los barcos hundidos (v219) y la base
+   (v242): lo que no se mueve se pinta UNA vez, con todo el detalle, en un lienzo guardado (sprite), y en cada
+   fotograma solo se estampa y se anima lo que se mueve (el cable de izado, la línea de hidrófonos de Kaori, el
+   piloto del módem y el nombre pintado, que no se voltea). Hay un sprite por estado (apagada / encendida) y por
+   zoom escalonado, igual que los barcos. Más detalle que antes y más barato por fotograma.
+   Misma forma, mismos sitios (acople, focos, módem, ojo de buey) y mismas cajas de colisión que la v259:
+   GEO_ESTACION no cambia; solo cambia cómo se pinta.
+   Lenguaje visual (sirve para Estigia y Leteo):
+     · acero con luz desde arriba: degradado vertical en las chapas y sombreado de cilindro en tubos y patas;
+     · tornillos, juntas, refuerzos, abrazaderas y pintura desconchada con óxido debajo;
+     · los años en el fondo según la profundidad: sedimento sobre todo lo horizontal, nieve marina, hidroides
+       colgando y algo de vida fija (a 1.000 m, pocas cosas: llevan tres años);
+     · encendida: lentes de los focos blancas, el ojo de buey cálido y los pilotos de los armarios; apagada: cristal
+       oscuro con un reflejo frío.
+   En Unity: un prefab con sprites por capas (estructura, desgaste, luces) y las partes vivas como objetos aparte.
+   --------------------------------------------------------------------- */
+const cacheEst = new Map();
+const EST_CAJA = { x0: -13, x1: 13, y0: -20.4, y1: 1.3 };   // lo que ocupa el sprite, en unidades locales de la estación
+const EST_SPRITE = { caronte: true, estigia: true, leteo: true };                         // las que ya usan el dibujo nuevo (v261 Estigia, v262 Leteo)
+const EST_AC = ['#6c7e85', '#40525a', '#1f2a2f'];             // acero pintado (gris azulado): luz, medio, sombra
+function claveEst(id, enc, E) { const Er = Math.min(64, Math.pow(2, Math.ceil(Math.log2(Math.max(4, escAcople(E) * ESC_EST)) * 4) / 4)); return [Er, id + '|' + (enc ? 1 : 0) + '|' + Er + '|' + G.semilla]; }
+function spriteEstacion(id, enc, m, E) {
+  const [Er, clave] = claveEst(id, enc, E);
+  let o = cacheEst.get(clave); if (o) return o;
+  if (cacheEst.size > 5) cacheEst.delete(cacheEst.keys().next().value);   // v267: fuera el más viejo, no todos
+  const K = EST_CAJA, cv = document.createElement('canvas');
+  cv.width = Math.ceil((K.x1 - K.x0) * Er); cv.height = Math.ceil((K.y1 - K.y0) * Er);
+  const c = cv.getContext('2d'); c.setTransform(Er, 0, 0, Er, -K.x0 * Er, -K.y0 * Er); c.lineJoin = 'round'; c.lineCap = 'round';
+  const r = mulberry32(hash2(G.semilla + 909, id.charCodeAt(0) * 7 + id.length));   // mismo desgaste encendida o apagada
+  if (id === 'caronte') estCaronte(c, r, enc); else if (id === 'estigia') estEstigia(c, r, enc); else if (id === 'leteo') estLeteo(c, r, enc);
+  o = { cv, Er }; cacheEst.set(clave, o); return o;
+}
+
+// ---- utilidades de dibujo de las estaciones ----
+function estGradV(c, y0, y1, cols) { const g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, cols[0]); g.addColorStop(0.45, cols[1]); g.addColorStop(1, cols[2]); return g; }
+function estGradCil(c, x0, x1, cols) {   // cilindro vertical: sombra a los lados, luz algo a la izquierda del centro
+  const g = c.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, cols[2]); g.addColorStop(0.32, cols[0]); g.addColorStop(0.62, cols[1]); g.addColorStop(1, cols[2]); return g;
+}
+// Tubo de acero entre dos puntos, con su volumen: base oscura, cuerpo y un hilo de luz por el lado de arriba
+function estTubo(c, x0, y0, x1, y1, w, cols = EST_AC) {
+  const L = Math.hypot(x1 - x0, y1 - y0) || 1; let nx = -(y1 - y0) / L, ny = (x1 - x0) / L; if (ny > 0) { nx = -nx; ny = -ny; }
+  c.lineCap = 'butt';
+  const linea = (o, ww, col) => { c.strokeStyle = col; c.lineWidth = ww; c.beginPath(); c.moveTo(x0 + nx * o, y0 + ny * o); c.lineTo(x1 + nx * o, y1 + ny * o); c.stroke(); };
+  linea(0, w, cols[2]); linea(w * 0.12, w * 0.62, cols[1]); linea(w * 0.27, w * 0.2, cols[0]);
+  c.lineCap = 'round';
+}
+function estPerno(c, x, y, R = 0.07) {
+  c.fillStyle = 'rgba(8,12,14,.55)'; c.beginPath(); c.arc(x + R * 0.25, y + R * 0.3, R, 0, 6.283); c.fill();
+  c.fillStyle = '#5b676b'; c.beginPath(); c.arc(x, y, R * 0.85, 0, 6.283); c.fill();
+  c.fillStyle = 'rgba(215,225,225,.45)'; c.beginPath(); c.arc(x - R * 0.3, y - R * 0.3, R * 0.32, 0, 6.283); c.fill();
+}
+// Chapa pintada: degradado de luz de arriba, canto claro arriba, línea de sombra abajo y contorno
+function estChapa(c, x, y, w, h, cols = EST_AC) {
+  c.fillStyle = estGradV(c, y, y + h, cols); c.fillRect(x, y, w, h);
+  c.fillStyle = 'rgba(225,232,230,.16)'; c.fillRect(x, y, w, Math.min(0.07, h * 0.2));
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x, y + h - Math.min(0.08, h * 0.2), w, Math.min(0.08, h * 0.2));
+  c.strokeStyle = 'rgba(6,10,12,.7)'; c.lineWidth = 0.05; c.strokeRect(x, y, w, h);
+}
+// Banda de sombra que sigue el borde interior de una forma (volumen y sombras de contacto), en una caja dada
+function estBorde(c, path, ux, uy, pasos, dmax, rgb, a, caja = EST_CAJA) {
+  for (let k = 1; k <= pasos; k++) {
+    const d = dmax * k / pasos, P = new Path2D(); P.addPath(path); P.addPath(path, new DOMMatrix([1, 0, 0, 1, ux * d, uy * d]));
+    c.save(); c.clip(path); c.clip(P, 'evenodd'); c.fillStyle = `rgba(${rgb},${a})`; c.fillRect(caja.x0, caja.y0, caja.x1 - caja.x0, caja.y1 - caja.y0); c.restore();
+  }
+}
+// Desgaste dentro de una forma: pintura comida (manchas de imprimación y óxido) y chorretones desde los tornillos
+function estDesgaste(c, path, x0, x1, y0, y1, n, r, chorros) {
+  c.save(); c.clip(path);
+  bqDesconchones(c, x0, x1, y0, y1, n, r, ['rgba(96,58,36,.55)', 'rgba(70,82,84,.5)', 'rgba(120,64,34,.45)'], 0.7);
+  for (const [x, y, L] of chorros || []) bqOxido(c, x, y, L, 0.22, 0.5, r);
+  c.restore();
+}
+// Foco submarino en su soporte: carcasa cilíndrica con aletas de refrigeración y lente (encendida: blanca)
+function estFoco(c, x, y, ang, enc) {
+  c.save(); c.translate(x, y); c.rotate(ang);
+  c.fillStyle = '#20292c'; c.fillRect(-0.12, -0.75, 0.24, 0.5);                                   // horquilla
+  c.fillStyle = estGradCil(c, -0.46, 0.46, ['#76858a', '#3c4a50', '#182124']); c.fillRect(-0.46, -0.35, 0.92, 0.82);
+  c.strokeStyle = 'rgba(8,12,14,.6)'; c.lineWidth = 0.05; for (let k = 0; k < 4; k++) { c.beginPath(); c.moveTo(-0.46, -0.24 + k * 0.15); c.lineTo(0.46, -0.24 + k * 0.15); c.stroke(); }   // aletas
+  c.fillStyle = '#9aa6aa'; c.fillRect(-0.52, 0.43, 1.04, 0.12);                                       // aro de la lente
+  if (enc) {
+    const gl = c.createLinearGradient(0, 0.5, 0, 0.66); gl.addColorStop(0, '#ffffff'); gl.addColorStop(1, '#ffe9b8');
+    c.fillStyle = gl; c.fillRect(-0.44, 0.52, 0.88, 0.14);
+  } else {
+    c.fillStyle = '#121a1d'; c.fillRect(-0.44, 0.52, 0.88, 0.14);
+    c.fillStyle = 'rgba(150,200,220,.35)'; c.fillRect(-0.36, 0.54, 0.28, 0.04);
+  }
+  c.restore();
+}
+
+// ---------------------------------------------------------------------
+// CARONTE (1.000 m): la original. Bastidor de baterías pintado de blanco («para que se vieran bien los golpes y las
+// fugas de aceite»), las ventosas del calamar en la pintura, la boya amarilla, la esfera naranja y el cable que
+// sube hacia ninguna parte (vivo). Tres años en el fondo: algo de sedimento, hidroides y pocas cosas fijas.
+// ---------------------------------------------------------------------
+function estCaronte(c, r, enc) {
+  const AC = EST_AC;
+  // --- silueta de lo que recoge sedimento (caras de arriba): bancada, armario, boya, esfera, cuna, collarín, módem
+  const sil = new Path2D();
+  sil.rect(-10.4, -4.8, 20.8, 1.4); sil.rect(-9.6, -11.2, 5.2, 6.4); sil.ellipse(-7, -11.9, 1.7, 0.7, 0, 0, 6.283);
+  sil.moveTo(6.6, -9.4); sil.arc(3, -9.4, 3.6, 0, 6.283); sil.rect(6.2, -10.55, 1.6, 2.3); sil.rect(-3.8, -6.9, 0.8, 2.1);
+  // --- 1. el suelo: zapatas medio enterradas y sedimento amontonado contra las patas
+  const patas = [-9.2, -3.4, 3.4, 9.2];
+  for (const x of patas) {
+    c.fillStyle = estGradV(c, -0.32, 0.05, ['#4a585d', '#2c373b', '#151c1f']); c.fillRect(x - 1.05, -0.32, 2.1, 0.37);
+    for (const dx of [-0.8, 0.8]) estPerno(c, x + dx, -0.2, 0.06);
+  }
+  // --- 2. arriostramiento entre patas (tubos en cruz con sus cartelas) y las patas
+  for (const [a, b] of [[-9.2, -3.4], [3.4, 9.2]]) {
+    estTubo(c, a + 0.3, -3.1, b - 0.3, -0.55, 0.17); estTubo(c, b - 0.3, -3.1, a + 0.3, -0.55, 0.17);
+    estTubo(c, a + 0.3, -0.7, b - 0.3, -0.7, 0.14);
+    c.fillStyle = '#2b363a'; for (const [x, y] of [[(a + b) / 2, -1.83]]) { c.beginPath(); c.arc(x, y, 0.2, 0, 6.283); c.fill(); estPerno(c, x, y, 0.06); }
+  }
+  for (const x of patas) {
+    c.fillStyle = estGradCil(c, x - 0.3, x + 0.3, AC); c.fillRect(x - 0.3, -3.4, 0.6, 3.1);
+    estChapa(c, x - 0.42, -3.48, 0.84, 0.22); estChapa(c, x - 0.4, -0.5, 0.8, 0.2);     // collarines arriba y abajo
+    c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(x - 0.3, -3.26, 0.6, 0.5);               // sombra de la bancada
+  }
+  // --- 3. la pirámide de izado («la lámpara de catedral»): tubos con su volumen, cartelas con grillete y la pieza de cabeza
+  const yA = -18.5, yb = -4.8 + (yA + 4.8) * 0.55, xi = 4.68 * 0.45;
+  estTubo(c, -10.2, -4.9, -0.25, yA + 0.35, 0.3); estTubo(c, 10.2, -4.9, 0.25, yA + 0.35, 0.3);
+  estTubo(c, -4.6, -4.9, -0.12, yA + 0.4, 0.24); estTubo(c, 4.6, -4.9, 0.12, yA + 0.4, 0.24);
+  estTubo(c, -xi - 0.05, yb, xi + 0.05, yb, 0.2);
+  estTubo(c, -xi, yb, -6.9, -9.0, 0.13); estTubo(c, xi, yb, 6.9, -9.0, 0.13);           // diagonales de refuerzo
+  for (const x of [-10.4, -4.68, 4.68, 10.4]) {                                         // orejetas en la bancada
+    c.fillStyle = '#34434a'; c.beginPath(); c.moveTo(x - 0.38, -4.8); c.lineTo(x - 0.16, -5.45); c.lineTo(x + 0.16, -5.45); c.lineTo(x + 0.38, -4.8); c.closePath(); c.fill();
+    c.fillStyle = '#0c1214'; c.beginPath(); c.arc(x, -5.2, 0.09, 0, 6.283); c.fill();
+  }
+  // cabeza: placa de reparto con el ojo del grillete
+  c.fillStyle = estGradV(c, yA - 0.75, yA + 0.55, ['#7b8b91', '#46575e', '#20292d']); c.beginPath(); c.moveTo(-0.85, yA + 0.5); c.lineTo(-0.5, yA - 0.6); c.lineTo(0.5, yA - 0.6); c.lineTo(0.85, yA + 0.5); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(6,10,12,.7)'; c.lineWidth = 0.05; c.stroke();
+  for (const [x, y] of [[-0.45, yA + 0.2], [0.45, yA + 0.2], [0, yA - 0.25]]) estPerno(c, x, y, 0.07);
+  c.strokeStyle = '#26302f'; c.lineWidth = 0.2; c.beginPath(); c.arc(0, yA - 0.95, 0.42, 0, 6.283); c.stroke();   // grillete
+  c.strokeStyle = 'rgba(190,200,200,.35)'; c.lineWidth = 0.05; c.beginPath(); c.arc(0, yA - 0.95, 0.42, 3.6, 5.4); c.stroke();
+  // --- 4. la bancada: perfil en I con alas, alma con rigidizadores, aligeramientos, franjas de aviso y tornillería
+  const beam = new Path2D(); beam.rect(-10.4, -4.8, 20.8, 1.4);
+  estChapa(c, -10.4, -4.8, 20.8, 0.26, ['#7e9097', '#4f626a', '#2b383d']);               // ala superior
+  c.fillStyle = estGradV(c, -4.54, -3.66, ['#3c4d54', '#2f3e44', '#1c262a']); c.fillRect(-10.2, -4.54, 20.4, 0.88);   // alma
+  estChapa(c, -10.4, -3.66, 20.8, 0.26, ['#56686f', '#3a4b52', '#1d282c']);              // ala inferior
+  for (let x = -9.6; x <= 9.7; x += 1.3) { c.fillStyle = 'rgba(120,138,144,.35)'; c.fillRect(x, -4.54, 0.07, 0.88); c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x + 0.07, -4.54, 0.07, 0.88); }
+  for (const x of [-7, -1, 5]) {
+    c.fillStyle = '#0a1012'; c.beginPath(); c.ellipse(x, -4.1, 0.36, 0.3, 0, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(140,158,162,.4)'; c.lineWidth = 0.05; c.beginPath(); c.ellipse(x, -4.1, 0.36, 0.3, 0, 0.2, 3.0); c.stroke();
+  }
+  for (const [x0, x1] of [[-10.2, -9.3], [9.3, 10.2]]) {                                  // franjas de aviso en los extremos
+    c.save(); c.beginPath(); c.rect(x0, -4.5, x1 - x0, 0.8); c.clip(); c.fillStyle = '#c9a227'; c.fillRect(x0, -4.5, x1 - x0, 0.8);
+    c.fillStyle = '#1b1b14'; for (let x = x0 - 1; x < x1 + 1; x += 0.36) { c.beginPath(); c.moveTo(x, -3.7); c.lineTo(x + 0.4, -4.5); c.lineTo(x + 0.58, -4.5); c.lineTo(x + 0.18, -3.7); c.fill(); }
+    c.restore();
+  }
+  for (let x = -10.1; x <= 10.15; x += 0.65) { estPerno(c, x, -4.67, 0.045); estPerno(c, x, -3.53, 0.045); }
+  estDesgaste(c, beam, -10.4, 10.4, -4.8, -3.4, 26, r, [[-8.3, -4.62, 0.7], [-2.6, -4.62, 0.6], [3.9, -4.62, 0.8], [8.4, -4.62, 0.5]]);
+  estBorde(c, beam, 0, 1, 4, 0.22, '0,0,0', 0.12);
+  // --- 5. la cuna de la esfera: silla de acero con costillas y tacos de goma
+  c.fillStyle = estGradV(c, -7.2, -4.8, ['#4d5f66', '#33434a', '#1b2427']);
+  c.beginPath(); c.moveTo(-0.2, -4.8); c.lineTo(0.55, -6.6); c.lineTo(5.45, -6.6); c.lineTo(6.2, -4.8); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(6,10,12,.6)'; c.lineWidth = 0.05; c.stroke();
+  for (const x of [1.3, 3, 4.7]) { c.fillStyle = 'rgba(0,0,0,.32)'; c.fillRect(x, -6.55, 0.16, 1.7); c.fillStyle = 'rgba(150,168,172,.3)'; c.fillRect(x - 0.06, -6.55, 0.06, 1.7); }
+  c.fillStyle = '#141a1b'; c.fillRect(0.6, -6.82, 1.2, 0.24); c.fillRect(4.2, -6.82, 1.2, 0.24);
+  // --- 6. mástiles de celosía con sus focos y la caja de conexiones
+  for (const xm of [-10.1, 10.1]) {
+    const yT = -15.4;
+    estChapa(c, xm - 0.55, -5.05, 1.1, 0.25);
+    for (const dx of [-0.2, 0.2]) { c.fillStyle = estGradCil(c, xm + dx - 0.08, xm + dx + 0.08, AC); c.fillRect(xm + dx - 0.08, yT, 0.16, -4.8 - yT); }
+    c.strokeStyle = '#3a4a51'; c.lineWidth = 0.07; c.beginPath();
+    for (let y = -4.9; y > yT + 0.6; y -= 0.9) { c.moveTo(xm - 0.2, y); c.lineTo(xm + 0.2, y - 0.45); c.lineTo(xm - 0.2, y - 0.9); }
+    c.stroke();
+    c.strokeStyle = '#11181a'; c.lineWidth = 0.08; c.beginPath(); c.moveTo(xm + 0.3, -5); c.lineTo(xm + 0.3, yT + 0.6); c.stroke();   // cable del foco
+    estChapa(c, xm - 0.32, -8.6, 0.64, 0.8, ['#5d6c70', '#3b484c', '#1e272a']); estPerno(c, xm, -8.4, 0.05);
+    estChapa(c, xm - 0.75, yT - 0.25, 1.5, 0.3, ['#8696a0', '#56666c', '#2e3a3f']);      // travesaño de los focos
+    for (const s of [-1, 1]) estFoco(c, xm + s * 0.5, yT + 0.1, s * 0.55, enc);
+  }
+  // --- 7. el bastidor de baterías, blanco, con las ventosas
+  const rack = new Path2D(); rack.rect(-9.6, -11.2, 5.2, 6.4);
+  c.fillStyle = estGradV(c, -11.2, -4.8, ['#ecebe3', '#d4d1c6', '#a8a59a']); c.fill(rack);
+  estChapa(c, -9.75, -5.12, 5.5, 0.32, ['#4a5a60', '#2e3b40', '#161e21']);              // zócalo
+  estChapa(c, -9.75, -11.38, 5.5, 0.26, ['#f4f2ea', '#c9c6ba', '#8f8c82']);             // tapa
+  for (const [px, lado] of [[-9.6, -1], [-7.0, 1]]) {                                    // dos puertas
+    const w = 2.6, y0 = -10.95, y1 = -5.3;
+    c.strokeStyle = 'rgba(60,58,50,.55)'; c.lineWidth = 0.06; c.strokeRect(px + 0.14, y0, w - 0.28, y1 - y0);
+    c.strokeStyle = 'rgba(255,255,250,.45)'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(px + 0.17, y1 - 0.03); c.lineTo(px + 0.17, y0 + 0.03); c.lineTo(px + w - 0.17, y0 + 0.03); c.stroke();
+    for (let k = 0; k < 6; k++) {                                                         // rejilla de lamas
+      const yy = y0 + 0.4 + k * 0.28;
+      c.fillStyle = 'rgba(40,40,34,.55)'; c.fillRect(px + 0.5, yy, w - 1.0, 0.12); c.fillStyle = 'rgba(255,255,250,.5)'; c.fillRect(px + 0.5, yy + 0.12, w - 1.0, 0.04);
+    }
+    const hx = lado > 0 ? px + w - 0.5 : px + 0.36;                                       // cierre de palanca
+    c.fillStyle = '#3d4446'; c.fillRect(hx, -8.55, 0.14, 1.2); c.fillRect(hx - 0.06, -8.62, 0.26, 0.14); c.fillRect(hx - 0.06, -7.42, 0.26, 0.14);
+    c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(hx, -8.5, 0.04, 1.1);
+    const bx = lado > 0 ? px + 0.08 : px + w - 0.16;                                      // bisagras
+    for (const yy of [-10.6, -8.1, -5.7]) { c.fillStyle = '#5a6062'; c.fillRect(bx, yy, 0.08, 0.36); }
+    c.fillStyle = '#c9a227'; c.fillRect(px + 0.5, -6.35, 0.9, 0.42); c.fillStyle = '#1b1b14'; c.beginPath(); c.moveTo(px + 0.95, -6.31); c.lineTo(px + 0.78, -6.0); c.lineTo(px + 1.12, -6.0); c.closePath(); c.fill();   // pegatina de alta tensión
+  }
+  // panel de estado (pilotos encendidos con energía)
+  estChapa(c, -5.55, -10.8, 0.95, 0.5, ['#2a3134', '#1c2225', '#101416']);
+  for (let k = 0; k < 3; k++) { const x = -5.38 + k * 0.3; c.fillStyle = enc ? ['#6dff9a', '#6dff9a', '#ffc35a'][k] : '#20292b'; c.beginPath(); c.arc(x, -10.55, 0.07, 0, 6.283); c.fill();
+    if (enc) { const g = c.createRadialGradient(x, -10.55, 0, x, -10.55, 0.3); g.addColorStop(0, k < 2 ? 'rgba(110,255,160,.45)' : 'rgba(255,200,100,.45)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, -10.55, 0.3, 0, 6.283); c.fill(); } }
+  // conectores del costado (por aquí salen los cables a la esfera)
+  for (const y of [-9.35, -8.75, -8.15]) { c.fillStyle = '#20282a'; c.fillRect(-4.45, y - 0.2, 0.32, 0.4); c.fillStyle = '#c9a227'; c.fillRect(-4.18, y - 0.13, 0.1, 0.26); }
+  c.save(); c.clip(rack);                                                                // desgaste: golpes, óxido de las bisagras
+  bqDesconchones(c, -9.6, -4.4, -11.2, -4.8, 18, r, ['rgba(120,110,96,.35)', 'rgba(140,84,48,.4)', 'rgba(90,96,96,.3)'], 0.6);
+  for (const [x, y, L] of [[-9.5, -10.4, 1.6], [-9.5, -7.9, 1.2], [-4.58, -10.4, 2.2], [-4.58, -5.5, 0.5], [-7.3, -6.6, 0.9]]) bqOxido(c, x, y, L, 0.2, 0.45, r);
+  c.restore();
+  ventosas(c, [[-8.6, -6.2, 0.32], [-7.8, -6.9, 0.26], [-7.0, -6.3, 0.3], [-6.2, -7.1, 0.24], [-5.4, -7.8, 0.28], [-7.6, -8.6, 0.7], [-5.6, -9.9, 0.62], [-8.9, -9.6, 0.22], [-6.6, -8.0, 0.2]]);
+  estBorde(c, rack, -1, 0, 4, 0.5, '40,38,30', 0.08); estBorde(c, rack, 0, 1, 3, 0.25, '40,38,30', 0.1);
+  // --- 8. la boya de emergencia sobre el bastidor (con su disparador acústico)
+  estChapa(c, -7.6, -11.6, 1.2, 0.26, ['#4f5d62', '#334046', '#182124']);
+  const boya = new Path2D(); boya.ellipse(-7, -11.95, 1.7, 0.7, 0, 0, 6.283);
+  const gb = c.createRadialGradient(-7.6, -12.35, 0.1, -7, -11.95, 1.9); gb.addColorStop(0, '#f6cf63'); gb.addColorStop(0.6, '#d6a12a'); gb.addColorStop(1, '#7b5512');
+  c.fillStyle = gb; c.fill(boya); c.strokeStyle = 'rgba(40,26,6,.6)'; c.lineWidth = 0.05; c.stroke(boya);
+  c.save(); c.clip(boya);
+  for (const x of [-7.9, -6.1]) { c.fillStyle = '#2b2d2a'; c.fillRect(x - 0.11, -12.7, 0.22, 1.5); c.fillStyle = 'rgba(255,255,255,.15)'; c.fillRect(x - 0.11, -12.7, 0.05, 1.5); }
+  c.fillStyle = 'rgba(235,240,240,.75)'; c.fillRect(-7.55, -12.18, 0.5, 0.12); c.fillRect(-6.95, -12.18, 0.5, 0.12);   // cinta reflectante
+  bqDesconchones(c, -8.7, -5.3, -12.65, -11.25, 6, r, ['rgba(120,84,30,.4)'], 0.5);
+  c.restore();
+  // --- 9. el mazo de cables del bastidor a la esfera, con abrazaderas y protectores de curvatura
+  const cables = [[[-4.15, -9.35], [-2.6, -9.75], [-1.6, -10.6], [-0.5, -10.3], 0.3, '#1c2427'], [[-4.15, -8.75], [-2.4, -8.6], [-1.4, -9.4], [-0.55, -9.3], 0.24, '#262c2a'], [[-4.15, -8.15], [-2.2, -7.9], [-1.1, -8.4], [-0.35, -8.5], 0.2, '#30302a']];
+  for (const [p0, p1, p2, p3, w, col] of cables) {
+    c.strokeStyle = '#0a0f11'; c.lineWidth = w + 0.06; c.beginPath(); c.moveTo(...p0); c.bezierCurveTo(...p1, ...p2, ...p3); c.stroke();
+    c.strokeStyle = col; c.lineWidth = w; c.stroke();
+    c.strokeStyle = 'rgba(190,200,200,.18)'; c.lineWidth = w * 0.25; c.beginPath(); c.moveTo(p0[0], p0[1] - w * 0.25); c.bezierCurveTo(p1[0], p1[1] - w * 0.25, p2[0], p2[1] - w * 0.25, p3[0], p3[1] - w * 0.25); c.stroke();
+  }
+  for (const [x, y] of [[-3.1, -9.0], [-2.0, -9.15]]) { c.fillStyle = '#4a5558'; c.fillRect(x - 0.08, y - 0.7, 0.16, 1.4); }
+  // --- 10. el módem acústico en su poste (con el cable hasta el bastidor)
+  estChapa(c, -3.5, -6.55, 0.2, 1.75, ['#56666c', '#34434a', '#1b2427']);
+  c.fillStyle = estGradCil(c, -3.85, -2.95, ['#b8c0c2', '#7a8689', '#3d4548']); c.fillRect(-3.85, -7.0, 0.9, 0.95);
+  c.fillStyle = estGradV(c, -7.5, -6.95, ['#f0cf62', '#c9a227', '#7d6314']); c.beginPath(); c.ellipse(-3.4, -7.0, 0.47, 0.42, 0, Math.PI, 0); c.fill();
+  c.strokeStyle = '#14191b'; c.lineWidth = 0.07; c.beginPath(); c.moveTo(-3.6, -6.1); c.quadraticCurveTo(-4.0, -5.6, -4.45, -5.6); c.stroke();
+  // --- 11. la esfera habitable: soldaduras, escotilla con volante, collarín atornillado, ánodos, ojo de buey
+  const cx = 3, cy = -9.4, R = 3.6, sph = new Path2D(); sph.arc(cx, cy, R, 0, 6.283);
+  c.save(); c.translate(cx, cy);                                                         // collarín de acoplamiento (hacia +x)
+  c.fillStyle = estGradV(c, -1.15, 1.15, ['#7a8b91', '#46575e', '#1f292d']); c.fillRect(R - 0.4, -1.15, 1.6, 2.3);
+  c.fillStyle = estGradV(c, -1.42, 1.42, ['#a5b2b6', '#6a7a80', '#2e3a3e']); c.fillRect(R + 1.05, -1.42, 0.32, 2.84);
+  for (const y of [-1.2, -0.6, 0, 0.6, 1.2]) estPerno(c, R + 1.21, y, 0.07);
+  c.fillStyle = '#c9a227'; c.fillRect(R + 0.2, -1.15, 0.12, 2.3); c.fillStyle = '#1b1b14'; for (let y = -1.1; y < 1.1; y += 0.4) c.fillRect(R + 0.2, y, 0.12, 0.18);
+  c.restore();
+  const ge = c.createRadialGradient(cx - R * 0.38, cy - R * 0.42, R * 0.1, cx, cy, R * 1.04);
+  ge.addColorStop(0, '#f0b36a'); ge.addColorStop(0.45, '#d0843f'); ge.addColorStop(0.8, '#8f4f22'); ge.addColorStop(1, '#4a260f');
+  c.fillStyle = ge; c.fill(sph);
+  c.save(); c.clip(sph);
+  const cordon = (path) => { c.strokeStyle = 'rgba(60,28,10,.55)'; c.lineWidth = 0.11; c.stroke(path); c.strokeStyle = 'rgba(255,214,160,.28)'; c.lineWidth = 0.04; c.save(); c.translate(-0.03, -0.05); c.stroke(path); c.restore(); };
+  const ecu = new Path2D(); ecu.ellipse(cx, cy, R, R * 0.2, 0, 0, Math.PI); cordon(ecu);   // soldadura del ecuador (la mitad de delante)
+  for (const k of [-0.55, 0.55]) { const mer = new Path2D(); mer.ellipse(cx, cy, R * Math.abs(k) * 1.0, R, 0, k < 0 ? Math.PI / 2 : -Math.PI / 2, k < 0 ? Math.PI * 1.5 : Math.PI / 2); cordon(mer); }
+  bqDesconchones(c, cx - R, cx + R, cy - R, cy + R, 14, r, ['rgba(110,60,30,.35)', 'rgba(80,46,24,.3)'], 0.5);
+  const gs = c.createRadialGradient(cx - R * 0.45, cy - R * 0.5, 0, cx - R * 0.45, cy - R * 0.5, R * 0.7);   // brillo
+  gs.addColorStop(0, 'rgba(255,236,200,.42)'); gs.addColorStop(1, 'rgba(255,236,200,0)'); c.fillStyle = gs; c.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+  c.restore();
+  estBorde(c, sph, -0.7, -0.7, 6, 0.9, '30,10,0', 0.07);                                // volumen: sombra hacia abajo a la derecha
+  c.strokeStyle = 'rgba(30,12,2,.7)'; c.lineWidth = 0.08; c.stroke(sph);
+  // escotilla de arriba: brocal, tapa y volante
+  estChapa(c, cx - 0.95, cy - R - 0.28, 1.9, 0.4, ['#e3a45d', '#a9612a', '#5e3315']);
+  c.fillStyle = '#3c4446'; c.fillRect(cx - 0.75, cy - R - 0.45, 1.5, 0.18);
+  c.strokeStyle = '#2a3133'; c.lineWidth = 0.1; c.beginPath(); c.moveTo(cx, cy - R - 0.45); c.lineTo(cx, cy - R - 0.75); c.stroke();
+  c.beginPath(); c.ellipse(cx, cy - R - 0.8, 0.55, 0.12, 0, 0, 6.283); c.stroke();
+  c.fillStyle = '#3c4446'; c.fillRect(cx + 0.95, cy - R - 0.2, 0.25, 0.3);                // bisagra
+  // orejetas de izado, ánodos de zinc y pasamuros de los cables
+  for (const a of [-2.35, -0.8]) { const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; c.strokeStyle = '#3a4346'; c.lineWidth = 0.12; c.beginPath(); c.arc(x, y - 0.12, 0.22, 3.4, 6.0); c.stroke(); }
+  for (const a of [0.9, 1.45]) { const x = cx + Math.cos(a) * R * 0.99, y = cy + Math.sin(a) * R * 0.99; c.save(); c.translate(x, y); c.rotate(a + Math.PI / 2); c.fillStyle = '#5e6567'; c.fillRect(-0.24, -0.09, 0.48, 0.18); c.fillStyle = 'rgba(200,210,210,.18)'; c.fillRect(-0.24, -0.09, 0.48, 0.04); c.restore(); }   // ánodos de zinc (gastados)
+  for (const a of [2.62, 2.86, 3.1]) { const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; c.fillStyle = '#20282a'; c.beginPath(); c.arc(x, y, 0.24, 0, 6.283); c.fill(); c.fillStyle = '#5b676b'; c.beginPath(); c.arc(x - 0.05, y - 0.05, 0.12, 0, 6.283); c.fill(); }
+  // ojo de buey: aro grueso con tornillería, metacrilato (encendida: la luz de dentro)
+  const ox = cx + Math.cos(Math.PI * 1.1) * R * 0.74, oy = cy + Math.sin(Math.PI * 1.1) * R * 0.74;
+  c.fillStyle = estGradV(c, oy - 1.15, oy + 1.15, ['#a7a089', '#6f6650', '#38321f']); c.beginPath(); c.arc(ox, oy, 1.12, 0, 6.283); c.fill();
+  for (let k = 0; k < 12; k++) { const a = k * 0.5236; estPerno(c, ox + Math.cos(a) * 0.98, oy + Math.sin(a) * 0.98, 0.06); }
+  if (enc) {
+    const gl = c.createRadialGradient(ox - 0.15, oy - 0.1, 0.05, ox, oy, 0.82); gl.addColorStop(0, '#fff2cf'); gl.addColorStop(0.5, '#f0b867'); gl.addColorStop(1, '#a35a22');
+    c.fillStyle = gl; c.beginPath(); c.arc(ox, oy, 0.82, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(255,250,235,.55)'; c.lineWidth = 0.06; c.beginPath(); c.arc(ox, oy, 0.62, 3.6, 4.5); c.stroke();   // reflejo en el metacrilato
+    const gw = c.createRadialGradient(ox, oy, 0.8, ox, oy, 2.6); gw.addColorStop(0, 'rgba(255,190,110,.28)'); gw.addColorStop(1, 'rgba(255,190,110,0)');   // la luz de dentro tiñe el casco alrededor
+    c.save(); c.clip(sph); c.fillStyle = gw; c.fillRect(ox - 2.6, oy - 2.6, 5.2, 5.2); c.restore();
+  } else {
+    const gl = c.createRadialGradient(ox - 0.2, oy - 0.25, 0.05, ox, oy, 0.82); gl.addColorStop(0, '#1d2a2e'); gl.addColorStop(1, '#05090a');
+    c.fillStyle = gl; c.beginPath(); c.arc(ox, oy, 0.82, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(150,200,220,.32)'; c.lineWidth = 0.07; c.beginPath(); c.arc(ox, oy, 0.6, 3.5, 4.6); c.stroke();
+  }
+  c.strokeStyle = 'rgba(20,16,8,.7)'; c.lineWidth = 0.05; c.beginPath(); c.arc(ox, oy, 0.84, 0, 6.283); c.stroke();
+  ventosas(c, [[4.6, -11.6, 0.3], [5.4, -10.8, 0.24], [1.6, -12.1, 0.26]]);
+  // --- 12. tres años en el fondo: sedimento en todo lo horizontal, nieve marina, hidroides colgando y algo de vida
+  bqSedimento(c, sil, 0.2, r, -11, 11, -13.5, -3.3);
+  bqNieve(c, sil, 650, 0.32, r, -11, 11, -13.5, -3.3);
+  bqColgantes(c, [[-8.6, -3.4], [-5.9, -3.4], [-1.6, -3.4], [1.9, -3.4], [6.3, -3.4], [8.7, -3.4], [-8.2, -11.25], [-5.8, -11.25]], 0.7, r);
+  bqColgantes(c, [[-xi + 0.3, yb + 0.1], [xi - 0.4, yb + 0.1]], 0.5, r);
+  estVida(c, [[-4.1, -4.8], [-1.4, -4.8], [7.3, -4.8], [9.6, -4.8], [-5.2, -11.38], [6.9, -6.6]], 0.55, r);
+  // sedimento amontonado contra las zapatas (del mismo tono que el de la repisa)
+  for (const x of patas) for (const d of [-1, 1]) {
+    const xp = x + d * 1.0, an = 0.9 + r() * 0.4, al = 0.18 + r() * 0.1;
+    c.fillStyle = 'rgba(74,68,55,.96)'; c.beginPath(); c.moveTo(xp, 0.1); c.lineTo(xp, -al); c.quadraticCurveTo(xp + d * an * 0.3, -al * 0.5, xp + d * an, 0.1); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(150,140,112,.3)'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(xp, -al); c.quadraticCurveTo(xp + d * an * 0.3, -al * 0.5, xp + d * an, 0.1); c.stroke();
+  }
+}
+// Vida fija de pocos años: hidroides, alguna anémona y esponjas pequeñas (prob = cuántos anclajes llevan algo)
+function estVida(c, anc, prob, r) {
+  for (const [x, y] of anc) {
+    if (r() > prob) continue;
+    const q = r(), k = 1.2 + r() * 0.6;
+    c.save(); c.translate(x + (r() - 0.5) * 0.4, y + 0.02); c.scale(k, k);
+    if (q < 0.5) VIDA_PECIO.hidroide(c, 0.3 + r() * 0.2, r); else if (q < 0.8) VIDA_PECIO.anemona(c, 0.28 + r() * 0.15, r, ['#d8743c', '#f3a36a']); else VIDA_PECIO.esponja(c, 0.3 + r() * 0.15, r);
+    c.restore();
+  }
+}
+// Lo que se mueve o no puede ir en el sprite (el nombre no se voltea con el dibujo)
+function estCaronteVivo(c, t, flip, m, enc, borde) {
+  const ond = Math.sin(t * 0.4) * 0.6;   // el cable de acero que «subía hacia ninguna parte»
+  const gc = c.createLinearGradient(0, -19.2, 0, -60); gc.addColorStop(0, 'rgba(92,104,108,1)'); gc.addColorStop(1, 'rgba(92,104,108,0)');
+  c.strokeStyle = gc; c.lineWidth = 0.2; c.beginPath(); c.moveTo(0, -19.35); c.bezierCurveTo(ond, -32, -ond * 1.5, -46, ond * 2, -60); c.stroke();
+  placaNombre(c, 'caronte', 1.2, -4.1, flip);
+  if (enc && (t % 2) < 0.12) { c.fillStyle = '#7dffa8'; c.beginPath(); c.arc(-3.4, -7.25, 0.09, 0, 6.283); c.fill(); }   // piloto del módem
+  // la línea de hidrófonos de Kaori, cortada, meciéndose en el borde de la cornisa
+  const x0 = borde - 0.6, sw = Math.sin(t * 0.7) * 0.5, sw2 = Math.sin(t * 0.7 - 0.8) * 0.9;
+  c.fillStyle = ACERO.medio; c.fillRect(x0 - 0.12, -1.3, 0.24, 1.3);
+  c.strokeStyle = '#c8b27a'; c.lineWidth = 0.09; c.beginPath(); c.moveTo(x0, -1.1); c.quadraticCurveTo(x0 + 0.8, -0.6, x0 + 1.1, 0.4); c.bezierCurveTo(x0 + 1.2 + sw, 2.5, x0 + 1.2 - sw, 4.5, x0 + 1.3 + sw2, 6.4); c.stroke();
+  c.lineWidth = 0.04; c.beginPath(); for (const a of [-0.5, 0, 0.5]) { c.moveTo(x0 + 1.3 + sw2, 6.4); c.lineTo(x0 + 1.3 + sw2 + a * 0.4, 6.9); } c.stroke();   // el cabo deshilachado
+  c.fillStyle = '#3a3f3a'; c.beginPath(); c.ellipse(x0 + 1.15 + sw * 0.6, 2.2, 0.16, 0.4, 0, 0, 6.283); c.fill();   // el hidrófono de arriba, aún atado
+}
+// ---------------------------------------------------------------------
+// v261 · piezas de estación con parámetros (Estigia; Leteo las reutilizará). Caronte conserva su propio dibujo (v260)
+// para no mover ni un píxel de lo ya publicado.
+// ---------------------------------------------------------------------
+// Cable de acero (o manguera) siguiendo un trazado: canto oscuro, cuerpo, y el «torcido» de los cordones con luz arriba
+function estCable(c, path, w, col = '#4d585c', torcido = true) {
+  c.lineCap = 'round';
+  c.strokeStyle = '#0b1012'; c.lineWidth = w + 0.07; c.stroke(path);
+  c.strokeStyle = col; c.lineWidth = w; c.stroke(path);
+  if (torcido) { c.save(); c.translate(-w * 0.12, -w * 0.18); c.setLineDash([w * 0.55, w * 0.45]); c.strokeStyle = 'rgba(200,210,208,.32)'; c.lineWidth = w * 0.32; c.stroke(path); c.restore(); c.setLineDash([]); }
+}
+// Patas de la bancada: zapatas medio enterradas, arriostramiento en cruz entre cada par y la pata con sus collarines
+function estPatas(c, patas, pares, hw, yTop) {
+  for (const x of patas) {
+    c.fillStyle = estGradV(c, -0.36, 0.05, ['#4a585d', '#2c373b', '#151c1f']); c.fillRect(x - hw - 0.75, -0.36, 2 * hw + 1.5, 0.41);
+    for (const dx of [-hw - 0.45, hw + 0.45]) estPerno(c, x + dx, -0.22, 0.065);
+  }
+  for (const [a, b] of pares) {
+    estTubo(c, a + hw, yTop + 0.3, b - hw, -0.55, 0.2); estTubo(c, b - hw, yTop + 0.3, a + hw, -0.55, 0.2);
+    estTubo(c, a + hw, -0.72, b - hw, -0.72, 0.16);
+    const xm = (a + b) / 2, ym = (yTop + 0.3 - 0.55) / 2;
+    c.fillStyle = '#2b363a'; c.beginPath(); c.arc(xm, ym, 0.24, 0, 6.283); c.fill(); estPerno(c, xm, ym, 0.07);
+  }
+  for (const x of patas) {
+    c.fillStyle = estGradCil(c, x - hw, x + hw, EST_AC); c.fillRect(x - hw, yTop, 2 * hw, -0.3 - yTop);
+    estChapa(c, x - hw - 0.13, yTop - 0.08, 2 * hw + 0.26, 0.24); estChapa(c, x - hw - 0.1, -0.52, 2 * hw + 0.2, 0.22);
+    c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(x - hw, yTop + 0.16, 2 * hw, 0.5);
+  }
+}
+// Pirámide de izado: cuatro tubos hasta la cabeza, travesaño, diagonales (torcida: una abollada), orejetas, cabeza y grillete
+function estPiramide(c, xo, xin, y0, yA, w, torcida) {
+  const yb = y0 + (yA - y0) * 0.55, f = (yb - y0) / (yA + 0.4 - y0), xi = xin + (0.12 - xin) * f;
+  const fo = (-9 - y0) / (yA + 0.35 - y0), xd = xo + (0.25 - xo) * fo;   // donde la diagonal muerde el tubo exterior (y = -9)
+  estTubo(c, -xo, y0, -0.25, yA + 0.35, w); estTubo(c, xo, y0, 0.25, yA + 0.35, w);
+  estTubo(c, -xin, y0, -0.12, yA + 0.4, w * 0.8); estTubo(c, xin, y0, 0.12, yA + 0.4, w * 0.8);
+  estTubo(c, -xi - 0.05, yb, xi + 0.05, yb, w * 0.66);
+  estTubo(c, -xi, yb, -xd, -9.0, w * 0.45);
+  if (torcida) { const mx = (xi + xd) / 2 + 0.25, my = (yb - 9) / 2 + 0.55; estTubo(c, xi, yb, mx, my, w * 0.45); estTubo(c, mx, my, xd, -9.0, w * 0.45);
+    c.fillStyle = 'rgba(120,60,30,.55)'; c.beginPath(); c.arc(mx, my, 0.12, 0, 6.283); c.fill(); }   // pintura saltada en el doblez
+  else estTubo(c, xi, yb, xd, -9.0, w * 0.45);
+  for (const x of [-xo - 0.2, -xin, xin, xo + 0.2]) {
+    c.fillStyle = '#34434a'; c.beginPath(); c.moveTo(x - 0.4, y0 + 0.1); c.lineTo(x - 0.17, y0 - 0.55); c.lineTo(x + 0.17, y0 - 0.55); c.lineTo(x + 0.4, y0 + 0.1); c.closePath(); c.fill();
+    c.fillStyle = '#0c1214'; c.beginPath(); c.arc(x, y0 - 0.3, 0.09, 0, 6.283); c.fill();
+  }
+  c.fillStyle = estGradV(c, yA - 0.75, yA + 0.55, ['#7b8b91', '#46575e', '#20292d']); c.beginPath(); c.moveTo(-0.9, yA + 0.5); c.lineTo(-0.52, yA - 0.6); c.lineTo(0.52, yA - 0.6); c.lineTo(0.9, yA + 0.5); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(6,10,12,.7)'; c.lineWidth = 0.05; c.stroke();
+  for (const [x, y] of [[-0.47, yA + 0.2], [0.47, yA + 0.2], [0, yA - 0.25]]) estPerno(c, x, y, 0.07);
+  c.strokeStyle = '#26302f'; c.lineWidth = 0.2; c.beginPath(); c.arc(0, yA - 0.9, 0.4, 0, 6.283); c.stroke();
+  c.strokeStyle = 'rgba(190,200,200,.35)'; c.lineWidth = 0.05; c.beginPath(); c.arc(0, yA - 0.9, 0.4, 3.6, 5.4); c.stroke();
+  return [xi, yb];
+}
+// Bancada en perfil I: alas, alma con rigidizadores, aligeramientos, franjas de aviso, tornillería, desgaste y sombra
+function estViga(c, x0, x1, y0, y1, huecos, r, nDesg, chorros) {
+  const beam = new Path2D(), ya = 0.28; beam.rect(x0, y0, x1 - x0, y1 - y0);
+  estChapa(c, x0, y0, x1 - x0, ya, ['#7e9097', '#4f626a', '#2b383d']);
+  c.fillStyle = estGradV(c, y0 + ya, y1 - ya, ['#3c4d54', '#2f3e44', '#1c262a']); c.fillRect(x0 + 0.2, y0 + ya, x1 - x0 - 0.4, y1 - y0 - 2 * ya);
+  estChapa(c, x0, y1 - ya, x1 - x0, ya, ['#56686f', '#3a4b52', '#1d282c']);
+  for (let x = x0 + 0.8; x <= x1 - 0.7; x += 1.3) { c.fillStyle = 'rgba(120,138,144,.35)'; c.fillRect(x, y0 + ya, 0.07, y1 - y0 - 2 * ya); c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x + 0.07, y0 + ya, 0.07, y1 - y0 - 2 * ya); }
+  const yc = (y0 + y1) / 2;
+  for (const x of huecos) {
+    c.fillStyle = '#0a1012'; c.beginPath(); c.ellipse(x, yc, 0.38, 0.32, 0, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(140,158,162,.4)'; c.lineWidth = 0.05; c.beginPath(); c.ellipse(x, yc, 0.38, 0.32, 0, 0.2, 3.0); c.stroke();
+  }
+  for (const [a, b] of [[x0 + 0.2, x0 + 1.1], [x1 - 1.1, x1 - 0.2]]) {
+    c.save(); c.beginPath(); c.rect(a, y0 + 0.3, b - a, y1 - y0 - 0.6); c.clip(); c.fillStyle = '#c9a227'; c.fillRect(a, y0 + 0.3, b - a, y1 - y0 - 0.6);
+    c.fillStyle = '#1b1b14'; for (let x = a - 1; x < b + 1; x += 0.36) { c.beginPath(); c.moveTo(x, y1 - 0.3); c.lineTo(x + 0.4, y0 + 0.3); c.lineTo(x + 0.58, y0 + 0.3); c.lineTo(x + 0.18, y1 - 0.3); c.fill(); }
+    c.restore();
+  }
+  for (let x = x0 + 0.3; x <= x1 - 0.25; x += 0.65) { estPerno(c, x, y0 + 0.13, 0.045); estPerno(c, x, y1 - 0.13, 0.045); }
+  estDesgaste(c, beam, x0, x1, y0, y1, nDesg, r, chorros);
+  estBorde(c, beam, 0, 1, 4, 0.22, '0,0,0', 0.12);
+  return beam;
+}
+// Mástil de celosía con su travesaño, dos focos y la caja de conexiones
+function estMastil(c, xm, yB, yT, yCaja, enc) {
+  estChapa(c, xm - 0.55, yB - 0.05, 1.1, 0.25);
+  for (const dx of [-0.2, 0.2]) { c.fillStyle = estGradCil(c, xm + dx - 0.08, xm + dx + 0.08, EST_AC); c.fillRect(xm + dx - 0.08, yT, 0.16, yB + 0.2 - yT); }
+  c.strokeStyle = '#3a4a51'; c.lineWidth = 0.07; c.beginPath();
+  for (let y = yB + 0.1; y > yT + 0.6; y -= 0.9) { c.moveTo(xm - 0.2, y); c.lineTo(xm + 0.2, y - 0.45); c.lineTo(xm - 0.2, y - 0.9); }
+  c.stroke();
+  c.strokeStyle = '#11181a'; c.lineWidth = 0.08; c.beginPath(); c.moveTo(xm + 0.3, yB); c.lineTo(xm + 0.3, yT + 0.6); c.stroke();
+  estChapa(c, xm - 0.32, yCaja, 0.64, 0.8, ['#5d6c70', '#3b484c', '#1e272a']); estPerno(c, xm, yCaja + 0.2, 0.05);
+  estChapa(c, xm - 0.75, yT - 0.25, 1.5, 0.3, ['#8696a0', '#56666c', '#2e3a3f']);
+  for (const s of [-1, 1]) estFoco(c, xm + s * 0.5, yT + 0.1, s * 0.55, enc);
+}
+// Bastidor (armario de baterías) con dos puertas de lamas, cierres, bisagras y abolladuras
+function estArmario(c, x0, y0, x1, y1, cols, r, abolladuras, tapa = ['#9ba383', '#6b7253', '#3c412c']) {
+  const w = x1 - x0, rack = new Path2D(); rack.rect(x0, y0, w, y1 - y0);
+  c.fillStyle = estGradV(c, y0, y1, cols); c.fill(rack);
+  estChapa(c, x0 - 0.15, y1 - 0.32, w + 0.3, 0.32, ['#4a5a60', '#2e3b40', '#161e21']);
+  estChapa(c, x0 - 0.15, y0 - 0.18, w + 0.3, 0.26, tapa);
+  const wp = w / 2;
+  for (const [px, lado] of [[x0, -1], [x0 + wp, 1]]) {
+    const yy0 = y0 + 0.25, yy1 = y1 - 0.5;
+    c.strokeStyle = 'rgba(24,28,18,.6)'; c.lineWidth = 0.06; c.strokeRect(px + 0.12, yy0, wp - 0.24, yy1 - yy0);
+    c.strokeStyle = 'rgba(220,228,190,.28)'; c.lineWidth = 0.03; c.beginPath(); c.moveTo(px + 0.15, yy1 - 0.03); c.lineTo(px + 0.15, yy0 + 0.03); c.lineTo(px + wp - 0.15, yy0 + 0.03); c.stroke();
+    for (let k = 0; k < 5; k++) { const yl = yy0 + 0.38 + k * 0.27;
+      c.fillStyle = 'rgba(20,22,14,.6)'; c.fillRect(px + 0.42, yl, wp - 0.84, 0.11); c.fillStyle = 'rgba(210,218,180,.3)'; c.fillRect(px + 0.42, yl + 0.11, wp - 0.84, 0.04); }
+    const hx = lado > 0 ? px + wp - 0.45 : px + 0.32, ym = (yy0 + yy1) / 2;
+    c.fillStyle = '#2f3430'; c.fillRect(hx, ym - 0.55, 0.13, 1.1); c.fillRect(hx - 0.05, ym - 0.62, 0.24, 0.13); c.fillRect(hx - 0.05, ym + 0.5, 0.24, 0.13);
+    const bx = lado > 0 ? px + 0.07 : px + wp - 0.15;
+    for (const yh of [yy0 + 0.3, ym, yy1 - 0.6]) { c.fillStyle = '#4c5246'; c.fillRect(bx, yh, 0.08, 0.34); }
+    c.fillStyle = '#c9a227'; c.fillRect(px + 0.45, yy1 - 0.75, 0.8, 0.38); c.fillStyle = '#1b1b14'; c.beginPath(); c.moveTo(px + 0.85, yy1 - 0.71); c.lineTo(px + 0.69, yy1 - 0.42); c.lineTo(px + 1.01, yy1 - 0.42); c.closePath(); c.fill();
+  }
+  c.save(); c.clip(rack);
+  for (let k = 0; k < abolladuras; k++) {   // abolladuras: la luz de arriba deja oscuro el borde alto y aclara el de abajo
+    const x = x0 + 0.4 + r() * (w - 0.8), y = y0 + 0.5 + r() * (y1 - y0 - 1.2), rx = 0.2 + r() * 0.45, ry = rx * (0.5 + r() * 0.4), a = (r() - 0.5) * 0.8;
+    const gd = c.createRadialGradient(x, y - ry * 0.4, 0, x, y, rx); gd.addColorStop(0, 'rgba(14,16,8,.32)'); gd.addColorStop(1, 'rgba(14,16,8,0)');
+    c.fillStyle = gd; c.beginPath(); c.ellipse(x, y, rx, ry, a, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(225,230,195,.22)'; c.lineWidth = 0.04; c.beginPath(); c.ellipse(x, y, rx * 0.95, ry * 0.95, a, 0.5, 2.6); c.stroke();
+    if (r() < 0.6) { c.fillStyle = 'rgba(128,70,38,.55)'; c.beginPath(); c.ellipse(x + (r() - 0.5) * rx, y + (r() - 0.5) * ry, rx * 0.35, ry * 0.3, a, 0, 6.283); c.fill(); }
+  }
+  bqDesconchones(c, x0, x1, y0, y1, 26, r, ['rgba(88,92,84,.45)', 'rgba(140,84,48,.5)', 'rgba(110,62,34,.45)'], 0.65);
+  for (let k = 0; k < 6; k++) bqOxido(c, x0 + 0.2 + r() * (w - 0.4), y0 + 0.3 + r() * 2.5, 1 + r() * 2.2, 0.2, 0.55, r);
+  c.restore();
+  estBorde(c, rack, -1, 0, 4, 0.45, '20,22,12', 0.09); estBorde(c, rack, 0, 1, 3, 0.25, '20,22,12', 0.1);
+  return rack;
+}
+// Esfera habitable: collarín de acople, casco con soldaduras, escotilla, orejetas, ánodos, pasamuros y ojo de buey
+function estEsfera(c, cx, cy, R, angCol, angOjo, enc, r, cols, pen, ojales, nDesc) {
+  const sph = new Path2D(); sph.arc(cx, cy, R, 0, 6.283);
+  c.save(); c.translate(cx, cy); c.rotate(angCol);
+  c.fillStyle = estGradV(c, -1.15, 1.15, ['#7a8b91', '#46575e', '#1f292d']); c.fillRect(R - 0.4, -1.15, 1.6, 2.3);
+  c.fillStyle = estGradV(c, -1.42, 1.42, ['#a5b2b6', '#6a7a80', '#2e3a3e']); c.fillRect(R + 1.05, -1.42, 0.32, 2.84);
+  for (const y of [-1.2, -0.6, 0, 0.6, 1.2]) estPerno(c, R + 1.21, y, 0.07);
+  c.fillStyle = '#c9a227'; c.fillRect(R + 0.2, -1.15, 0.12, 2.3); c.fillStyle = '#1b1b14'; for (let y = -1.1; y < 1.1; y += 0.4) c.fillRect(R + 0.2, y, 0.12, 0.18);
+  c.restore();
+  const ge = c.createRadialGradient(cx - R * 0.38, cy - R * 0.42, R * 0.1, cx, cy, R * 1.04);
+  ge.addColorStop(0, cols[0]); ge.addColorStop(0.45, cols[1]); ge.addColorStop(0.8, cols[2]); ge.addColorStop(1, cols[3]);
+  c.fillStyle = ge; c.fill(sph);
+  c.save(); c.clip(sph);
+  const cordon = (path) => { c.strokeStyle = 'rgba(50,24,8,.55)'; c.lineWidth = 0.11; c.stroke(path); c.strokeStyle = 'rgba(255,214,160,.24)'; c.lineWidth = 0.04; c.save(); c.translate(-0.03, -0.05); c.stroke(path); c.restore(); };
+  const ecu = new Path2D(); ecu.ellipse(cx, cy, R, R * 0.2, 0, 0, Math.PI); cordon(ecu);
+  for (const k of [-0.55, 0.55]) { const mer = new Path2D(); mer.ellipse(cx, cy, R * Math.abs(k), R, 0, k < 0 ? Math.PI / 2 : -Math.PI / 2, k < 0 ? Math.PI * 1.5 : Math.PI / 2); cordon(mer); }
+  bqDesconchones(c, cx - R, cx + R, cy - R, cy + R, nDesc, r, ['rgba(100,54,26,.4)', 'rgba(70,40,20,.35)', 'rgba(90,96,92,.3)'], 0.55);
+  for (let k = 0; k < 5; k++) { const a = -2.6 + r() * 2.2; bqOxido(c, cx + Math.cos(a) * R * 0.8, cy + Math.sin(a) * R * 0.8, 0.8 + r() * 1.4, 0.18, 0.4, r); }
+  const gs = c.createRadialGradient(cx - R * 0.45, cy - R * 0.5, 0, cx - R * 0.45, cy - R * 0.5, R * 0.7);
+  gs.addColorStop(0, 'rgba(255,236,200,.36)'); gs.addColorStop(1, 'rgba(255,236,200,0)'); c.fillStyle = gs; c.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+  c.restore();
+  estBorde(c, sph, -0.7, -0.7, 6, 0.9, '30,10,0', 0.08);
+  c.strokeStyle = 'rgba(30,12,2,.7)'; c.lineWidth = 0.08; c.stroke(sph);
+  estChapa(c, cx - 0.95, cy - R - 0.28, 1.9, 0.4, [cols[0], cols[2], cols[3]]);
+  c.fillStyle = '#3c4446'; c.fillRect(cx - 0.75, cy - R - 0.45, 1.5, 0.18);
+  c.strokeStyle = '#2a3133'; c.lineWidth = 0.1; c.beginPath(); c.moveTo(cx, cy - R - 0.45); c.lineTo(cx, cy - R - 0.75); c.stroke();
+  c.beginPath(); c.ellipse(cx, cy - R - 0.8, 0.55, 0.12, 0, 0, 6.283); c.stroke();
+  c.fillStyle = '#3c4446'; c.fillRect(cx + 0.95, cy - R - 0.2, 0.25, 0.3);
+  for (const a of ojales) { const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; c.strokeStyle = '#3a4346'; c.lineWidth = 0.12; c.beginPath(); c.arc(x, y - 0.12, 0.22, 3.4, 6.0); c.stroke(); }
+  for (const a of [0.95, 1.5]) { const x = cx + Math.cos(a) * R * 0.99, y = cy + Math.sin(a) * R * 0.99; c.save(); c.translate(x, y); c.rotate(a + Math.PI / 2); c.fillStyle = '#5a6062'; c.fillRect(-0.16, -0.08, 0.32, 0.16); c.fillStyle = 'rgba(200,210,210,.15)'; c.fillRect(-0.16, -0.08, 0.32, 0.04); c.restore(); }   // ánodos casi consumidos
+  for (const a of pen) { const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R; c.fillStyle = '#20282a'; c.beginPath(); c.arc(x, y, 0.26, 0, 6.283); c.fill(); c.fillStyle = '#5b676b'; c.beginPath(); c.arc(x - 0.05, y - 0.05, 0.13, 0, 6.283); c.fill(); }
+  const ox = cx + Math.cos(angOjo) * R * 0.74, oy = cy + Math.sin(angOjo) * R * 0.74;
+  c.fillStyle = estGradV(c, oy - 1.15, oy + 1.15, ['#a7a089', '#6f6650', '#38321f']); c.beginPath(); c.arc(ox, oy, 1.12, 0, 6.283); c.fill();
+  for (let k = 0; k < 12; k++) { const a = k * 0.5236; estPerno(c, ox + Math.cos(a) * 0.98, oy + Math.sin(a) * 0.98, 0.06); }
+  if (enc) {
+    const gl = c.createRadialGradient(ox - 0.15, oy - 0.1, 0.05, ox, oy, 0.82); gl.addColorStop(0, '#fff2cf'); gl.addColorStop(0.5, '#f0b867'); gl.addColorStop(1, '#a35a22');
+    c.fillStyle = gl; c.beginPath(); c.arc(ox, oy, 0.82, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(255,250,235,.55)'; c.lineWidth = 0.06; c.beginPath(); c.arc(ox, oy, 0.62, 3.6, 4.5); c.stroke();
+    const gw = c.createRadialGradient(ox, oy, 0.8, ox, oy, 2.6); gw.addColorStop(0, 'rgba(255,190,110,.28)'); gw.addColorStop(1, 'rgba(255,190,110,0)');
+    c.save(); c.clip(sph); c.fillStyle = gw; c.fillRect(ox - 2.6, oy - 2.6, 5.2, 5.2); c.restore();
+  } else {
+    const gl = c.createRadialGradient(ox - 0.2, oy - 0.25, 0.05, ox, oy, 0.82); gl.addColorStop(0, '#1d2a2e'); gl.addColorStop(1, '#05090a');
+    c.fillStyle = gl; c.beginPath(); c.arc(ox, oy, 0.82, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(150,200,220,.32)'; c.lineWidth = 0.07; c.beginPath(); c.arc(ox, oy, 0.6, 3.5, 4.6); c.stroke();
+  }
+  c.strokeStyle = 'rgba(20,16,8,.7)'; c.lineWidth = 0.05; c.beginPath(); c.arc(ox, oy, 0.84, 0, 6.283); c.stroke();
+  return sph;
+}
+// Módem acústico en su poste, con el cable hasta el armario
+function estModem(c, x, yB, xCable) {
+  estChapa(c, x - 0.1, yB - 1.6, 0.2, 1.6, ['#56666c', '#34434a', '#1b2427']);
+  c.fillStyle = estGradCil(c, x - 0.45, x + 0.45, ['#b8c0c2', '#7a8689', '#3d4548']); c.fillRect(x - 0.45, yB - 2.05, 0.9, 0.95);
+  c.fillStyle = estGradV(c, yB - 2.55, yB - 2.0, ['#f0cf62', '#c9a227', '#7d6314']); c.beginPath(); c.ellipse(x, yB - 2.05, 0.47, 0.42, 0, Math.PI, 0); c.fill();
+  c.strokeStyle = '#14191b'; c.lineWidth = 0.07; c.beginPath(); c.moveTo(x - 0.2, yB - 1.15); c.quadraticCurveTo(x - 0.5, yB - 0.6, xCable, yB - 0.6); c.stroke();
+}
+// Cuna de la esfera: silla de acero con costillas y tacos de goma
+function estCuna(c, x0, x1, xt0, xt1, yB, yT) {
+  c.fillStyle = estGradV(c, yT - 0.4, yB, ['#4d5f66', '#33434a', '#1b2427']);
+  c.beginPath(); c.moveTo(x0, yB); c.lineTo(xt0, yT); c.lineTo(xt1, yT); c.lineTo(x1, yB); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(6,10,12,.6)'; c.lineWidth = 0.05; c.stroke();
+  for (let k = 1; k <= 3; k++) { const x = xt0 + (xt1 - xt0) * k / 4; c.fillStyle = 'rgba(0,0,0,.32)'; c.fillRect(x, yT + 0.05, 0.16, yB - yT - 0.1); c.fillStyle = 'rgba(150,168,172,.3)'; c.fillRect(x - 0.06, yT + 0.05, 0.06, yB - yT - 0.1); }
+  c.fillStyle = '#141a1b'; c.fillRect(xt0 + 0.05, yT - 0.22, 1.2, 0.24); c.fillRect(xt1 - 1.25, yT - 0.22, 1.2, 0.24);
+}
+// Sedimento amontonado contra las zapatas
+function estDunas(c, patas, d0, r, k = 1) {
+  for (const x of patas) for (const d of [-1, 1]) {
+    const xp = x + d * d0, an = (0.9 + r() * 0.5) * k, al = (0.18 + r() * 0.12) * k;
+    c.fillStyle = 'rgba(74,68,55,.96)'; c.beginPath(); c.moveTo(xp, 0.1); c.lineTo(xp, -al); c.quadraticCurveTo(xp + d * an * 0.3, -al * 0.5, xp + d * an, 0.1); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(150,140,112,.3)'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(xp, -al); c.quadraticCurveTo(xp + d * an * 0.3, -al * 0.5, xp + d * an, 0.1); c.stroke();
+  }
+}
+// Vida fija del abismo (a partir de unos 3.000 m): esponjas de cristal, lirios de mar y anémonas pálidas
+function estVidaAbisal(c, anc, prob, r) {
+  for (const [x, y] of anc) {
+    if (r() > prob) continue;
+    const q = r(), k = 1.6 + r() * 0.9;
+    c.save(); c.translate(x + (r() - 0.5) * 0.4, y + 0.02); c.scale(k, k);
+    if (q < 0.3) VIDA_PECIO.esponjaCristal(c, 0.4 + r() * 0.2, r); else if (q < 0.75) VIDA_PECIO.anemona(c, 0.42 + r() * 0.16, r, ['#e2d2c4', '#f8eee6']); else VIDA_PECIO.crinoide(c, 0.4 + r() * 0.15, r);
+    c.restore();
+  }
+}
+
+// ---------------------------------------------------------------------
+// ESTIGIA (4.000 m): «más ancha y más fea». Dos bastidores verdes de taller, muy golpeados; conductos con doble
+// aislante sujetos con abrazaderas; los calefactores gemelos atornillados a la esfera «como las orejeras de un gorro»;
+// el cable de izado, suelto, enroscado sobre los bastidores; una diagonal de la pirámide doblada; un parche soldado
+// en la viga. Más años y más hondo que Caronte: más sedimento, más nieve y vida de abismo (esponjas de cristal,
+// lirios de mar, anémonas pálidas). Los nódulos, el lirio que se mece y las holoturias van en el dibujo vivo.
+// ---------------------------------------------------------------------
+function estEstigia(c, r, enc) {
+  const patas = [-10.6, -4, 4, 10.6], cx = 4.4, cy = -9.6, R = 3.6;
+  const sil = new Path2D();
+  sil.rect(-11.8, -5, 23.6, 1.6); sil.rect(-11.2, -11, 4.4, 6); sil.rect(-6.5, -11, 4.4, 6); sil.ellipse(-7.6, -11.95, 3.7, 0.95, 0, 0, 6.283);
+  sil.moveTo(cx + R, cy); sil.arc(cx, cy, R, 0, 6.283); sil.rect(-2.05, -7.1, 0.9, 2.1);
+  // 1. patas, zapatas y arriostramiento (más gruesas que en Caronte: la estación pesa más)
+  estPatas(c, patas, [[-10.6, -4], [4, 10.6]], 0.36, -3.4);
+  // 2. la pirámide de izado, con una diagonal doblada
+  const [xi, yb] = estPiramide(c, 11.6, 5.0, -5.1, -18.85, 0.34, true);
+  // 3. la viga, con un parche soldado y más óxido
+  estViga(c, -11.8, 11.8, -5, -3.4, [-8.6, -1, 7], r, 40, [[-10.2, -4.85, 0.9], [-6.9, -4.85, 0.8], [-3.2, -4.85, 1.0], [0.4, -4.85, 0.6], [5.1, -4.85, 0.9], [9.6, -4.85, 0.7]]);
+  estChapa(c, -6.7, -4.62, 1.9, 0.86, ['#5a6a70', '#3d4c52', '#222c30']);   // parche
+  c.strokeStyle = 'rgba(120,96,70,.6)'; c.lineWidth = 0.08; c.strokeRect(-6.72, -4.64, 1.94, 0.9);
+  c.strokeStyle = 'rgba(30,20,10,.5)'; c.setLineDash([0.06, 0.05]); c.lineWidth = 0.05; c.strokeRect(-6.66, -4.58, 1.82, 0.78); c.setLineDash([]);
+  bqOxido(c, -6.2, -3.8, 0.7, 0.2, 0.5, r);
+  // 4. la cuna de la esfera
+  estCuna(c, 1.0, 7.8, 1.9, 6.9, -5, -6.85);
+  // 5. mástiles con los focos
+  for (const xm of [-11.4, 11.4]) estMastil(c, xm, -5, -15.8, -9.2, enc);
+  // 6. los dos bastidores verdes
+  const verde = ['#89916b', '#6a7152', '#3e432d'];
+  estArmario(c, -11.2, -11, -6.8, -5, verde, r, 7);
+  estArmario(c, -6.5, -11, -2.1, -5, verde, r, 6);
+  estChapa(c, -3.35, -10.55, 0.95, 0.5, ['#2a3134', '#1c2225', '#101416']);   // panel de estado
+  for (let k = 0; k < 3; k++) { const x = -3.18 + k * 0.3; c.fillStyle = enc ? ['#6dff9a', '#ffc35a', '#6dff9a'][k] : '#20292b'; c.beginPath(); c.arc(x, -10.3, 0.07, 0, 6.283); c.fill();
+    if (enc) { const g = c.createRadialGradient(x, -10.3, 0, x, -10.3, 0.3); g.addColorStop(0, k === 1 ? 'rgba(255,200,100,.45)' : 'rgba(110,255,160,.45)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, -10.3, 0.3, 0, 6.283); c.fill(); } }
+  for (const y of [-8.2, -7.6, -7.0]) { c.fillStyle = '#20282a'; c.fillRect(-2.15, y - 0.2, 0.3, 0.4); c.fillStyle = '#c9a227'; c.fillRect(-1.88, y - 0.13, 0.09, 0.26); }
+  // 7. los conductos con doble aislante (funda gruesa y manguitos), sujetos con abrazaderas
+  const cond = [[-4.3, -11, -4.3, -12.5, -1.6, -13.1, 2.05, -12.3], [-2.0, -7.6, -1.3, -7.6, -0.5, -8.2, 0.85, -8.6]];
+  for (const [x0, y0, x1, y1, x2, y2, x3, y3] of cond) {
+    const p = new Path2D(); p.moveTo(x0, y0); p.bezierCurveTo(x1, y1, x2, y2, x3, y3);
+    estCable(c, p, 0.75, '#2c3131', false);
+    c.save(); c.translate(-0.08, -0.12); c.strokeStyle = 'rgba(120,130,128,.35)'; c.lineWidth = 0.16; c.stroke(p); c.restore();   // brillo de la funda
+    c.save(); c.setLineDash([0.12, 0.95]); c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 0.8; c.lineCap = 'butt'; c.stroke(p); c.restore(); c.setLineDash([]);   // manguitos
+    const bz = (u, a, b, cc, d) => (1 - u) ** 3 * a + 3 * (1 - u) ** 2 * u * b + 3 * (1 - u) * u * u * cc + u ** 3 * d;
+    for (const u of y0 < -10 ? [0.2, 0.5, 0.78] : [0.5]) {
+      const x = bz(u, x0, x1, x2, x3), y = bz(u, y0, y1, y2, y3), dx = bz(u + 0.01, x0, x1, x2, x3) - x, dy = bz(u + 0.01, y0, y1, y2, y3) - y, a = Math.atan2(dy, dx);
+      c.save(); c.translate(x, y); c.rotate(a); c.fillStyle = estGradV(c, -0.5, 0.5, ['#8a979b', '#59676b', '#2a3336']); c.fillRect(-0.1, -0.5, 0.2, 1.0); estPerno(c, 0, -0.52, 0.06); c.restore();
+    }
+  }
+  // 8. los calefactores gemelos, atornillados a los costados de la esfera
+  for (const a of [Math.PI, -0.62]) {
+    c.save(); c.translate(cx + Math.cos(a) * (R + 0.3), cy + Math.sin(a) * (R + 0.3)); c.rotate(a);
+    c.fillStyle = estGradV(c, -1.45, 1.45, ['#7c878a', '#4a5457', '#22292b']); c.fillRect(-0.62, -1.45, 0.3, 2.9);   // brida contra el casco
+    for (const y of [-1.2, -0.4, 0.4, 1.2]) estPerno(c, -0.47, y, 0.07);
+    c.fillStyle = estGradV(c, -1.25, 1.25, ['#5f686b', '#3e4446', '#1d2224']); c.fillRect(-0.32, -1.25, 1.14, 2.5);
+    c.fillStyle = 'rgba(0,0,0,.4)'; c.fillRect(0.05, -1.25, 0.08, 2.5); c.fillRect(0.45, -1.25, 0.08, 2.5);   // flejes
+    for (let k = 0; k < 6; k++) { const y = -1.15 + k * 0.42; c.fillStyle = '#272c2e'; c.fillRect(0.82, y, 0.46, 0.2); c.fillStyle = 'rgba(190,200,200,.28)'; c.fillRect(0.82, y, 0.46, 0.04);
+      if (enc) { c.fillStyle = 'rgba(255,120,50,.3)'; c.fillRect(1.1, y + 0.04, 0.18, 0.12); } }
+    c.fillStyle = '#c9a227'; c.fillRect(0.1, -0.35, 0.5, 0.7); c.fillStyle = '#1b1b14'; c.fillRect(0.18, -0.08, 0.34, 0.16);   // etiqueta de temperatura
+    c.fillStyle = enc ? '#ffb347' : '#2a2420'; c.beginPath(); c.arc(0.35, 0.85, 0.07, 0, 6.283); c.fill();
+    c.restore();
+  }
+  // 9. la esfera
+  estEsfera(c, cx, cy, R, 0.43, Math.PI * 1.15, enc, r, ['#e0a35e', '#b56c32', '#7a3f1a', '#3c1e0b'], [4.0, 4.15], [-2.0, -1.25], 22);
+  // 10. el cable de izado: bajó del barco y se enroscó sobre los bastidores; el último tramo aún cuelga de la cabeza
+  const vueltas = [];
+  for (let k = 0; k < 6; k++) vueltas.push([-7.5 - k * 0.1, -11.35 - k * 0.2, 3.6 - k * 0.25]);
+  for (const [x, y, rx] of vueltas) { const p = new Path2D(); p.ellipse(x, y, rx, 0.42, 0.02, Math.PI, 2 * Math.PI); estCable(c, p, 0.2, '#3d474b'); }   // la mitad de atrás, más oscura
+  for (const [x, y, rx] of vueltas) { const p = new Path2D(); p.ellipse(x, y, rx, 0.42, 0.02, 0, Math.PI); estCable(c, p, 0.2); }
+  const caida = new Path2D(); caida.moveTo(0, -19.35); caida.bezierCurveTo(-0.6, -16.5, -2.2, -13.8, -3.9, -12.3); caida.quadraticCurveTo(-4.4, -11.9, -4.2, -11.55); estCable(c, caida, 0.2);
+  // 11. el módem
+  estModem(c, -1.6, -5, -2.15);
+  // 12. muchos años a 4.000 m: sedimento espeso, nieve, colgantes y vida de abismo
+  bqSedimento(c, sil, 0.3, r, -12, 12, -14, -3.3);
+  bqNieve(c, sil, 1100, 0.36, r, -12, 12, -14, -3.3);
+  bqColgantes(c, [[-9.8, -3.4], [-7.2, -3.4], [-5.3, -3.4], [-2.4, -3.4], [0.6, -3.4], [2.8, -3.4], [5.9, -3.4], [8.2, -3.4], [10.1, -3.4], [-10.4, -5.03], [-4.6, -5.03]], 0.9, r);
+  bqColgantes(c, [[-xi + 0.3, yb + 0.12], [xi - 0.4, yb + 0.12], [-1, yb + 0.12]], 0.7, r);
+  estVidaAbisal(c, [[-1.6, -5], [-0.4, -5], [0.4, -5], [8.2, -5], [9.3, -5], [10.9, -5], [7.35, -6.85], [-10.6, -11.2], [-2.6, -11.2]], 0.6, r);
+  estDunas(c, patas, 1.1, r, 1.35);
+}
+// Lo vivo de Estigia: nódulos por toda la terraza, el nombre, el piloto del módem, el lirio que se mece,
+// la esponja de cristal y las holoturias que caminan
+function estEstigiaVivo(c, t, flip, m, enc, borde, pared) {
+  const n = 70, an = borde - pared - 2;
+  c.fillStyle = '#17181a'; c.beginPath();   // nódulos sembrados «a voleo»: un solo trazado para todos
+  for (let k = 0; k < n; k++) { const x = pared + 1 + (k * 0.5713 % 1) * an, rr = 0.14 + ((k * 0.377) % 1) * 0.16; c.moveTo(x - rr * 1.3, -0.06); c.ellipse(x, -0.06, rr * 1.3, rr, 0, Math.PI, 0); }
+  c.fill();
+  c.fillStyle = 'rgba(150,130,100,.22)'; c.beginPath();   // su canto de luz (y el polvo que tienen encima)
+  for (let k = 0; k < n; k++) { const x = pared + 1 + (k * 0.5713 % 1) * an, rr = 0.14 + ((k * 0.377) % 1) * 0.16; c.moveTo(x - rr * 0.9, -rr * 0.7); c.ellipse(x - rr * 0.2, -rr * 0.72, rr * 0.7, rr * 0.22, 0, Math.PI, 0); }
+  c.fill();
+  placaNombre(c, 'estigia', 2.5, -4.2, flip);
+  if (enc && (t % 2.3) < 0.12) { c.fillStyle = '#7dffa8'; c.beginPath(); c.arc(-1.6, -7.3, 0.09, 0, 6.283); c.fill(); }   // piloto del módem
+  // el lirio de mar: tallo de artejos y diez brazos plumosos que se mecen
+  const lx = borde - 3.5, sw = Math.sin(t * 0.8) * 0.2, bx = lx + 0.1 + sw, by = -3;
+  c.strokeStyle = 'rgba(214,200,170,.9)'; c.lineWidth = 0.07; c.beginPath(); c.moveTo(lx, 0); c.quadraticCurveTo(lx + 0.3, -1.6, bx, by); c.stroke();
+  c.fillStyle = 'rgba(236,226,200,.85)'; for (let k = 1; k < 8; k++) { const u = k / 8, x = (1 - u) * (1 - u) * lx + 2 * (1 - u) * u * (lx + 0.3) + u * u * bx, y = 2 * (1 - u) * u * -1.6 + u * u * by; c.fillRect(x - 0.06, y - 0.02, 0.12, 0.04); }
+  c.strokeStyle = 'rgba(238,228,204,.85)'; c.lineWidth = 0.05; c.beginPath();
+  const brazos = [];
+  for (let k = -4; k <= 5; k++) { const a = (k - 0.5) * 0.3 + Math.sin(t * 0.9 + k) * 0.06, L = 1.0 - Math.abs(k - 0.5) * 0.05, ex = bx + Math.sin(a) * L, ey = by - Math.cos(a) * L * 0.75 + Math.abs(k - 0.5) * 0.08;
+    c.moveTo(bx, by); c.quadraticCurveTo(bx + Math.sin(a) * L * 0.5, by - 0.55, ex, ey); brazos.push([bx + Math.sin(a) * L * 0.5, by - 0.55, ex, ey]); }
+  c.stroke(); c.lineWidth = 0.025; c.strokeStyle = 'rgba(238,228,204,.5)'; c.beginPath();
+  for (const [mx, my, ex, ey] of brazos) for (let q = 1; q < 5; q++) { const u = q / 5, x = mx + (ex - mx) * u, y = my + (ey - my) * u; c.moveTo(x, y); c.lineTo(x - 0.1, y + 0.08); c.moveTo(x, y); c.lineTo(x + 0.1, y + 0.08); }
+  c.stroke();
+  // la esponja de cristal: jarrón translúcido con su retícula de sílice y la corona de espículas
+  const ex = borde - 7, vaso = new Path2D();
+  vaso.moveTo(ex - 0.22, 0); vaso.bezierCurveTo(ex - 0.85, -0.9, ex - 0.75, -2.0, ex - 0.6, -2.5); vaso.lineTo(ex + 0.6, -2.5); vaso.bezierCurveTo(ex + 0.75, -2.0, ex + 0.85, -0.9, ex + 0.22, 0); vaso.closePath();
+  const gv = c.createLinearGradient(ex - 0.8, 0, ex + 0.8, 0); gv.addColorStop(0, 'rgba(200,220,225,.12)'); gv.addColorStop(0.4, 'rgba(225,240,240,.34)'); gv.addColorStop(1, 'rgba(200,220,225,.1)');
+  c.fillStyle = gv; c.fill(vaso);
+  c.save(); c.clip(vaso); c.strokeStyle = 'rgba(232,244,246,.45)'; c.lineWidth = 0.035; c.beginPath();
+  for (let k = -5; k <= 5; k++) { c.moveTo(ex + k * 0.2 - 0.9, 0); c.lineTo(ex + k * 0.2 + 0.9, -2.6); c.moveTo(ex + k * 0.2 + 0.9, 0); c.lineTo(ex + k * 0.2 - 0.9, -2.6); }
+  c.stroke(); c.restore();
+  c.strokeStyle = 'rgba(236,246,248,.75)'; c.lineWidth = 0.06; c.beginPath(); c.ellipse(ex, -2.5, 0.6, 0.12, 0, 0, 6.283); c.stroke();
+  c.lineWidth = 0.025; c.beginPath(); for (let k = 0; k < 9; k++) { const x = ex - 0.55 + k * 0.1375; c.moveTo(x, -2.55); c.lineTo(x + (k - 4) * 0.04, -2.85); } c.stroke();
+  // holoturias («cochinillos de mar»): cuerpo translúcido, papilas arriba y patas tubulares que caminan
+  for (const [k, x0] of [[0, -8], [1, borde - 10]]) {
+    const x = x0 + ((t * 0.05 + k * 3) % 4), gp = c.createRadialGradient(x - 0.15, -0.45, 0.05, x, -0.35, 0.75);
+    gp.addColorStop(0, 'rgba(250,196,210,.92)'); gp.addColorStop(1, 'rgba(206,124,156,.45)');
+    c.fillStyle = gp; c.beginPath(); c.ellipse(x, -0.36, 0.68, 0.3, 0, 0, 6.283); c.fill();
+    c.strokeStyle = 'rgba(244,180,200,.8)'; c.lineWidth = 0.05; c.beginPath();
+    for (let p = -2; p <= 2; p++) { c.moveTo(x + p * 0.22, -0.1); c.lineTo(x + p * 0.22 + Math.sin(t * 2 + p) * 0.06, 0.02); }
+    c.moveTo(x - 0.25, -0.62); c.quadraticCurveTo(x - 0.35, -0.95, x - 0.2 + Math.sin(t * 1.3 + k) * 0.06, -1.05);   // papilas dorsales
+    c.moveTo(x - 0.05, -0.64); c.quadraticCurveTo(x - 0.05, -0.92, x + 0.05 + Math.sin(t * 1.3 + k + 1) * 0.06, -1.0);
+    c.stroke();
+    c.fillStyle = 'rgba(255,235,240,.35)'; c.beginPath(); c.ellipse(x - 0.2, -0.5, 0.3, 0.08, -0.1, 0, 6.283); c.fill();
+  }
+}
+// ---------------------------------------------------------------------
+// LETEO (6.000 m): la que se quedó sin esfera. Bastidores gris azulado con los dos depósitos de oxígeno verdes
+// encima, la cuna vacía con el asiento de acero sin pintar donde iba la esfera y los cierres de liberación abiertos
+// hacia fuera, el umbilical de servicio en el extremo de la bancada (aquí se acopla el submarino). Posada sobre la
+// mancha blanca de bacterias, con almejas y destellos verdes «que no eran luz», y las balizas de Mikel en las
+// esquinas del cuadrado. A 6.000 m la vida fija es escasa: tapetes de bacterias en la chapa y alguna esponja.
+// En el dibujo vivo: la mancha, las almejas, los destellos, las balizas, los latiguillos sueltos, «O₂» y el nombre.
+// ---------------------------------------------------------------------
+function estLeteo(c, r, enc) {
+  const patas = [-8.8, -3, 3, 8.8], cx = 5, cy = -10.1, R = 3.7;
+  const sil = new Path2D();
+  sil.rect(-10, -5, 20, 1.6); sil.rect(-9.4, -10.2, 8.6, 5.2); sil.roundRect(-9.35, -13.05, 8.5, 2.7, 0.65);
+  sil.moveTo(1, -5); sil.lineTo(1.6, -7.6); sil.lineTo(8.4, -7.6); sil.lineTo(9, -5); sil.closePath(); sil.rect(-0.85, -7.1, 0.9, 2.1);
+  // 1. patas, pirámide, viga
+  estPatas(c, patas, [[-8.8, -3], [3, 8.8]], 0.34, -3.4);
+  const [xi, yb] = estPiramide(c, 9.8, 4.4, -5.1, -17, 0.3, false);
+  estViga(c, -10, 10, -5, -3.4, [-6.5, 5.5], r, 26, [[-8.4, -4.85, 0.7], [-3.6, -4.85, 0.6], [3.4, -4.85, 0.8], [7.9, -4.85, 0.5]]);
+  // 2. la cuna vacía: silla con el asiento curvo, acero desnudo donde rozaba la esfera y tacos de goma arrancados
+  estCuna(c, 1.0, 9.0, 1.8, 8.2, -5, -6.6);
+  const a0 = Math.acos((2.2 - cx) / R), a1 = Math.acos((7.8 - cx) / R);    // ángulos del asiento (mitad de abajo)
+  const silla = new Path2D(); silla.moveTo(1.6, -6.3); silla.lineTo(1.6, -7.75); silla.lineTo(2.2, cy + Math.sin(a0) * R);
+  silla.arc(cx, cy, R, a0, a1, true); silla.lineTo(8.4, -7.75); silla.lineTo(8.4, -6.3); silla.closePath();
+  c.fillStyle = estGradV(c, -7.8, -6.6, ['#6f828a', '#4a5c63', '#27333a']); c.fill(silla);
+  c.strokeStyle = 'rgba(6,10,12,.6)'; c.lineWidth = 0.05; c.stroke(silla);
+  const asiento = new Path2D(); asiento.arc(cx, cy, R, a0 - 0.02, a1 + 0.02, true);
+  c.strokeStyle = '#a9b4b6'; c.lineWidth = 0.16; c.stroke(asiento);                                         // acero sin pintar, pulido por el roce
+  c.strokeStyle = 'rgba(240,246,244,.55)'; c.lineWidth = 0.05; c.save(); c.translate(0, -0.05); c.stroke(asiento); c.restore();
+  for (const a of [2.2, 1.85, 1.3, 0.95]) {                                                                  // restos de los tacos de goma
+    const x = cx + Math.cos(a) * (R + 0.02), y = cy + Math.sin(a) * (R + 0.02), L = 0.25 + r() * 0.35;
+    c.save(); c.translate(x, y); c.rotate(a - Math.PI / 2); c.fillStyle = '#141a1b'; c.beginPath(); c.moveTo(-L, 0); c.lineTo(-L * 0.6, -0.16); c.lineTo(L * (0.2 + r() * 0.5), -0.1 - r() * 0.1); c.lineTo(L, 0); c.closePath(); c.fill(); c.restore();
+  }
+  for (const x of [3.4, 5, 6.6]) { c.fillStyle = 'rgba(0,0,0,.3)'; c.fillRect(x, -7.3, 0.12, 0.7); }        // costillas de la silla
+  // cierres de liberación abiertos hacia fuera (pintados de amarillo y negro), con su bulón
+  for (const s of [-1, 1]) {
+    const x = s < 0 ? 1.75 : 8.25, y = -7.6;
+    estTubo(c, x, y, x + s * 0.95, y - 1.3, 0.3, ['#e0bd45', '#b8941f', '#5d4a10']);
+    estTubo(c, x + s * 0.95, y - 1.3, x + s * 0.55, y - 1.85, 0.26, ['#e0bd45', '#b8941f', '#5d4a10']);
+    c.fillStyle = '#1b1b14'; c.save(); c.translate(x + s * 0.48, y - 0.65); c.rotate(-s * 0.63); c.fillRect(-0.1, -0.15, 0.2, 0.3); c.restore();
+    c.fillStyle = '#2b3437'; c.beginPath(); c.arc(x, y, 0.2, 0, 6.283); c.fill(); estPerno(c, x, y, 0.08);
+  }
+  // 3. mástiles con los focos
+  for (const xm of [-9.6, 9.6]) estMastil(c, xm, -5, -15, -9.2, enc);
+  // 4. los dos bastidores, gris azulado
+  const gris = ['#7a8790', '#5a6770', '#343e44'], tapa = ['#97a3aa', '#62717a', '#2f393f'];
+  estArmario(c, -9.4, -10.2, -5.2, -5, gris, r, 3, tapa);
+  estArmario(c, -5.0, -10.2, -0.8, -5, gris, r, 2, tapa);
+  estChapa(c, -2.05, -9.75, 0.95, 0.5, ['#2a3134', '#1c2225', '#101416']);   // panel de estado
+  for (let k = 0; k < 3; k++) { const x = -1.88 + k * 0.3; c.fillStyle = enc ? ['#6dff9a', '#6dff9a', '#6dff9a'][k] : '#20292b'; c.beginPath(); c.arc(x, -9.5, 0.07, 0, 6.283); c.fill();
+    if (enc) { const g = c.createRadialGradient(x, -9.5, 0, x, -9.5, 0.3); g.addColorStop(0, 'rgba(110,255,160,.45)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, -9.5, 0.3, 0, 6.283); c.fill(); } }
+  for (const y of [-8.6, -7.4]) { c.fillStyle = '#20282a'; c.fillRect(-0.85, y - 0.22, 0.32, 0.44); c.fillStyle = '#b08a3a'; c.fillRect(-0.58, y - 0.14, 0.12, 0.28); }   // tomas de los latiguillos
+  // 5. los dos depósitos de oxígeno: cilindros verdes en sus sillas, con cinchas, cúpulas y la válvula con volante
+  estChapa(c, -8.6, -10.62, 0.5, 0.32, ['#4f5d62', '#334046', '#182124']); estChapa(c, -2.1, -10.62, 0.5, 0.32, ['#4f5d62', '#334046', '#182124']);
+  for (const y of [-12.4, -11]) {
+    const dep = new Path2D(); dep.roundRect(-9.2, y - 0.65, 8.2, 1.3, 0.65);
+    c.fillStyle = estGradV(c, y - 0.65, y + 0.65, ['#79a57b', '#4e7652', '#223826']); c.fill(dep);
+    c.save(); c.clip(dep);
+    c.fillStyle = 'rgba(230,245,225,.28)'; c.fillRect(-9.2, y - 0.46, 8.2, 0.09);                                    // brillo
+    c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(-9.2, y + 0.3, 8.2, 0.35);
+    for (const x of [-8.55, -1.65]) { c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(x, y - 0.65, 0.05, 1.3); }       // costuras de las cúpulas
+    bqDesconchones(c, -9.2, -1, y - 0.65, y + 0.65, 7, r, ['rgba(60,70,58,.4)', 'rgba(120,80,40,.35)'], 0.5);
+    c.restore();
+    c.strokeStyle = 'rgba(10,20,12,.6)'; c.lineWidth = 0.05; c.stroke(dep);
+    for (const x of [-7.6, -2.6]) { estChapa(c, x - 0.12, y - 0.68, 0.24, 1.36, ['#3c4446', '#272d2f', '#141819']); estPerno(c, x, y + 0.5, 0.05); }   // cinchas
+    c.fillStyle = '#c9c4b0'; c.fillRect(-6.15, y - 0.2, 0.5, 0.4); c.fillStyle = 'rgba(40,40,30,.6)'; c.fillRect(-6.08, y - 0.08, 0.36, 0.05); c.fillRect(-6.08, y + 0.04, 0.26, 0.05);   // placa de prueba
+    // grifo con volante en la cúpula derecha
+    c.fillStyle = '#8a7a4a'; c.fillRect(-1.05, y - 0.13, 0.32, 0.26); c.fillStyle = '#5a4c26'; c.fillRect(-0.75, y - 0.2, 0.14, 0.4);
+    c.strokeStyle = '#b02e22'; c.lineWidth = 0.07; c.beginPath(); c.ellipse(-0.6, y, 0.08, 0.3, 0, 0, 6.283); c.stroke();
+  }
+  estCable(c, (() => { const p = new Path2D(); p.moveTo(-0.65, -12.4); p.bezierCurveTo(-0.2, -12.2, -0.2, -11.2, -0.65, -11); return p; })(), 0.12, '#6b5d34', false);   // colector entre los dos
+  // 6. el módem y el umbilical de servicio (aquí se conecta el submarino)
+  estModem(c, -0.4, -5, -0.85);
+  estChapa(c, 9.45, -5.25, 0.9, 0.25);
+  c.fillStyle = estGradCil(c, 9.55, 10.15, EST_AC); c.fillRect(9.55, -7.4, 0.6, 2.2);
+  estChapa(c, 9.48, -7.6, 0.74, 0.24, ['#8696a0', '#56666c', '#2e3a3f']);
+  c.fillStyle = estGradV(c, -7.0, -5.6, ['#f0cf62', '#c9a227', '#7d6314']); c.beginPath(); c.moveTo(10.0, -6.95); c.lineTo(10.42, -7.15); c.lineTo(10.42, -5.45); c.lineTo(10.0, -5.65); c.closePath(); c.fill();   // embudo del conector
+  c.fillStyle = '#0b1012'; c.fillRect(10.36, -6.55, 0.06, 0.5);
+  c.save(); c.beginPath(); c.rect(9.55, -7.36, 0.6, 0.42); c.clip(); c.fillStyle = '#c9a227'; c.fillRect(9.55, -7.36, 0.6, 0.42);   // franja de aviso
+  c.fillStyle = '#1b1b14'; for (let x = 9.3; x < 10.3; x += 0.3) { c.beginPath(); c.moveTo(x, -6.94); c.lineTo(x + 0.3, -7.36); c.lineTo(x + 0.45, -7.36); c.lineTo(x + 0.15, -6.94); c.fill(); }
+  c.restore(); estPerno(c, 9.85, -6.2, 0.06); estPerno(c, 9.85, -5.6, 0.06);
+  c.strokeStyle = '#11181a'; c.lineWidth = 0.1; c.beginPath(); c.moveTo(9.7, -5.4); c.quadraticCurveTo(9.3, -5.2, 8.9, -5.15); c.stroke();   // cable a la bancada
+  // 7. 6.000 m: sedimento, nieve, colgantes cortos, tapetes de bacterias en la chapa y poca vida fija
+  bqSedimento(c, sil, 0.26, r, -11, 11, -13.5, -3.3);
+  bqNieve(c, sil, 950, 0.34, r, -11, 11, -13.5, -3.3);
+  bqColgantes(c, [[-7.6, -3.4], [-4.8, -3.4], [-1.2, -3.4], [1.6, -3.4], [4.4, -3.4], [7.2, -3.4]], 0.6, r);
+  bqColgantes(c, [[-xi + 0.3, yb + 0.12], [xi - 0.4, yb + 0.12]], 0.5, r);
+  c.fillStyle = 'rgba(232,236,226,.45)'; c.beginPath();
+  for (const [x0, x1, y] of [[0.1, 0.9, -5], [9.2, 9.9, -5], [-9.4, -0.8, -13.05], [1.7, 2.4, -7.65], [7.6, 8.3, -7.65]]) for (let k = 0; k < 3; k++) { const x = x0 + r() * (x1 - x0), w = 0.2 + r() * 0.35; c.moveTo(x + w, y); c.ellipse(x, y - 0.01, w, 0.035, 0, 0, 6.283); }
+  c.fill();
+  estVidaAbisal(c, [[0.5, -5], [-6.8, -13.05], [9.6, -5], [2.0, -7.6], [-8.2, -13.05]], 0.4, r);
+  estDunas(c, patas, 1.05, r, 1.15);
+}
+// Lo vivo de Leteo
+function estLeteoVivo(c, t, flip, m, enc, borde, pared) {
+  // la mancha blanca de bacterias (más allá del sprite), almejas y destellos verdes «que no eran luz»
+  const gm = c.createRadialGradient(0, 0, 1, 0, 0, 16); gm.addColorStop(0, 'rgba(235,235,225,.9)'); gm.addColorStop(0.6, 'rgba(225,228,215,.55)'); gm.addColorStop(1, 'rgba(235,235,225,0)');
+  c.fillStyle = gm; c.beginPath(); c.ellipse(0, 0, 16, 0.6, 0, Math.PI, 0); c.fill();
+  c.fillStyle = 'rgba(250,236,200,.35)'; c.beginPath(); for (let k = 0; k < 9; k++) { const x = -12 + (k * 0.7071 % 1) * 24; c.moveTo(x + 0.9, -0.04); c.ellipse(x, -0.04, 0.9, 0.06, 0, 0, 6.283); } c.fill();   // vetas amarillentas del tapete
+  c.fillStyle = '#cfc8b6'; c.beginPath();
+  for (let k = 0; k < 18; k++) { const x = -13 + (k * 0.6180 % 1) * 26, a = (k % 3 - 1) * 0.4; c.moveTo(x + 0.28, -0.12); c.ellipse(x, -0.12, 0.28, 0.14, a, 0, 6.283); }
+  c.fill();
+  c.fillStyle = 'rgba(255,255,250,.55)'; c.beginPath();
+  for (let k = 0; k < 18; k++) { const x = -13 + (k * 0.6180 % 1) * 26; c.moveTo(x + 0.1, -0.18); c.ellipse(x - 0.06, -0.18, 0.14, 0.04, (k % 3 - 1) * 0.4, 0, 6.283); }
+  c.fill();
+  c.strokeStyle = 'rgba(80,70,52,.55)'; c.lineWidth = 0.03; c.beginPath();
+  for (let k = 0; k < 18; k += 2) { const x = -13 + (k * 0.6180 % 1) * 26; c.moveTo(x - 0.22, -0.1); c.lineTo(x + 0.22, -0.13); }
+  c.stroke();
+  for (let k = 0; k < 12; k++) { const v = Math.sin(t * 1.7 + k * 2.3); if (v < 0.75) continue; const x = -12 + (k * 0.4142 % 1) * 24, a = (v - 0.75) * 4;
+    const gg = c.createRadialGradient(x, -0.15, 0, x, -0.15, 0.5); gg.addColorStop(0, `rgba(140,255,170,${(0.5 * a).toFixed(2)})`); gg.addColorStop(1, 'rgba(140,255,170,0)'); c.fillStyle = gg; c.fillRect(x - 0.5, -0.65, 1, 1);
+    c.fillStyle = 'rgba(170,255,190,.95)'; c.fillRect(x - 0.05, -0.2, 0.1, 0.1); }
+  // las balizas estroboscópicas de Mikel: estaca clavada, carcasa con aletas y cúpula; encendida, destello cada 1,6 s
+  for (const bx of balizasLeteo(m).map(x => x / ESC_EST)) {
+    estTubo(c, bx, 0.2, bx, -2.9, 0.16);
+    c.fillStyle = '#b02e22'; c.fillRect(bx - 0.08, -1.6, 0.16, 0.25); c.fillStyle = '#e8e4d8'; c.fillRect(bx - 0.08, -1.35, 0.16, 0.25);
+    estChapa(c, bx - 0.32, -3.55, 0.64, 0.62, ['#5d6c70', '#3b484c', '#1e272a']);
+    const fase = (t + bx * 0.13) % 1.6, fl = enc && fase < 0.09;
+    c.fillStyle = fl ? '#ffffff' : enc ? '#d8dccf' : '#26302f'; c.beginPath(); c.arc(bx, -3.58, 0.28, Math.PI, 0); c.fill();
+    c.strokeStyle = 'rgba(10,14,16,.6)'; c.lineWidth = 0.04; c.stroke();
+    if (fl) { const gl = c.createRadialGradient(bx, -3.7, 0, bx, -3.7, 3); gl.addColorStop(0, 'rgba(255,255,250,.75)'); gl.addColorStop(1, 'rgba(255,255,250,0)'); c.fillStyle = gl; c.fillRect(bx - 3, -6.7, 6, 6); }
+  }
+  // dos latiguillos sueltos que se mecen (salían hacia la esfera)
+  const fl = Math.sin(t * 0.6) * 0.6;
+  c.lineCap = 'round';
+  const lat = new Path2D(); lat.moveTo(-0.6, -8.6); lat.bezierCurveTo(1, -9.4 + fl, 2.2, -11.2, 3.2 + fl, -12.6 - fl * 0.5);
+  const lat2 = new Path2D(); lat2.moveTo(-0.6, -7.4); lat2.bezierCurveTo(0.8, -6.6, 1.6, -8.2 - fl * 0.6, 2.6, -9.3 + fl);
+  for (const p of [lat, lat2]) { c.strokeStyle = '#0b1012'; c.lineWidth = 0.28; c.stroke(p); c.strokeStyle = '#2a3235'; c.lineWidth = 0.2; c.stroke(p); }
+  c.fillStyle = '#b08a3a';
+  for (const [x, y] of [[3.2 + fl, -12.6 - fl * 0.5], [2.6, -9.3 + fl]]) { c.beginPath(); c.arc(x, y, 0.16, 0, 6.283); c.fill(); }   // racores de latón en las puntas
+  // «O₂» pintado en los depósitos (el texto no se voltea) y el nombre
+  c.fillStyle = 'rgba(235,240,225,.75)'; c.font = "700 0.6px 'Barlow Semi Condensed', 'Arial Narrow', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.save(); if (flip) c.scale(-1, 1); for (const y of [-11, -12.4]) c.fillText('O₂', flip ? 4.2 : -4.2, y); c.restore();
+  placaNombre(c, 'leteo', 0, -4.2, flip);
+  if (enc && (t % 2.1) < 0.12) { c.fillStyle = '#7dffa8'; c.beginPath(); c.arc(-0.4, -7.3, 0.09, 0, 6.283); c.fill(); }   // piloto del módem
+}
+function dibujarEstacion(id, t, flip, m, E) {
   const c = ctx, g = GEO_ESTACION[id], encendida = !!(G.estaciones && G.estaciones[id] && G.estaciones[id].energia);
   const borde = m.W * (1 - (m.barco.pos || 0.55)) / ESC_EST, pared = -m.W * (m.barco.pos || 0.55) / ESC_EST;   // x local del borde de la cornisa y de la pared
   c.lineJoin = 'round';
-  if (id === 'caronte') {
-    // el cable de acero que «subía hacia ninguna parte»: sale del grillete y se pierde en la oscuridad
-    const ond = Math.sin(t * 0.4) * 0.6;
-    const gc = c.createLinearGradient(0, -19, 0, -60); gc.addColorStop(0, 'rgba(80,92,96,1)'); gc.addColorStop(1, 'rgba(80,92,96,0)');
-    c.strokeStyle = gc; c.lineWidth = 0.2; c.beginPath(); c.moveTo(0, -19.2); c.bezierCurveTo(ond, -32, -ond * 1.5, -46, ond * 2, -60); c.stroke();
-    bastidorIzado(c, -10.4, 10.4, -4.8, -18.5);
-    patasBancada(c, [-9.2, -3.4, 3.4, 9.2], -3.4, 0.6);
-    viga(c, -10.4, -4.8, 10.4, -3.4);
-    for (const x of [-7, -1, 5]) { c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(x, -4.1, 0.32, 0, 6.283); c.fill(); }   // aligeramientos de la viga
-    placaNombre(c, id, 1.2, -4.1, flip);
-    // el bastidor blanco: Mikel lo pintó así «para que se vieran bien los golpes y las fugas de aceite»
-    bastidor(c, -9.6, -11.2, -4.4, -4.8, '#d9d6cc', '#a9a69c');
-    ventosas(c, [[-8.6, -6.2, 0.32], [-7.8, -6.9, 0.26], [-7.0, -6.3, 0.3], [-6.2, -7.1, 0.24], [-5.4, -7.8, 0.28], [-7.6, -8.6, 0.7], [-5.6, -9.9, 0.62], [-8.9, -9.6, 0.22], [-6.6, -8.0, 0.2]]);
-    // boya de emergencia (se suelta con un código acústico) encima del bastidor
-    c.fillStyle = '#d6a12a'; c.beginPath(); c.ellipse(-7, -11.9, 1.7, 0.7, 0, 0, 6.283); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 0.08; c.stroke(); c.fillStyle = 'rgba(92,86,72,.7)'; c.beginPath(); c.ellipse(-7, -12.45, 1.2, 0.2, 0, Math.PI, 0); c.fill();
-    // mazo de cables del bastidor a la esfera
-    c.strokeStyle = '#1d2629'; c.lineWidth = 0.32; c.beginPath(); c.moveTo(-4.4, -9.2); c.bezierCurveTo(-2.6, -9.6, -1.6, -10.6, -0.55, -10.2); c.moveTo(-4.4, -8.4); c.bezierCurveTo(-2.4, -8.4, -1.4, -9.4, -0.5, -9.4); c.stroke();
-    esferaHabitable(c, 3, -9.4, 3.6, 0, Math.PI * 1.1, encendida, t, ['#e0a15a', '#b0652a', '#5e3315']);
-    ventosas(c, [[4.6, -11.6, 0.3], [5.4, -10.8, 0.24], [1.6, -12.1, 0.26]]);
-    mastilFocos(c, -10.1, -4.8, -15.4, encendida); mastilFocos(c, 10.1, -4.8, -15.4, encendida);
-    // módem acústico
-    c.fillStyle = ACERO.claro; c.fillRect(-3.8, -6.6, 0.8, 1.8); c.fillStyle = '#c9a227'; c.fillRect(-3.85, -7.1, 0.9, 0.5);
-    // la línea de hidrófonos de Kaori, cortada, meciéndose en el borde de la cornisa
-    const x0 = borde - 0.6, sw = Math.sin(t * 0.7) * 0.5, sw2 = Math.sin(t * 0.7 - 0.8) * 0.9;
-    c.fillStyle = ACERO.medio; c.fillRect(x0 - 0.12, -1.3, 0.24, 1.3);
-    c.strokeStyle = '#c8b27a'; c.lineWidth = 0.09; c.beginPath(); c.moveTo(x0, -1.1); c.quadraticCurveTo(x0 + 0.8, -0.6, x0 + 1.1, 0.4); c.bezierCurveTo(x0 + 1.2 + sw, 2.5, x0 + 1.2 - sw, 4.5, x0 + 1.3 + sw2, 6.4); c.stroke();
-    c.lineWidth = 0.04; c.beginPath(); for (const a of [-0.5, 0, 0.5]) { c.moveTo(x0 + 1.3 + sw2, 6.4); c.lineTo(x0 + 1.3 + sw2 + a * 0.4, 6.9); } c.stroke();   // el cabo deshilachado
-    c.fillStyle = '#3a3f3a'; c.beginPath(); c.ellipse(x0 + 1.15 + sw * 0.6, 2.2, 0.16, 0.4, 0, 0, 6.283); c.fill();   // el hidrófono de arriba, aún atado
-  } else if (id === 'estigia') {
-    // nódulos sembrados «a voleo» por toda la terraza
-    c.fillStyle = '#16181a';
-    for (let k = 0; k < 70; k++) { const x = pared + 1 + (k * 0.5713 % 1) * (borde - pared - 2), r = 0.14 + ((k * 0.377) % 1) * 0.16; c.beginPath(); c.ellipse(x, -0.08, r * 1.3, r, 0, Math.PI, 0); c.fill(); }
-    bastidorIzado(c, -11.8, 11.8, -5, -19);
-    patasBancada(c, [-10.6, -4, 4, 10.6], -3.4, 0.85);
-    viga(c, -11.8, -5, 11.8, -3.4);
-    for (const x of [-8.6, -1, 7]) { c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(x, -4.2, 0.36, 0, 6.283); c.fill(); }
-    placaNombre(c, id, 2.5, -4.2, flip);
-    // dos bastidores en lugar de uno, pintura verde de taller, más golpeados
-    bastidor(c, -11.2, -11, -6.8, -5, '#6f7558', '#4b503c');
-    bastidor(c, -6.5, -11, -2.1, -5, '#6f7558', '#4b503c');
-    // conductos con doble aislante (gruesos, con abrazaderas)
-    c.strokeStyle = '#2f3333'; c.lineWidth = 0.75; c.lineCap = 'butt';
-    c.beginPath(); c.moveTo(-4.3, -11); c.bezierCurveTo(-4.3, -12.4, -1.8, -12.6, 1.4, -11.6); c.moveTo(-2.1, -7.6); c.bezierCurveTo(-1.4, -7.6, -0.6, -8.2, 0.85, -8.6); c.stroke();
-    c.strokeStyle = '#4d5452'; c.lineWidth = 0.95;
-    for (const [x, y] of [[-4.4, -11.9], [-2.6, -12.25], [-0.7, -12.05], [-1.7, -7.75]]) { c.beginPath(); c.moveTo(x - 0.06, y - 0.45); c.lineTo(x + 0.06, y + 0.45); c.stroke(); }
-    // calefactores gemelos atornillados a los costados de la esfera («como las orejeras de un gorro»)
-    const cx = 4.4, cy = -9.6, R = 3.6;
-    for (const a of [Math.PI, -0.62]) {
-      c.save(); c.translate(cx + Math.cos(a) * (R + 0.3), cy + Math.sin(a) * (R + 0.3)); c.rotate(a);
-      c.fillStyle = '#3e4446'; c.fillRect(-0.5, -1.25, 1.3, 2.5);
-      c.fillStyle = '#272c2e'; for (let k = 0; k < 6; k++) c.fillRect(0.82, -1.15 + k * 0.42, 0.42, 0.2);   // aletas
-      c.restore();
-    }
-    esferaHabitable(c, cx, cy, R, 0.43, Math.PI * 1.15, encendida, t, ['#d39a55', '#9e5b27', '#4f2b12']);
-    // el cable de izado, suelto, «se enroscó lentamente sobre sí mismo encima de la estructura»
-    c.strokeStyle = '#4d585c'; c.lineWidth = 0.2; c.beginPath();
-    for (let k = 0; k < 6; k++) { c.moveTo(-7.5 + 3.6 - k * 0.25, -11.35 - k * 0.2); c.ellipse(-7.5 - k * 0.1, -11.35 - k * 0.2, 3.6 - k * 0.25, 0.42, 0.02, 0, 6.283); }
-    c.moveTo(0, -19.2); c.bezierCurveTo(-0.6, -16.5, -2.2, -13.8, -3.9, -12.3); c.stroke();
-    mastilFocos(c, -11.4, -5, -15.8, encendida); mastilFocos(c, 11.4, -5, -15.8, encendida);
-    c.fillStyle = ACERO.claro; c.fillRect(-2, -6.8, 0.8, 1.8); c.fillStyle = '#c9a227'; c.fillRect(-2.05, -7.3, 0.9, 0.5);
-    // vida lenta entre los nódulos: un lirio de mar y una esponja de cristal
-    const lx = borde - 3.5;
-    c.strokeStyle = 'rgba(225,220,205,.8)'; c.lineWidth = 0.06; c.beginPath(); c.moveTo(lx, 0); c.quadraticCurveTo(lx + 0.3, -1.6, lx + 0.1 + Math.sin(t * 0.8) * 0.2, -3);
-    for (let k = -2; k <= 2; k++) { const bx = lx + 0.1 + Math.sin(t * 0.8) * 0.2; c.moveTo(bx, -3); c.quadraticCurveTo(bx + k * 0.25, -3.6, bx + k * 0.45, -3.3 - Math.abs(k) * 0.1); }
-    c.stroke();
-    const ex = borde - 7;
-    c.strokeStyle = 'rgba(210,225,230,.55)'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(ex - 0.4, 0); c.bezierCurveTo(ex - 0.9, -1, ex - 0.7, -2, ex - 0.6, -2.4); c.moveTo(ex + 0.4, 0); c.bezierCurveTo(ex + 0.9, -1, ex + 0.7, -2, ex + 0.6, -2.4);
-    for (let y = -0.4; y > -2.4; y -= 0.35) { c.moveTo(ex - 0.55, y); c.lineTo(ex + 0.55, y - 0.2); c.moveTo(ex + 0.55, y); c.lineTo(ex - 0.55, y - 0.2); }
-    c.stroke();
-    // cochinillos de gelatina (holoturias) caminando muy despacio
-    for (const [k, x0] of [[0, -8], [1, borde - 10]]) {
-      const x = x0 + ((t * 0.05 + k * 3) % 4), gp = c.createRadialGradient(x, -0.35, 0.05, x, -0.35, 0.7);
-      gp.addColorStop(0, 'rgba(240,170,190,.85)'); gp.addColorStop(1, 'rgba(210,130,160,.35)');
-      c.fillStyle = gp; c.beginPath(); c.ellipse(x, -0.35, 0.65, 0.3, 0, 0, 6.283); c.fill();
-      c.strokeStyle = 'rgba(240,170,190,.7)'; c.lineWidth = 0.05; c.beginPath(); for (let p = -2; p <= 2; p++) { c.moveTo(x + p * 0.22, -0.1); c.lineTo(x + p * 0.22 + Math.sin(t * 2 + p) * 0.05, 0.02); } c.stroke();
-    }
-  } else {   // leteo
-    // la mancha blanca de bacterias sobre la que se posó, con almejas y destellos verdes «que no eran luz»
-    const gm = c.createRadialGradient(0, 0, 1, 0, 0, 16); gm.addColorStop(0, 'rgba(235,235,225,.9)'); gm.addColorStop(1, 'rgba(235,235,225,0)');
-    c.fillStyle = gm; c.beginPath(); c.ellipse(0, 0, 16, 0.55, 0, Math.PI, 0); c.fill();
-    c.fillStyle = '#d8d3c4'; for (let k = 0; k < 18; k++) { const x = -13 + (k * 0.6180 % 1) * 26; c.beginPath(); c.ellipse(x, -0.12, 0.28, 0.14, (k % 3 - 1) * 0.4, 0, 6.283); c.fill(); }
-    for (let k = 0; k < 12; k++) { if (Math.sin(t * 1.7 + k * 2.3) < 0.75) continue; const x = -12 + (k * 0.4142 % 1) * 24; c.fillStyle = 'rgba(120,255,160,.9)'; c.fillRect(x, -0.2, 0.12, 0.12); }
-    // las balizas estroboscópicas de Mikel en las esquinas del cuadrado (aquí se ven dos)
-    for (const bx of balizasLeteo(m).map(x => x / ESC_EST)) {
-      c.fillStyle = ACERO.medio; c.fillRect(bx - 0.1, -3, 0.2, 3);
-      c.fillStyle = ACERO.oscuro; c.fillRect(bx - 0.3, -3.6, 0.6, 0.6);
-      c.fillStyle = encendida ? '#fbfbf2' : '#26302f'; c.beginPath(); c.arc(bx, -3.75, 0.28, Math.PI, 0); c.fill();
-    }
-    bastidorIzado(c, -10, 10, -5, -17);
-    patasBancada(c, [-8.8, -3, 3, 8.8], -3.4, 0.8);
-    viga(c, -10, -5, 10, -3.4);
-    placaNombre(c, id, 0, -4.2, flip);
-    bastidor(c, -9.4, -10.2, -5.2, -5, '#5c6870', '#3e474d');
-    bastidor(c, -5.0, -10.2, -0.8, -5, '#5c6870', '#3e474d');
-    // depósitos de oxígeno (verdes) encima de los bastidores
-    for (const y of [-11, -12.4]) {
-      const go = c.createLinearGradient(0, y - 0.65, 0, y + 0.65); go.addColorStop(0, '#5f8a62'); go.addColorStop(1, '#2f4a33');
-      c.fillStyle = go; c.beginPath(); c.roundRect(-9.2, y - 0.65, 8.2, 1.3, 0.65); c.fill();
-      c.fillStyle = 'rgba(235,240,225,.75)'; c.font = "700 0.6px 'Barlow Semi Condensed', 'Arial Narrow', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.save(); if (flip) c.scale(-1, 1); c.fillText('O₂', flip ? 5.1 : -5.1, y); c.restore();
-    }
-    // la cuna vacía: los cierres de liberación abiertos hacia fuera y dos latiguillos sueltos
-    c.fillStyle = ACERO.oscuro; c.beginPath(); c.moveTo(1, -5); c.lineTo(1.8, -6.6); c.lineTo(8.2, -6.6); c.lineTo(9, -5); c.closePath(); c.fill();
-    c.strokeStyle = ACERO.claro; c.lineWidth = 0.18; c.beginPath(); c.arc(5, -10.1, 3.7, 0.55, Math.PI - 0.55); c.stroke();   // el asiento donde iba la esfera, sin pintar
-    c.strokeStyle = ACERO.medio; c.lineWidth = 0.3; c.lineCap = 'round';
-    for (const [x, s] of [[1.9, -1], [8.1, 1]]) { c.beginPath(); c.moveTo(x, -6.6); c.lineTo(x + s * 0.9, -7.9); c.lineTo(x + s * 0.5, -8.4); c.stroke(); }
-    c.strokeStyle = '#1d2629'; c.lineWidth = 0.22;
-    const fl = Math.sin(t * 0.6) * 0.6;
-    c.beginPath(); c.moveTo(-0.8, -8.6); c.bezierCurveTo(1, -9.4 + fl, 2.2, -11.2, 3.2 + fl, -12.6 - fl * 0.5); c.moveTo(-0.8, -7.4); c.bezierCurveTo(0.8, -6.6, 1.6, -8.2 - fl * 0.6, 2.6, -9.3 + fl); c.stroke();
-    mastilFocos(c, -9.6, -5, -15, encendida); mastilFocos(c, 9.6, -5, -15, encendida);
-    c.fillStyle = ACERO.claro; c.fillRect(-0.8, -6.6, 0.8, 1.6); c.fillStyle = '#c9a227'; c.fillRect(-0.85, -7.1, 0.9, 0.5);
-    // umbilical de servicio en el extremo de la bancada (aquí se conecta el submarino)
-    c.fillStyle = ACERO.medio; c.fillRect(9.6, -7.2, 0.6, 1.8); c.fillStyle = '#c9a227'; c.fillRect(10.05, -6.9, 0.25, 1.2);
+  if (EST_SPRITE[id]) {   // v260: sprite pintado una vez + lo que se mueve
+    const sp = spriteEstacion(id, encendida, m, E || 24), K = EST_CAJA;
+    c.drawImage(sp.cv, K.x0, K.y0, K.x1 - K.x0, K.y1 - K.y0);
+    if (id === 'caronte') estCaronteVivo(c, t, flip, m, encendida, borde); else if (id === 'estigia') estEstigiaVivo(c, t, flip, m, encendida, borde, pared); else if (id === 'leteo') estLeteoVivo(c, t, flip, m, encendida, borde, pared);
   }
 }
 // La T-1 del Consorcio junto a Estigia: tubos amarillos caídos de lado, carcasas naranjas y vidrio en el suelo
@@ -13331,6 +14075,7 @@ function spriteColumna() {   // columna de agua hirviendo: trapecio con degradad
 }
 // Parte fija de una chimenea (montículo, cuerpo, vetas y boca) a la escala actual. Se rehace solo si cambia el zum.
 function spriteChimenea(ch, E) {
+  E = escAcople(E);   // v267: a la escala del acercamiento máximo, se estampa reducido (kAcople)
   const clave = E.toFixed(3);
   if (ch._spr && ch._sprE === clave) return ch._spr;
   const lean = ch.tx - ch.x, h = ch.h, w0 = ch.w * 0.5, w1 = ch.w * 0.32, ap = !ch.activa;
@@ -13360,7 +14105,7 @@ function dibujarHidro(m, sx, sy, E, t) {
   for (const ch of Biomas.chimeneas()) {
     if (ch.m !== m) continue;
     const spr = spriteChimenea(ch, E);
-    ctx.drawImage(spr, sx(ch.x + ch._sprX), sy(ch.y + ch._sprY));
+    ctx.drawImage(spr, sx(ch.x + ch._sprX), sy(ch.y + ch._sprY), spr.width * kAcople(), spr.height * kAcople());
     if (!ch.activa) continue;   // las apagadas no tienen vida: sin calor no hay bacterias que comer
     ctx.save(); ctx.translate(sx(ch.x), sy(ch.y)); ctx.scale(E, E);
     // gusanos tubícolas: tubos blancos con el penacho rojo (Riftia), que se mecen
@@ -13394,6 +14139,7 @@ function dibujarHidro(m, sx, sy, E, t) {
 }
 // Repisa de llanura: nódulos sueltos sobre el sedimento (o lodo rojo). Parte fija precalculada por repisa.
 function spriteLlanura(m, E) {
+  E = escAcople(E);   // v267: a la escala del acercamiento máximo, se estampa reducido (kAcople)
   const clave = E.toFixed(3); if (m._spr && m._sprE === clave) return m._spr;
   const tipo = m.llanura.tipo, fr = mulberry32(m.llanura.sem), W = m.W;
   const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.ceil((W + 2) * E)); cv.height = Math.max(1, Math.ceil(3 * E));
@@ -13551,7 +14297,7 @@ function dibujarLlanura(m, sx, sy, E, t) {
   const xw = m.lado < 0 ? Fosa.izqBase(m.y) : Fosa.derBase(m.y), spr = spriteLlanura(m, E);
   // el sprite se pinta de la pared hacia el agua; en la pared derecha se refleja
   ctx.save(); ctx.translate(sx(xw), sy(m.y)); if (m.lado > 0) ctx.scale(-1, 1);
-  ctx.drawImage(spr, -E, -2.2 * E); ctx.restore();
+  ctx.drawImage(spr, -E, -2.2 * E, spr.width * kAcople(), spr.height * kAcople()); ctx.restore();
   if (m.llanura.tipo === 'surgencia') {   // v179: burbujas de metano que suben de las grietas del sedimento (sin peces trípode)
     for (let k = 0; k < 3; k++) { const xb = xw - m.lado * (m.W * (0.2 + 0.3 * k) + 0.5);
       for (let j = 0; j < 4; j++) { const f = (t * 0.32 + j * 0.25 + k * 0.37 + m.i * 0.13) % 1;
@@ -13778,6 +14524,7 @@ function piezasFinHTML(r) {
 }
 // ---- Dibujo de los puntos de interés (parte fija precalculada, como las chimeneas) ----
 function spriteRepisa(m, E, dibujar, alto = 6) {
+  E = escAcople(E);   // v267: a la escala del acercamiento máximo, se estampa reducido (kAcople)
   const clave = E.toFixed(3); if (m._spr && m._sprE === clave) return m._spr;
   const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.ceil((m.W + 2) * E)); cv.height = Math.max(1, Math.ceil((alto + 1) * E));
   const c = cv.getContext('2d'); c.scale(E, E); c.translate(1, alto); c.lineJoin = 'round'; c.lineCap = 'round';
@@ -13806,7 +14553,7 @@ function dibujarEsqueleto(c, m, fr) {   // origen: pie de la pared sobre el tech
   c.fillStyle = '#c8323a'; for (let k = 0; k < 40; k++) { const x = x0 + fr() * L * 0.95, y = -0.3 - fr() * 1.6; c.beginPath(); c.arc(x, y, 0.07 + fr() * 0.06, 0, 6.283); c.fill(); }
 }
 function dibujarOrfeoRestos(c, m, fr) {
-  const W = m.W, xc = W * 0.45, r = fr || mulberry32(hash2(G.semilla + 7171, m.i));
+  const W = m.W, xc = W * 0.45, r = fr || mulberry32(hash2(G.semilla + 7171, m.i)), r2 = mulberry32(hash2(G.semilla + 7272, m.i));   // v265: r2 para lo nuevo
   const AM = '#d7a71f', AMc = '#f0c64a', AMo = '#7c5d0e';   // amarillo de la espuma sintáctica: base, luz y sombra
   c.save(); c.beginPath(); c.rect(-2, -6, W + 4, 6.05); c.clip();   // nada por debajo del techo de la repisa
   // el cráter del impacto: el sedimento apartado en un reborde y el surco que dejó al resbalar
@@ -13862,14 +14609,25 @@ function dibujarOrfeoRestos(c, m, fr) {
   c.restore();
   c.strokeStyle = 'rgba(60,44,8,.75)'; c.lineWidth = 0.05; c.stroke(F);
   bqBorde(c, F, 0, 1, 5, 0.4, '255,245,200', 0.05); bqBorde(c, F, 0, -1, 6, 0.7, '30,20,4', 0.08); bqBorde(c, F, 1, 0, 4, 0.5, '30,20,4', 0.05);
+  bqSedimento(c, F, 0.13, r2, -3.6, 3.0, -1.5, 0.8);   // v265
+  bqNieve(c, F, 260, 0.3, r2, -3.6, 3.0, -1.5, 0.8);
   // --- encima: ojal de izado, ánodos de zinc, el propulsor vertical y la antena con su luz de destellos, apagada
   c.strokeStyle = '#6a6c66'; c.lineWidth = 0.06; c.beginPath(); c.arc(0.3, -1.3, 0.13, Math.PI, 0); c.stroke(); c.fillStyle = '#5a5c56'; c.fillRect(0.12, -1.22, 0.36, 0.08);
-  c.fillStyle = '#8c908a'; for (const x of [-1.2, 1.7]) { rr(c, x, -1.19, 0.3, 0.1, 0.03); c.fill(); }
-  c.fillStyle = '#2e2e2a'; rr(c, -2.62, -1.44, 0.74, 0.38, 0.1); c.fill(); c.fillStyle = '#111'; c.fillRect(-2.52, -1.34, 0.54, 0.14);
-  c.strokeStyle = 'rgba(160,160,150,.35)'; c.lineWidth = 0.015; c.beginPath(); for (let x = -2.48; x < -1.98; x += 0.08) { c.moveTo(x, -1.34); c.lineTo(x, -1.2); } c.stroke();
+  for (const x of [-1.2, 1.7]) { c.fillStyle = '#6a6e68'; c.beginPath(); c.moveTo(x, -1.1); c.lineTo(x + 0.04, -1.18); c.lineTo(x + 0.12, -1.16); c.lineTo(x + 0.18, -1.2); c.lineTo(x + 0.27, -1.17); c.lineTo(x + 0.3, -1.1); c.closePath(); c.fill(); c.fillStyle = 'rgba(220,225,220,.25)'; c.fillRect(x + 0.04, -1.17, 0.2, 0.02); }   // ánodos de zinc, casi consumidos
+  c.fillStyle = estGradV(c, -1.5, -1.06, ['#5d605a', '#36383380', '#151614']); rr(c, -2.66, -1.46, 0.82, 0.42, 0.08); c.fill(); c.strokeStyle = 'rgba(8,8,6,.7)'; c.lineWidth = 0.025; c.stroke();   // tobera del propulsor vertical
+  c.fillStyle = estGradV(c, -1.52, -1.4, ['#7c807a', '#4a4d48', '#1e201d']); c.fillRect(-2.7, -1.52, 0.9, 0.1); for (const x of [-2.62, -2.25, -1.88]) estPerno(c, x, -1.47, 0.025);
+  c.fillStyle = '#0c0d0c'; c.fillRect(-2.55, -1.38, 0.6, 0.18); c.fillStyle = '#3e403b'; for (const x of [-2.45, -2.25, -2.05]) { c.beginPath(); c.ellipse(x, -1.29, 0.07, 0.03, 0.5, 0, 6.283); c.fill(); }   // palas
+  c.strokeStyle = 'rgba(160,160,150,.4)'; c.lineWidth = 0.014; c.beginPath(); for (let x = -2.52; x < -1.96; x += 0.07) { c.moveTo(x, -1.38); c.lineTo(x, -1.2); } c.stroke();   // rejilla
+  c.fillStyle = 'rgba(112,106,90,.85)'; c.fillRect(-2.68, -1.55, 0.86, 0.04);
   c.strokeStyle = '#4a4a44'; c.lineWidth = 0.045; c.beginPath(); c.moveTo(-1.2, -1.12); c.lineTo(-1.32, -1.78); c.stroke();
-  c.fillStyle = '#2a2a26'; rr(c, -1.42, -1.95, 0.2, 0.2, 0.05); c.fill(); c.fillStyle = 'rgba(200,210,215,.35)'; c.beginPath(); c.arc(-1.32, -1.88, 0.06, 0, 6.283); c.fill();
+  c.fillStyle = estGradCil(c, -1.44, -1.2, ['#6a6e6a', '#33362f', '#141513']); rr(c, -1.44, -1.98, 0.24, 0.24, 0.05); c.fill(); c.fillStyle = 'rgba(200,215,220,.45)'; c.beginPath(); c.arc(-1.32, -1.99, 0.09, Math.PI, 0); c.fill(); c.strokeStyle = '#1b1c1a'; c.lineWidth = 0.015; c.beginPath(); c.arc(-1.32, -1.99, 0.1, Math.PI, 0); c.stroke();   // la luz de destellos, apagada, con su jaula
   // --- la cabina: esfera de acrílico para una sola persona, gruesa, con su aro atornillado; rajada en estrella
+  c.fillStyle = 'rgba(30,20,4,.45)'; c.beginPath(); c.arc(1.98, -0.3, 1.16, 0, 6.283); c.fill();   // v265: sombra de la brida sobre el flotador
+  c.fillStyle = estGradV(c, -1.45, 0.75, ['#9da29c', '#5f635d', '#262824']); c.beginPath(); c.arc(2.02, -0.35, 1.1, 0, 6.283); c.fill();   // la brida del casco
+  c.strokeStyle = 'rgba(10,10,8,.65)'; c.lineWidth = 0.03; c.stroke();
+  for (let k = 0; k < 18; k++) { const a = k / 18 * 6.283; estPerno(c, 2.02 + Math.cos(a) * 1.03, -0.35 + Math.sin(a) * 1.03, 0.03); }
+  c.strokeStyle = 'rgba(235,240,235,.35)'; c.lineWidth = 0.025; c.beginPath(); c.arc(2.02, -0.35, 1.08, 3.5, 5.2); c.stroke();
+  c.fillStyle = 'rgba(112,106,90,.85)'; c.beginPath(); c.arc(2.02, -0.35, 1.11, 3.6, 4.7); c.arc(2.02, -0.35, 0.98, 4.7, 3.6, true); c.closePath(); c.fill();   // sedimento en el canto de arriba
   c.fillStyle = '#5c5e58'; c.beginPath(); c.arc(2.15, -0.35, 0.95, 0, 6.283); c.fill();
   c.fillStyle = '#3a3c38'; for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283; c.beginPath(); c.arc(2.15 + Math.cos(a) * 0.88, -0.35 + Math.sin(a) * 0.88, 0.028, 0, 6.283); c.fill(); }   // pernos del aro
   c.strokeStyle = 'rgba(220,225,220,.3)'; c.lineWidth = 0.03; c.beginPath(); c.arc(2.15, -0.35, 0.93, 3.4, 5.3); c.stroke();
@@ -13879,7 +14637,9 @@ function dibujarOrfeoRestos(c, m, fr) {
   c.fillStyle = 'rgba(96,90,72,.85)'; c.beginPath(); c.moveTo(1.4, 0.05); c.quadraticCurveTo(2.2, 0.22, 3.0, -0.02); c.lineTo(3.0, 0.5); c.lineTo(1.4, 0.5); c.closePath(); c.fill();   // limo que ha entrado por la grieta
   c.strokeStyle = 'rgba(150,200,215,.22)'; c.lineWidth = 0.05; c.beginPath(); c.arc(2.2, -0.35, 0.68, 3.5, 5.0); c.stroke();   // la cara interior del acrílico
   c.restore();
+  c.strokeStyle = '#121312'; c.lineWidth = 0.05; c.beginPath(); c.arc(2.2, -0.35, 0.83, 0, 6.283); c.stroke();   // v265: la junta de goma
   c.strokeStyle = 'rgba(160,210,225,.4)'; c.lineWidth = 0.03; c.beginPath(); c.arc(2.2, -0.35, 0.8, 0, 6.283); c.stroke();   // el canto grueso del acrílico
+  { c.save(); c.beginPath(); c.arc(2.2, -0.35, 0.8, 0, 6.283); c.clip(); const gsh = c.createLinearGradient(0, -1.15, 0, -0.6); gsh.addColorStop(0, 'rgba(0,0,0,.45)'); gsh.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gsh; c.fillRect(1.4, -1.15, 1.6, 0.6); c.restore(); }   // sombra del aro sobre el acrílico
   // la grieta del acrílico, como la de la cúpula de tu submarino: un punto de impacto machacado, grietas radiales
   // que serpentean hasta el aro y anillos rotos que las unen (tela de araña). Cada trazo lleva su sombra al lado y
   // un filo de luz, y los trozos entre grietas reflejan la luz cada uno a su manera.
@@ -13928,14 +14688,12 @@ function dibujarOrfeoRestos(c, m, fr) {
     c.restore();
   }
   c.fillStyle = 'rgba(225,240,248,.35)'; c.beginPath(); c.ellipse(1.78, -0.84, 0.3, 0.12, -0.6, 0, 6.283); c.fill(); c.fillStyle = 'rgba(225,240,248,.15)'; c.beginPath(); c.ellipse(2.55, 0.12, 0.25, 0.07, -0.4, 0, 6.283); c.fill();
-  // --- los dos focos de proa en sus horquillas, apagados (uno con el cristal roto)
+  // --- los dos focos de proa en sus horquillas, apagados (uno con el cristal roto); v265: con volumen, como los de las estaciones
   for (const [x, y, roto] of [[2.95, -0.98, false], [3.05, 0.25, true]]) {
-    c.strokeStyle = '#4a4a44'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(x - 0.25, y + 0.05); c.lineTo(x - 0.05, y); c.stroke();
-    const gl = c.createLinearGradient(0, y - 0.16, 0, y + 0.16); gl.addColorStop(0, '#5a5a54'); gl.addColorStop(1, '#25251f'); c.fillStyle = gl; rr(c, x - 0.18, y - 0.15, 0.4, 0.3, 0.06); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 0.012; c.beginPath(); for (let q = 0; q < 3; q++) { c.moveTo(x - 0.12 + q * 0.08, y - 0.15); c.lineTo(x - 0.12 + q * 0.08, y + 0.15); } c.stroke();   // aletas del disipador
-    c.fillStyle = '#0a0c0d'; c.beginPath(); c.arc(x + 0.22, y, 0.13, 0, 6.283); c.fill(); c.strokeStyle = '#6a6c66'; c.lineWidth = 0.025; c.stroke();
-    if (roto) { c.strokeStyle = 'rgba(220,230,235,.65)'; c.lineWidth = 0.012; c.beginPath(); c.moveTo(x + 0.13, y - 0.09); c.lineTo(x + 0.3, y + 0.08); c.moveTo(x + 0.28, y - 0.1); c.lineTo(x + 0.15, y + 0.07); c.moveTo(x + 0.22, y - 0.12); c.lineTo(x + 0.22, y + 0.12); c.stroke(); }
-    else { c.fillStyle = 'rgba(200,220,230,.35)'; c.beginPath(); c.ellipse(x + 0.18, y - 0.05, 0.05, 0.025, -0.5, 0, 6.283); c.fill(); } }
+    estTubo(c, x - 0.3, y + 0.06, x - 0.05, y, 0.06, ['#7c807a', '#4a4d48', '#1e201d']);
+    c.save(); c.translate(x + 0.02, y); c.rotate(-Math.PI / 2); c.scale(0.36, 0.36); estFoco(c, 0, 0, 0, false); c.restore();
+    if (roto) { const lx = x + 0.23; c.strokeStyle = 'rgba(220,230,235,.7)'; c.lineWidth = 0.012; c.beginPath(); c.moveTo(lx - 0.02, y - 0.14); c.lineTo(lx + 0.03, y + 0.02); c.lineTo(lx - 0.01, y + 0.14); c.moveTo(lx + 0.03, y + 0.02); c.lineTo(lx + 0.06, y - 0.06); c.stroke(); }
+  }
   // --- el brazo: tramos con su cilindro hidráulico y la manguera, la muñeca y la pinza abierta sobre el sedimento
   tuboN(c, [[1.2, 0.85], [2.3, 1.55]], 0.17, '#7e807a', 'rgba(225,230,225,.45)', '#363834'); tuboN(c, [[2.3, 1.55], [3.35, 1.05]], 0.14, '#7e807a', 'rgba(225,230,225,.45)', '#363834');
   c.strokeStyle = '#a8aaa4'; c.lineWidth = 0.035; c.beginPath(); c.moveTo(1.4, 0.75); c.lineTo(2.1, 1.38); c.moveTo(2.45, 1.38); c.lineTo(3.1, 1.03); c.stroke();   // vástagos de los cilindros
@@ -13944,13 +14702,15 @@ function dibujarOrfeoRestos(c, m, fr) {
   c.strokeStyle = '#5a5c56'; c.lineWidth = 0.075; c.beginPath(); c.moveTo(3.35, 1.05); c.lineTo(3.65, 0.8); c.lineTo(3.82, 0.95); c.moveTo(3.35, 1.05); c.lineTo(3.6, 1.3); c.lineTo(3.8, 1.2); c.stroke();
   c.strokeStyle = '#3a3c38'; c.lineWidth = 0.025; c.beginPath(); for (const [x, y] of [[3.7, 0.86], [3.76, 0.91], [3.65, 1.25], [3.72, 1.22]]) { c.moveTo(x, y); c.lineTo(x + 0.03, y + 0.04); } c.stroke();   // dientes de la pinza
   // --- polvo posado encima y en los rebordes
-  c.fillStyle = 'rgba(112,106,90,.8)'; c.beginPath(); c.moveTo(-2.6, -1.0); c.quadraticCurveTo(-0.6, -1.32, 1.4, -1.15); c.lineTo(1.4, -1.07); c.quadraticCurveTo(-0.6, -1.2, -2.6, -0.92); c.closePath(); c.fill();
-  c.fillStyle = 'rgba(112,106,90,.7)'; c.fillRect(-2.62, -1.47, 0.74, 0.05); c.fillRect(2.77, -1.15, 0.4, 0.04);
+    c.fillStyle = 'rgba(112,106,90,.7)'; c.fillRect(-2.62, -1.47, 0.74, 0.05); c.fillRect(2.77, -1.15, 0.4, 0.04);
   // anfípodos pálidos sobre el casco (la fauna de la fosa: se comen lo que haya)
   c.fillStyle = 'rgba(232,226,210,.8)'; for (const [x, y, a] of [[-1.5, -1.06, 0.2], [0.9, -1.13, -0.3], [-2.9, -0.55, 1.2], [1.8, 0.56, 0]]) { c.save(); c.translate(x, y); c.rotate(a); c.beginPath(); c.ellipse(0, 0, 0.07, 0.03, 0, 0, 6.283); c.fill(); c.restore(); }
   c.restore();
   // --- sedimento contra el casco, con bultos, guijarros y el surco del resbalón
   monticuloN(c, xc - 3.9, xc + 3.8, 0.55, r, 'rgba(60,55,48,.96)', 'rgba(150,142,120,.42)');
+  { const mx = xc - 0.05, rx = 3.85; c.fillStyle = 'rgba(30,27,22,.5)'; c.beginPath();   // v265: grano y motas claras en el montículo
+    for (let k = 0; k < 160; k++) { const x = mx + (r2() * 2 - 1) * rx * 0.95, h = 0.55 * Math.sqrt(Math.max(0, 1 - ((x - mx) / rx) ** 2)), y = -r2() * h * 0.9, R = 0.012 + r2() * 0.022; c.moveTo(x + R, y); c.arc(x, y, R, 0, 6.283); } c.fill();
+    c.fillStyle = 'rgba(200,192,168,.4)'; c.beginPath(); for (let k = 0; k < 70; k++) { const x = mx + (r2() * 2 - 1) * rx * 0.9, h = 0.55 * Math.sqrt(Math.max(0, 1 - ((x - mx) / rx) ** 2)), y = -r2() * h * 0.9; c.rect(x, y, 0.025, 0.025); } c.fill(); }
   for (let k = 0; k < 10; k++) { const x = xc - 3.5 + r() * 7, y = -0.06 - r() * 0.18, R = 0.05 + r() * 0.06; c.fillStyle = '#4a453c'; c.beginPath(); c.ellipse(x, y, R, R * 0.65, 0, 0, 6.283); c.fill(); c.fillStyle = 'rgba(200,190,165,.25)'; c.beginPath(); c.ellipse(x - R * 0.2, y - R * 0.3, R * 0.5, R * 0.2, 0, 0, 6.283); c.fill(); }
   // la vida de la fosa: una holoturia pálida, casi transparente, con sus tentáculos, junto al patín
   c.save(); c.translate(xc + 4.6, 0);
@@ -13982,6 +14742,7 @@ function balizaOrfeoLocal(m) { return [Math.min(m.W - 1.5, m.W * 0.45 + 6.5), -0
    Colores apagados, como el resto del decorado, para no confundirlos con recursos.
    --------------------------------------------------------------------- */
 function spriteRestos(m, E) {
+  E = escAcople(E);   // v267: a la escala del acercamiento máximo, se estampa reducido (kAcople)
   const clave = E.toFixed(3); if (m._spr && m._sprE === clave) return m._spr;
   const ALTO = 5, BAJO = 7, fr = mulberry32(m.restos.sem), fotica = m.y < 200, R = m.restos;
   // Una boca de cueva puede comerse parte de la repisa: se usa el tramo de roca maciza más largo, para que
@@ -14090,7 +14851,7 @@ function spriteRestos(m, E) {
 function dibujarRestos(m, sx, sy, E, t) {
   const xw = m.lado < 0 ? Fosa.izqBase(m.y) : Fosa.derBase(m.y), spr = spriteRestos(m, E), h = -m.lado;   // h: hacia el agua
   ctx.save(); ctx.translate(sx(xw), sy(m.y)); if (m.lado > 0) ctx.scale(-1, 1);
-  ctx.drawImage(spr, -E, -m._sprAlto * E); ctx.restore();
+  ctx.drawImage(spr, -E, -m._sprAlto * E, spr.width * kAcople(), spr.height * kAcople()); ctx.restore();
   const R = m.restos; if (R.Wu < 8) return;
   if (R.red) {   // flotadores de la red: tiran del cabo hacia arriba y se mecen con el agua
     ctx.lineWidth = Math.max(1, 0.06 * E); ctx.strokeStyle = 'rgba(170,160,130,.6)';
@@ -14199,6 +14960,7 @@ function lagoDe(m) {   // d0..d1 = metros desde la pared; ys = superficie (y del
   return m._lago = { d0, d1, ys: m.y - F.hondo, x0: Math.min(a, b), x1: Math.max(a, b), xw };
 }
 function spriteSalmuera(m, E) {
+  E = escAcople(E);   // v267: a la escala del acercamiento máximo, se estampa reducido (kAcople)
   const clave = E.toFixed(3); if (m._spr && m._sprE === clave) return m._spr;
   const ALTO = 4, L = lagoDe(m), F = BAL.biomas.salmuera, fr = mulberry32(m.salmuera.sem);
   const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.ceil((m.W + 2) * E)); cv.height = Math.max(1, Math.ceil((ALTO + 1) * E));
@@ -14225,7 +14987,7 @@ function spriteSalmuera(m, E) {
 function dibujarSalmuera(m, sx, sy, E, t) {
   const L = lagoDe(m), spr = spriteSalmuera(m, E), h = -m.lado, I = inm;
   ctx.save(); ctx.translate(sx(L.xw), sy(m.y)); if (m.lado > 0) ctx.scale(-1, 1);
-  ctx.drawImage(spr, -E, -m._sprAlto * E); ctx.restore();
+  ctx.drawImage(spr, -E, -m._sprAlto * E, spr.width * kAcople(), spr.height * kAcople()); ctx.restore();
   // superficie: una línea que refleja la luz, con olas lentas y las ondas que deja el submarino al tocarla
   const ondas = I.ondasSal.filter(o => o.m === m.i);
   ctx.strokeStyle = 'rgba(175,205,220,.6)'; ctx.lineWidth = Math.max(1, 0.08 * E); ctx.beginPath();
@@ -14304,7 +15066,7 @@ function dibujarPdiRepisa(m, sx, sy, E, t) {
   const xw = m.lado < 0 ? Fosa.izqBase(m.y) : Fosa.derBase(m.y);
   const spr = spriteRepisa(m, E, m.pdi.id === 'ballena' ? dibujarEsqueleto : dibujarOrfeoRestos, 5);
   ctx.save(); ctx.translate(sx(xw), sy(m.y)); if (m.lado > 0) ctx.scale(-1, 1);
-  ctx.drawImage(spr, -E, -m._sprAlto * E); ctx.restore();
+  ctx.drawImage(spr, -E, -m._sprAlto * E, spr.width * kAcople(), spr.height * kAcople()); ctx.restore();
   if (m.pdi.id === 'ballena') for (let k = 0; k < 2; k++) {   // isópodos gigantes (Bathynomus): carroñeros que llegan a las caídas de ballena
     const f = 0.3 + 0.35 * k + 0.08 * Math.sin(t * 0.05 + k), x = xw - m.lado * (2 + f * Math.min(16, m.W - 4)), dir = Math.sin(t * 0.05 + k) > 0 ? 1 : -1;
     ctx.save(); ctx.translate(sx(x), sy(m.y - 0.35)); ctx.scale(E * dir * 1.6, E * 1.6);
@@ -14987,102 +15749,206 @@ function formacionesSala(c, rc) {
   }
   return out;
 }
-// v182: el taller clandestino como una base del Consorcio, al estilo de las estaciones (mismos aceros, vigas y focos)
-// pero con lo suyo: módulo de trabajo amarillo del Consorcio (el mismo amarillo que la T-1) con ojos de buey, armarios
-// de acumuladores, brazo de servicio, collarín de acople, módem, mástiles de focos y el mazo de cables que sube al techo
-// de la cámara. Las patas llegan cada una al suelo de la cámara con su zapata de hormigón y sus pernos. Flegetonte es
-// la más vieja: óxido, un mástil doblado, una abolladura y una caja de placas abierta. Origen: la bancada (deck);
-// «arriba» es y negativo y +x apunta al submarino acoplado. Solo dibujo (sin colisión).
-// Todo es fijo, así que se pinta una vez en una imagen (por escala, orientación y piloto) y luego solo se copia: lo que
-// se mueve (el parpadeo de la baliza, la luz de los ojos de buey) lo ponen los brillos. Como el casco del submarino.
-function dibujarTaller(T, sx, sy, E, t) {
-  const f = -T.sg, hay = reservaTaller(T.id).n > 0 || !tallerG(T.id).visto, clave = `${E.toFixed(3)}|${hay ? 1 : 0}`;
-  const top = T.techo.reduce((m, q) => (q.y !== null && q.y < m ? q.y : m), -11), x0 = -12, x1 = 4.4, y0 = Math.min(top, -11) - 1, y1 = Math.max(...T.patas.map(p => p.h)) + 0.8;
-  if (!T._spr || T._sprK !== clave) {
-    const cv = document.createElement('canvas'); cv.width = Math.ceil((x1 - x0) * E); cv.height = Math.ceil((y1 - y0) * E);
-    const g = cv.getContext('2d');
-    if (f > 0) { g.translate(-x0 * E, -y0 * E); g.scale(E, E); } else { g.translate(x1 * E, -y0 * E); g.scale(-E, E); }
-    pintarTaller(g, T, f, hay); T._spr = cv; T._sprK = clave;
-  }
-  ctx.drawImage(T._spr, Math.round(sx(T.x) + (f > 0 ? x0 : -x1) * E), Math.round(sy(T.deck) + y0 * E));
+// v263: el taller clandestino al nivel de las estaciones (v260–v262), con sus mismas piezas (acero con luz de arriba,
+// tornillería, desgaste, sedimento y vida), y lo suyo del Consorcio: el módulo de trabajo amarillo de la T-1 con ojos de
+// buey, armario de acumuladores con el piloto de la reparación, brazo de servicio con su boquilla de soldar, collarín de
+// acople, módem, baliza ámbar y el mazo de cables que sube al techo de la cámara. Las patas bajan cada una al suelo de la
+// cámara (cada taller tiene las suyas) con su zapata de hormigón. Flegetonte, la más vieja: pintura desvaída y comida por
+// el óxido, un ojo de buey apagado, el mástil delantero doblado, una abolladura y la caja de placas a medio abrir.
+// Origen: la bancada; «arriba» es y negativo y +x apunta al submarino acoplado. Solo dibujo (sin colisión).
+// Se pinta una vez en un sprite por zoom escalonado (como las estaciones) y por estado del piloto; se adelanta fuera de
+// la pantalla (precalentarPecios). Lo que se mueve (baliza, ojos de buey, focos) lo ponen los brillos.
+const TALLER_CAJA = { x0: -12.5, x1: 5.6 };
+const OJOS_TALLER = [-2.93, -1.3, 0.33];   // centro de cada panel del módulo, entre las bandas y las costuras
+function claveTaller(T, E) {
+  const Er = Math.min(56, Math.pow(2, Math.ceil(Math.log2(Math.max(4, escAcople(E))) * 4) / 4)), hay = reservaTaller(T.id).n > 0 || !tallerG(T.id).visto;
+  return [Er, hay, `${Er}|${hay ? 1 : 0}|${T.sg}`];
 }
-function pintarTaller(c, T, f, hay) {
-  const t = 0, yA = T.dock.y - T.deck, viejo = T.id === 'flegetonte';
+function spriteTaller(T, E) {
+  const [Er, hay, clave] = claveTaller(T, E);
+  if (T._spr && T._sprK === clave) return T._spr;
+  const f = -T.sg, K = TALLER_CAJA, top = T.techo.reduce((m, q) => (q.y !== null && q.y < m ? q.y : m), -11);
+  const y0 = Math.min(top, -11) - 1, y1 = Math.max(...T.patas.map(p => p.h)) + 0.8;
+  const cv = document.createElement('canvas'); cv.width = Math.ceil((K.x1 - K.x0) * Er); cv.height = Math.ceil((y1 - y0) * Er);
+  const g = cv.getContext('2d');
+  if (f > 0) g.setTransform(Er, 0, 0, Er, -K.x0 * Er, -y0 * Er); else g.setTransform(-Er, 0, 0, Er, K.x1 * Er, -y0 * Er);
+  pintarTaller(g, T, f, hay, y0, y1);
+  T._spr = { cv, Er, y0 }; T._sprK = clave; return T._spr;
+}
+function dibujarTaller(T, sx, sy, E, t) {
+  const S = spriteTaller(T, E), f = -T.sg, K = TALLER_CAJA, k = E / S.Er;
+  ctx.drawImage(S.cv, Math.round(sx(T.x) + (f > 0 ? K.x0 : -K.x1) * E), Math.round(sy(T.deck) + S.y0 * E), S.cv.width * k, S.cv.height * k);
+}
+function pintarTaller(c, T, f, hay, Y0, Y1) {
+  const yA = T.dock.y - T.deck, viejo = T.id === 'flegetonte', r = mulberry32(hash2(G.semilla + 910, T.id.length * 13 + 5));
+  const caja = { x0: TALLER_CAJA.x0, x1: TALLER_CAJA.x1, y0: Y0, y1: Y1 };
+  const AMA = viejo ? ['#c7a24c', '#9c7a2e', '#4f3a14'] : ['#f2c95a', '#d6a23a', '#6e4c12'];   // amarillo del Consorcio
+  const NAR = viejo ? '#b65a1e' : '#d0661c';
   c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
-  // mazo de cables y tubo de servicio: del armario al techo de la cámara (por donde baja la energía)
-  const top = T.techo.reduce((m, q) => (q.y !== null && Math.abs(q.lx + 6) < Math.abs(m.lx + 6) ? q : m), { lx: 1e9, y: null }), yT = top.y !== null ? top.y + 0.4 : -14, sw = Math.sin(t * 0.35) * 0.25;
-  c.strokeStyle = '#1b2124'; c.lineWidth = 0.34; c.beginPath(); c.moveTo(-6.2, -4.9); c.bezierCurveTo(-6.6 + sw, (yT - 4.9) * 0.45 - 4.9, -5.6 - sw, yT * 0.85, -5.9, yT); c.stroke();
-  c.strokeStyle = '#2b3236'; c.lineWidth = 0.18; c.beginPath(); c.moveTo(-5.6, -4.9); c.bezierCurveTo(-5.9 - sw, (yT - 4.9) * 0.5 - 4.9, -5.0 + sw, yT * 0.9, -5.2, yT); c.stroke();
-  c.fillStyle = ACERO.oscuro; c.fillRect(-6.5, yT - 0.2, 1.6, 0.5);   // anclaje en la roca del techo
-  // tubo que sale por detrás y se mete en la roca del fondo de la cámara
-  const pb = T.patas[0].h - 0.4; c.strokeStyle = '#2b3236'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(-7.2, 0.6); c.quadraticCurveTo(-8.6, pb, -11.5, pb + 0.6); c.stroke();
-  // patas hasta el suelo de la cámara, con zapata de hormigón, pernos y arriostramiento
+  // 1. el mazo de cables y la manguera de servicio hasta el techo de la cámara, con su anclaje; el tubo que se mete en
+  //    la roca del fondo
+  const top = T.techo.reduce((m, q) => (q.y !== null && Math.abs(q.lx + 6) < Math.abs(m.lx + 6) ? q : m), { lx: 1e9, y: null }), yT = top.y !== null ? top.y + 0.4 : -14;
+  const m1 = new Path2D(); m1.moveTo(-6.2, -4.9); m1.bezierCurveTo(-6.6, (yT - 4.9) * 0.45 - 4.9, -5.6, yT * 0.85, -5.9, yT); estCable(c, m1, 0.34, '#22292c', false);
+  const m2 = new Path2D(); m2.moveTo(-5.6, -4.9); m2.bezierCurveTo(-5.9, (yT - 4.9) * 0.5 - 4.9, -5.0, yT * 0.9, -5.2, yT); estCable(c, m2, 0.18, viejo ? '#6e3a18' : '#8a4519', false);
+  for (const u of [0.3, 0.62]) { const y = -4.9 + (yT + 4.9) * u; estChapa(c, -6.35, y - 0.12, 0.6, 0.24, ['#7c878a', '#4a5457', '#22292b']); }   // abrazaderas del mazo
+  estChapa(c, -6.6, yT - 0.25, 1.8, 0.5, ['#5d6c70', '#3b484c', '#1e272a']); for (const x of [-6.35, -5.05]) estPerno(c, x, yT, 0.07);   // anclaje en la roca
+  const pb = T.patas[0].h - 0.4, tb = new Path2D(); tb.moveTo(-7.2, 0.6); tb.quadraticCurveTo(-8.6, pb, -11.5, pb + 0.6); estCable(c, tb, 0.4, '#2b3236', false);
+  // 2. las patas hasta el suelo, con collarines, arriostramiento, zapata de hormigón con pernos y sedimento
+  for (let i = 0; i + 1 < T.patas.length; i++) {
+    const a = T.patas[i], b = T.patas[i + 1], h = Math.min(a.h, b.h) - 0.6; if (h < 1.7) continue;
+    estTubo(c, a.lx + 0.3, 1.2, b.lx - 0.3, h, 0.15); estTubo(c, b.lx - 0.3, 1.2, a.lx + 0.3, h, 0.15);
+  }
   for (const p of T.patas) {
-    c.fillStyle = ACERO.medio; c.fillRect(p.lx - 0.38, 0.9, 0.76, p.h - 0.9);
-    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(p.lx + 0.22, 0.9, 0.16, p.h - 0.9);
-    c.fillStyle = '#4c4f4c'; c.beginPath(); c.moveTo(p.lx - 1.1, p.h + 0.25); c.lineTo(p.lx - 0.85, p.h - 0.45); c.lineTo(p.lx + 0.85, p.h - 0.45); c.lineTo(p.lx + 1.1, p.h + 0.25); c.closePath(); c.fill();   // zapata
-    c.fillStyle = '#8a8f8c'; for (const dx of [-0.6, 0.6]) { c.beginPath(); c.arc(p.lx + dx, p.h - 0.25, 0.09, 0, 6.283); c.fill(); }   // pernos
-    c.fillStyle = 'rgba(120,112,98,.6)'; c.beginPath(); c.ellipse(p.lx - 0.6, p.h - 0.4, 0.8, 0.22, 0, Math.PI, 0); c.fill();   // sedimento acumulado
+    c.fillStyle = estGradCil(c, p.lx - 0.36, p.lx + 0.36, EST_AC); c.fillRect(p.lx - 0.36, 0.9, 0.72, p.h - 1.3);
+    estChapa(c, p.lx - 0.48, 0.86, 0.96, 0.22); if (p.h > 2.2) estChapa(c, p.lx - 0.46, p.h - 0.72, 0.92, 0.2);
+    c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(p.lx - 0.36, 1.08, 0.72, 0.35);
+    const zap = new Path2D(); zap.moveTo(p.lx - 1.1, p.h + 0.3); zap.lineTo(p.lx - 0.85, p.h - 0.5); zap.lineTo(p.lx + 0.85, p.h - 0.5); zap.lineTo(p.lx + 1.1, p.h + 0.3); zap.closePath();
+    c.fillStyle = estGradV(c, p.h - 0.5, p.h + 0.3, ['#8a8c86', '#62645f', '#33352f']); c.fill(zap);
+    c.save(); c.clip(zap); bqDesconchones(c, p.lx - 1.1, p.lx + 1.1, p.h - 0.5, p.h + 0.3, 6, r, ['rgba(40,40,36,.45)', 'rgba(150,150,140,.3)'], 0.35); c.restore();
+    c.strokeStyle = 'rgba(10,12,10,.55)'; c.lineWidth = 0.04; c.stroke(zap);
+    for (const dx of [-0.6, 0.6]) estPerno(c, p.lx + dx, p.h - 0.3, 0.08);
+    for (const d of [-1, 1]) bqDuna(c, p.lx + d * 1.0, p.h + 0.3, 0.8 + r() * 0.5, 0.18 + r() * 0.14, d, r);
   }
-  c.strokeStyle = ACERO.medio; c.lineWidth = 0.14; c.beginPath();
-  for (let i = 0; i + 1 < T.patas.length; i++) { const a = T.patas[i], b = T.patas[i + 1], h = Math.min(a.h, b.h) - 0.5; if (h < 1.6) continue; c.moveTo(a.lx, 1.1); c.lineTo(b.lx, h); c.moveTo(b.lx, 1.1); c.lineTo(a.lx, h); }
-  c.stroke();
-  viga(c, -8.2, 0, 3.7, 0.9);
-  c.fillStyle = '#d0661c'; for (let x = -8.1; x < 3.5; x += 0.7) { c.beginPath(); c.moveTo(x, 0.9); c.lineTo(x + 0.35, 0.9); c.lineTo(x + 0.6, 0.62); c.lineTo(x + 0.25, 0.62); c.closePath(); c.fill(); }   // franja del Consorcio
-  c.save(); c.scale(f, 1); c.fillStyle = 'rgba(232,214,176,.88)'; c.font = "800 0.62px 'Big Shoulders Display', 'Arial Narrow', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText(('TETIS · ' + TALLERES[T.id].placa + ' · ' + TALLERES[T.id].n.toUpperCase()).split('').join(' '), f * -2.25, 0.36); c.restore();
-  // armarios de acumuladores (con el piloto de la reparación)
-  bastidor(c, -7.9, -4.9, -4.5, 0, viejo ? '#4a4c46' : '#3c4248', viejo ? '#2c2d28' : '#262b30');
-  c.fillStyle = '#121618'; c.beginPath(); c.arc(-5.1, -4.1, 0.26, 0, 6.283); c.fill(); c.fillStyle = hay ? '#59e08a' : '#e0504a'; c.beginPath(); c.arc(-5.1, -4.1, 0.15, 0, 6.283); c.fill();
-  // módulo de trabajo: cilindro presurizado amarillo del Consorcio, con ojos de buey, escotilla y bandas negras
-  { const x0 = -4.6, x1 = 2.0, y0 = -3.5, y1 = -0.2, r = (y1 - y0) / 2;
-    c.fillStyle = ACERO.oscuro; for (const x of [-3.5, 0.9]) { c.beginPath(); c.moveTo(x - 0.9, 0); c.lineTo(x - 0.5, y1 - 0.3); c.lineTo(x + 0.5, y1 - 0.3); c.lineTo(x + 0.9, 0); c.closePath(); c.fill(); }   // cunas del módulo
-    const gm = c.createLinearGradient(0, y0, 0, y1); gm.addColorStop(0, viejo ? '#c9a64a' : '#f0c454'); gm.addColorStop(0.45, viejo ? '#a57f2c' : '#d9a33a'); gm.addColorStop(1, viejo ? '#5e4518' : '#7a5414');
-    c.fillStyle = gm; c.beginPath(); c.roundRect(x0, y0, x1 - x0, y1 - y0, r); c.fill(); c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 0.1; c.stroke();
-    c.fillStyle = '#1d1f1c'; for (const x of [x0 + 0.55, x1 - 0.85]) c.fillRect(x, y0 + 0.08, 0.3, y1 - y0 - 0.16);   // bandas negras
-    c.strokeStyle = 'rgba(0,0,0,.28)'; c.lineWidth = 0.05; c.beginPath(); for (const x of [-2.4, -0.4]) { c.moveTo(x, y0 + 0.1); c.lineTo(x, y1 - 0.1); } c.stroke();   // juntas soldadas
-    c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.roundRect(x0 + 0.9, y0 + 0.35, x1 - x0 - 1.8, 0.35, 0.17); c.fill();   // brillo
-    for (const [k, x] of [[0, -3.3], [1, -1.6], [2, 0.1]]) {   // ojos de buey: luz cálida (en Flegetonte, uno apagado)
-      const on = !(viejo && k === 1);
-      c.fillStyle = '#2a2d2c'; c.beginPath(); c.arc(x, -1.95, 0.48, 0, 6.283); c.fill();
-      c.fillStyle = on ? `rgba(255,${200 + Math.round(20 * Math.sin(t * 1.3 + k))},120,.95)` : '#1a2224'; c.beginPath(); c.arc(x, -1.95, 0.34, 0, 6.283); c.fill();
-      c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.arc(x - 0.12, -2.08, 0.1, 0, 6.283); c.fill();
+  // 3. la bancada: chapa con alas, tornillería, la franja naranja del Consorcio y la placa pintada
+  const deck = new Path2D(); deck.rect(-8.2, 0, 11.9, 0.9);
+  estChapa(c, -8.2, 0, 11.9, 0.2, ['#7e9097', '#4f626a', '#2b383d']);
+  c.fillStyle = estGradV(c, 0.2, 0.9, ['#3c4d54', '#2f3e44', '#1c262a']); c.fillRect(-8.05, 0.2, 11.6, 0.7);
+  for (let x = -7.6; x < 3.5; x += 1.2) { c.fillStyle = 'rgba(120,138,144,.3)'; c.fillRect(x, 0.2, 0.06, 0.42); c.fillStyle = 'rgba(0,0,0,.3)'; c.fillRect(x + 0.06, 0.2, 0.06, 0.42); }
+  c.fillStyle = NAR; for (let x = -8.1; x < 3.5; x += 0.7) { c.beginPath(); c.moveTo(x, 0.9); c.lineTo(x + 0.35, 0.9); c.lineTo(x + 0.6, 0.64); c.lineTo(x + 0.25, 0.64); c.closePath(); c.fill(); }
+  for (let x = -7.95; x < 3.6; x += 0.6) estPerno(c, x, 0.1, 0.04);
+  estDesgaste(c, deck, -8.2, 3.7, 0, 0.9, viejo ? 26 : 14, r, viejo ? [[-6.6, 0.12, 0.6], [-2.2, 0.12, 0.5], [1.8, 0.12, 0.7]] : [[-4.4, 0.12, 0.4]]);
+  estBorde(c, deck, 0, 1, 3, 0.15, '0,0,0', 0.12, caja);
+  c.save(); c.scale(f, 1); c.fillStyle = 'rgba(232,214,176,.88)'; c.font = "800 0.5px 'Big Shoulders Display', 'Arial Narrow', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(('TETIS · ' + TALLERES[T.id].placa + ' · ' + TALLERES[T.id].n.toUpperCase()).split('').join(' '), f * -2.25, 0.42); c.restore();
+  // 4. mástiles de focos (en Flegetonte, el delantero doblado por un golpe)
+  estMastil(c, -8.0, 0, -9.6, -5.6, true);
+  if (viejo) { c.save(); c.translate(2.2, 0); c.rotate(0.22); estMastil(c, 0, 0, -8.4, -4.6, true); c.restore();
+    c.fillStyle = 'rgba(120,60,30,.6)'; c.beginPath(); c.arc(2.2, -0.3, 0.2, 0, 6.283); c.fill(); }   // el doblez, con la pintura saltada
+  else estMastil(c, 2.2, 0, -8.8, -4.6, true);
+  // 5. el armario de acumuladores, con el piloto de la reparación en su placa
+  const gris = viejo ? ['#6b6d64', '#4f5149', '#2c2d28'] : ['#5e6870', '#454e56', '#262b30'];
+  estArmario(c, -7.9, -4.9, -4.5, 0, gris, r, viejo ? 5 : 2, viejo ? ['#7d7f76', '#55574f', '#2c2d28'] : ['#7c878f', '#535d65', '#2a3136']);
+  estChapa(c, -5.48, -4.48, 0.76, 0.76, ['#2a3134', '#1c2225', '#101416']);
+  c.fillStyle = '#0b0f10'; c.beginPath(); c.arc(-5.1, -4.1, 0.24, 0, 6.283); c.fill();
+  c.fillStyle = hay ? '#59e08a' : '#e0504a'; c.beginPath(); c.arc(-5.1, -4.1, 0.15, 0, 6.283); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.arc(-5.15, -4.16, 0.05, 0, 6.283); c.fill();
+  // 6. el módulo de trabajo: cilindro presurizado amarillo en sus sillas, con cúpulas, bandas negras, costuras
+  //    remachadas, ojos de buey con su aro atornillado, escotilla con volante y «TETIS» a plantilla
+  { const x0 = -4.6, x1 = 2.0, y0 = -3.5, y1 = -0.2, rr = (y1 - y0) / 2;
+    for (const x of [-3.5, 0.9]) { const s = new Path2D(); s.moveTo(x - 0.95, 0); s.lineTo(x - 0.55, y1 - 0.35); s.lineTo(x + 0.55, y1 - 0.35); s.lineTo(x + 0.95, 0); s.closePath();
+      c.fillStyle = estGradV(c, y1 - 0.4, 0, ['#5a6c73', '#3a4a51', '#1c262a']); c.fill(s); c.strokeStyle = 'rgba(6,10,12,.6)'; c.lineWidth = 0.04; c.stroke(s);
+      c.fillStyle = '#141a1b'; c.fillRect(x - 0.6, y1 - 0.42, 1.2, 0.14); estPerno(c, x - 0.6, -0.15, 0.05); estPerno(c, x + 0.6, -0.15, 0.05); }
+    const mod = new Path2D(); mod.roundRect(x0, y0, x1 - x0, y1 - y0, rr);
+    c.fillStyle = estGradV(c, y0, y1, AMA); c.fill(mod);
+    c.save(); c.clip(mod);
+    const gc = c.createLinearGradient(x0, 0, x1, 0); gc.addColorStop(0, 'rgba(0,0,0,.35)'); gc.addColorStop(0.12, 'rgba(0,0,0,0)'); gc.addColorStop(0.88, 'rgba(0,0,0,0)'); gc.addColorStop(1, 'rgba(0,0,0,.35)');
+    c.fillStyle = gc; c.fillRect(x0, y0, x1 - x0, y1 - y0);                                        // las cúpulas se curvan
+    c.fillStyle = 'rgba(255,248,220,.28)'; c.fillRect(x0, y0 + 0.4, x1 - x0, 0.22);                 // brillo
+    c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(x0, y1 - 0.75, x1 - x0, 0.75);
+    for (const x of [x0 + 0.55, x1 - 0.85]) { c.fillStyle = '#1d1f1c'; c.fillRect(x, y0, 0.3, y1 - y0); c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(x, y0, 0.05, y1 - y0); }   // bandas negras
+    for (const x of [-2.117, -0.483]) { c.strokeStyle = 'rgba(60,40,8,.5)'; c.lineWidth = 0.08; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
+      for (let y = y0 + 0.25; y < y1 - 0.1; y += 0.32) { c.fillStyle = 'rgba(40,26,4,.5)'; c.beginPath(); c.arc(x + 0.12, y, 0.035, 0, 6.283); c.fill(); } }   // costuras remachadas
+    bqDesconchones(c, x0, x1, y0, y1, viejo ? 26 : 8, r, viejo ? ['rgba(120,64,30,.55)', 'rgba(90,92,86,.45)', 'rgba(70,40,20,.5)'] : ['rgba(120,70,30,.35)', 'rgba(110,110,100,.3)'], 0.55);
+    for (const x of viejo ? [-3.9, -2.3, -1.1, 0.9, 1.6] : [-2.3, 0.9]) bqOxido(c, x, -1.45, viejo ? 1.6 : 0.8, 0.22, viejo ? 0.6 : 0.35, r);
+    if (viejo) {   // la abolladura: la luz de arriba oscurece su borde alto y aclara el de abajo
+      const gd = c.createRadialGradient(1.2, -2.95, 0, 1.2, -2.8, 0.7); gd.addColorStop(0, 'rgba(30,20,4,.45)'); gd.addColorStop(1, 'rgba(30,20,4,0)');
+      c.fillStyle = gd; c.beginPath(); c.ellipse(1.2, -2.8, 0.7, 0.42, 0.3, 0, 6.283); c.fill();
+      c.strokeStyle = 'rgba(255,240,200,.3)'; c.lineWidth = 0.05; c.beginPath(); c.ellipse(1.2, -2.8, 0.66, 0.4, 0.3, 0.4, 2.7); c.stroke();
     }
-    c.fillStyle = ACERO.medio; c.fillRect(-3.0, y0 - 0.35, 1.1, 0.4); c.strokeStyle = '#8a7a52'; c.lineWidth = 0.08; c.beginPath(); c.arc(-2.45, y0 - 0.55, 0.32, 0, 6.283); c.stroke();   // escotilla con volante
-    c.save(); c.scale(f, 1); c.fillStyle = 'rgba(30,26,18,.75)'; c.font = "800 0.72px 'Big Shoulders Display', 'Arial Narrow', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.restore();
+    estBorde(c, mod, 0, 1, 4, 0.35, '30,20,4', 0.08, caja);
+    c.strokeStyle = 'rgba(20,14,4,.7)'; c.lineWidth = 0.07; c.stroke(mod);
+    for (const [k, x] of OJOS_TALLER.map((x, k) => [k, x])) {
+      const on = !(viejo && k === 1), y = -1.95;
+      c.fillStyle = estGradV(c, y - 0.55, y + 0.55, ['#9aa3a6', '#5d676b', '#2a3133']); c.beginPath(); c.arc(x, y, 0.55, 0, 6.283); c.fill();
+      for (let q = 0; q < 8; q++) { const a = q * 0.785 + 0.39; estPerno(c, x + Math.cos(a) * 0.46, y + Math.sin(a) * 0.46, 0.045); }
+      if (on) { const gl = c.createRadialGradient(x - 0.08, y - 0.06, 0.02, x, y, 0.36); gl.addColorStop(0, '#fff2cf'); gl.addColorStop(0.55, '#f0b867'); gl.addColorStop(1, '#a35a22'); c.fillStyle = gl; }
+      else { const gl = c.createRadialGradient(x - 0.1, y - 0.12, 0.02, x, y, 0.36); gl.addColorStop(0, '#1d2a2e'); gl.addColorStop(1, '#05090a'); c.fillStyle = gl; }
+      c.beginPath(); c.arc(x, y, 0.36, 0, 6.283); c.fill();
+      c.strokeStyle = on ? 'rgba(255,250,235,.55)' : 'rgba(150,200,220,.35)'; c.lineWidth = 0.04; c.beginPath(); c.arc(x, y, 0.26, 3.6, 4.6); c.stroke();
+    }
+    estChapa(c, -1.9, y0 - 0.35, 1.2, 0.4, ['#8696a0', '#56666c', '#2e3a3f']);     // brocal de la escotilla (en el panel del centro) y volante
+    c.strokeStyle = '#2a3133'; c.lineWidth = 0.08; c.beginPath(); c.moveTo(-1.3, y0 - 0.35); c.lineTo(-1.3, y0 - 0.6); c.stroke();
+    c.strokeStyle = '#8a7a52'; c.lineWidth = 0.08; c.beginPath(); c.ellipse(-1.3, y0 - 0.65, 0.42, 0.1, 0, 0, 6.283); c.stroke();
+    c.save(); c.scale(f, 1); c.fillStyle = 'rgba(30,26,18,.7)'; c.font = "800 0.6px 'Big Shoulders Display', 'Arial Narrow', sans-serif"; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('T E T I S', f * -1.3, -0.72); c.restore();
-    if (viejo) {   // óxido y una abolladura
-      c.strokeStyle = 'rgba(140,70,30,.55)'; c.lineWidth = 0.14; c.beginPath(); for (const x of [-3.9, -2.3, 0.9]) { c.moveTo(x, -1.4); c.lineTo(x + 0.1, -0.35); } c.stroke();
-      c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(1.2, -2.8, 0.6, 0.35, 0.3, 0, 6.283); c.fill();
-    }
   }
-  // brazo de servicio plegado sobre el módulo, con su manguera y la boquilla de soldar
-  c.save(); c.translate(0, 0.9);
-  c.fillStyle = ACERO.medio; c.fillRect(0.2, -5.0, 0.9, 0.62);
-  c.strokeStyle = '#cfc8b6'; c.lineWidth = 0.45; c.beginPath(); c.moveTo(0.65, -5.0); c.lineTo(-1.6, -6.3); c.lineTo(1.9, -5.9); c.stroke();
-  c.strokeStyle = '#d0661c'; c.lineWidth = 0.12; c.beginPath(); c.moveTo(0.1, -5.3); c.lineTo(-1.0, -5.95); c.stroke();
-  c.strokeStyle = '#1b2124'; c.lineWidth = 0.08; c.beginPath(); c.moveTo(0.65, -4.9); c.quadraticCurveTo(-1.2, -5.8, 1.6, -5.7); c.stroke();   // manguera
-  c.fillStyle = '#3c4247'; for (const [x, y] of [[0.65, -5.0], [-1.6, -6.3]]) { c.beginPath(); c.arc(x, y, 0.3, 0, 6.283); c.fill(); }
-  c.fillStyle = '#9aa1a4'; c.beginPath(); c.moveTo(1.9, -6.15); c.lineTo(2.55, -5.9); c.lineTo(1.9, -5.65); c.closePath(); c.fill();
-  c.restore();
-  // collarín de acople: poste desde la bancada hasta la altura del submarino y brida con pernos
-  c.fillStyle = ACERO.medio; c.fillRect(2.55, Math.min(yA - 0.3, -0.2), 0.6, Math.max(0.5, -Math.min(yA - 0.3, -0.2)));
-  c.fillStyle = ACERO.medio; c.fillRect(1.6, yA - 0.55, 1.6, 1.1); c.fillStyle = ACERO.claro; c.fillRect(3.2, yA - 0.85, 0.3, 1.7);
-  c.fillStyle = '#d0661c'; c.fillRect(3.48, yA - 0.85, 0.12, 1.7);
-  c.fillStyle = '#7d8a8f'; for (const y of [-0.6, -0.2, 0.2, 0.6]) { c.beginPath(); c.arc(3.35, yA + y, 0.07, 0, 6.283); c.fill(); }
-  // módem acústico y una baliza ámbar sobre el armario
-  c.fillStyle = ACERO.claro; c.fillRect(-4.2, -6.4, 0.7, 1.5); c.fillStyle = '#c9a227'; c.fillRect(-4.25, -6.85, 0.8, 0.45);
-  c.fillStyle = ACERO.oscuro; c.fillRect(-7.0, -5.5, 0.5, 0.6); c.fillStyle = `rgba(255,170,60,${(0.55 + 0.45 * Math.max(0, Math.sin(t * 1.6))).toFixed(3)})`; c.beginPath(); c.arc(-6.75, -5.65, 0.22, Math.PI, 0); c.fill();
-  // mástiles de focos (en Flegetonte, el delantero doblado por un golpe)
-  mastilFocos(c, -8.0, 0, -9.6, true);
-  if (viejo) { c.save(); c.translate(2.2, 0); c.rotate(0.22); mastilFocos(c, 0, 0, -8.4, true); c.restore(); }
-  else mastilFocos(c, 2.2, 0, -8.8, true);
-  if (viejo) {   // la caja de placas de recambio, a medio abrir
-    c.fillStyle = '#5a4a32'; c.fillRect(-4.4, -0.9, 1.4, 0.9); c.save(); c.translate(-4.4, -0.9); c.rotate(-0.5); c.fillStyle = '#6c583a'; c.fillRect(0, -0.12, 1.4, 0.14); c.restore();
-    c.fillStyle = '#8f9599'; for (let k = 0; k < 3; k++) c.fillRect(-4.2 + k * 0.38, -1.25, 0.3, 0.5);
+  // 7. el brazo de servicio plegado sobre el módulo: torreta con motor, brazo y antebrazo de cajón con aligeramientos,
+  //    cilindros hidráulicos con su vástago, rótulas atornilladas, mangueras y, en la punta, la antorcha de soldar
+  { const B0 = [0.7, -4.35], B1 = [-1.55, -5.55], B2 = [1.55, -5.2];
+    const BR = viejo ? ['#d6ccb2', '#a39a82', '#565040'] : ['#efe9d8', '#c2bba9', '#6a655a'];
+    // torreta: base atornillada al módulo, corona giratoria y caja del motor
+    estChapa(c, 0.05, -3.78, 1.3, 0.3, ['#7c878a', '#4a5457', '#22292b']); for (const x of [0.2, 1.2]) estPerno(c, x, -3.63, 0.045);
+    c.fillStyle = estGradCil(c, 0.25, 1.15, ['#8a969b', '#4d595e', '#20282b']); c.fillRect(0.25, -4.25, 0.9, 0.48);
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0.25, -4.0, 0.9, 0.05);
+    estChapa(c, 1.05, -4.22, 0.38, 0.42, ['#5d6c70', '#3b484c', '#1e272a']);                 // motor de giro
+    // un tramo de cajón: trapecio que se estrecha, con luz en el canto de arriba
+    const tramo = (a, b, w0, w1, huecos) => {
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L; let nx = -uy, ny = ux; if (ny > 0) { nx = -nx; ny = -ny; }
+      const P = new Path2D(); P.moveTo(a[0] + nx * w0 / 2, a[1] + ny * w0 / 2); P.lineTo(b[0] + nx * w1 / 2, b[1] + ny * w1 / 2); P.lineTo(b[0] - nx * w1 / 2, b[1] - ny * w1 / 2); P.lineTo(a[0] - nx * w0 / 2, a[1] - ny * w0 / 2); P.closePath();
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, gw = c.createLinearGradient(mx + nx * w0 / 2, my + ny * w0 / 2, mx - nx * w0 / 2, my - ny * w0 / 2);
+      gw.addColorStop(0, BR[0]); gw.addColorStop(0.45, BR[1]); gw.addColorStop(1, BR[2]); c.fillStyle = gw; c.fill(P);
+      c.save(); c.clip(P);
+      c.strokeStyle = 'rgba(255,255,250,.45)'; c.lineWidth = 0.04; c.beginPath(); c.moveTo(a[0] + nx * (w0 / 2 - 0.04), a[1] + ny * (w0 / 2 - 0.04)); c.lineTo(b[0] + nx * (w1 / 2 - 0.04), b[1] + ny * (w1 / 2 - 0.04)); c.stroke();
+      c.fillStyle = NAR; c.beginPath(); c.moveTo(a[0] - nx * w0 * 0.12, a[1] - ny * w0 * 0.12); c.lineTo(b[0] - nx * w1 * 0.12, b[1] - ny * w1 * 0.12); c.lineTo(b[0] - nx * w1 * 0.3, b[1] - ny * w1 * 0.3); c.lineTo(a[0] - nx * w0 * 0.3, a[1] - ny * w0 * 0.3); c.closePath(); c.fill();   // franja naranja
+      for (const u of huecos) { const x = a[0] + (b[0] - a[0]) * u, y = a[1] + (b[1] - a[1]) * u, w = (w0 + (w1 - w0) * u) * 0.2;
+        c.fillStyle = 'rgba(20,18,12,.75)'; c.beginPath(); c.ellipse(x + nx * w * 0.6, y + ny * w * 0.6, L * 0.07, w, Math.atan2(uy, ux), 0, 6.283); c.fill(); }   // aligeramientos
+      if (viejo) bqDesconchones(c, Math.min(a[0], b[0]) - 0.3, Math.max(a[0], b[0]) + 0.3, Math.min(a[1], b[1]) - 0.3, Math.max(a[1], b[1]) + 0.3, 6, r, ['rgba(120,64,30,.5)', 'rgba(90,92,86,.4)'], 0.4);
+      c.restore(); c.strokeStyle = 'rgba(20,18,12,.7)'; c.lineWidth = 0.04; c.stroke(P);
+      return [nx, ny];
+    };
+    // cilindro hidráulico: camisa oscura y vástago cromado
+    const piston = (a, b, w) => { const mx = a[0] + (b[0] - a[0]) * 0.58, my = a[1] + (b[1] - a[1]) * 0.58;
+      estTubo(c, a[0], a[1], mx, my, w, ['#5a6266', '#33393c', '#15191b']); estTubo(c, mx, my, b[0], b[1], w * 0.5, ['#eef2f2', '#a9b1b3', '#4e5558']);
+      for (const p of [a, b]) { c.fillStyle = '#2a3033'; c.beginPath(); c.arc(p[0], p[1], w * 0.55, 0, 6.283); c.fill(); estPerno(c, p[0], p[1], w * 0.25); } };
+    const rotula = (p, R) => { c.fillStyle = estGradV(c, p[1] - R, p[1] + R, ['#7c8a90', '#45525a', '#1c2427']); c.beginPath(); c.arc(p[0], p[1], R, 0, 6.283); c.fill();
+      c.strokeStyle = 'rgba(8,12,14,.7)'; c.lineWidth = 0.04; c.stroke(); for (let k = 0; k < 6; k++) { const a = k * 1.047; estPerno(c, p[0] + Math.cos(a) * R * 0.65, p[1] + Math.sin(a) * R * 0.65, 0.035); } estPerno(c, p[0], p[1], R * 0.3); };
+    piston([1.12, -4.1], [-0.35, -5.15], 0.17);                                                  // cilindro del hombro (detrás del brazo)
+    tramo(B0, B1, 0.5, 0.38, [0.4, 0.68]);
+    const [nx2, ny2] = tramo(B1, B2, 0.36, 0.26, [0.3, 0.55]);
+    piston([-1.05, -5.05], [0.55, -5.08], 0.13);                                                 // cilindro del codo (delante)
+    const mg = new Path2D(); mg.moveTo(0.95, -4.0); mg.bezierCurveTo(0.2, -3.75, -1.4, -4.7, -1.55, -5.15); mg.bezierCurveTo(-1.4, -5.8, 0.4, -5.75, 1.3, -5.45); estCable(c, mg, 0.08, '#1b2124', false);   // manguera del gas
+    for (const u of [0.35, 0.7]) { c.fillStyle = '#8a8f8c'; const x = B1[0] + (B2[0] - B1[0]) * u, y = B1[1] + (B2[1] - B1[1]) * u; c.fillRect(x - 0.05, y - 0.22, 0.1, 0.16); }   // bridas de la manguera
+    rotula(B0, 0.3); rotula(B1, 0.26);
+    // muñeca y antorcha de soldar: cuerpo, cuello curvo hacia abajo, tobera de cobre y punta de contacto
+    c.save(); c.translate(B2[0], B2[1]); c.rotate(Math.atan2(B2[1] - B1[1], B2[0] - B1[0]));
+    c.fillStyle = estGradV(c, -0.17, 0.17, ['#6c7a80', '#3c4a50', '#1c2427']); c.fillRect(-0.12, -0.17, 0.26, 0.34);   // muñeca
+    c.fillStyle = estGradV(c, -0.11, 0.11, ['#454c4f', '#2a3033', '#111517']); c.fillRect(0.14, -0.11, 0.46, 0.22);     // cuerpo de la antorcha
+    for (let k = 0; k < 3; k++) { c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(0.22 + k * 0.12, -0.11, 0.04, 0.22); }  // estrías del mango
+    const cu = new Path2D(); cu.moveTo(0.6, 0); cu.quadraticCurveTo(0.85, 0, 0.92, 0.25); estCable(c, cu, 0.12, '#5e676a', false);   // cuello curvo
+    c.save(); c.translate(0.93, 0.28); c.rotate(1.25);
+    c.fillStyle = estGradV(c, -0.08, 0.08, ['#e8a066', '#b0662e', '#5e3214']); c.beginPath(); c.moveTo(0, -0.09); c.lineTo(0.22, -0.07); c.lineTo(0.22, 0.07); c.lineTo(0, 0.09); c.closePath(); c.fill();   // tobera de cobre
+    c.fillStyle = '#2a1a0c'; c.fillRect(0.22, -0.035, 0.05, 0.07);
+    c.restore(); c.restore();
   }
-  // sedimento sobre la bancada (lleva años sin nadie)
-  c.fillStyle = 'rgba(150,140,120,.45)'; for (const [x, w] of [[-8.0, 0.9], [2.0, 0.8], [-4.4, 0.5]]) { c.beginPath(); c.ellipse(x, -0.02, w, 0.14, 0, Math.PI, 0); c.fill(); }
+  // 8. el collarín de acople: poste desde la bancada hasta la altura del submarino, tubo y brida atornillada
+  { const yp = Math.min(yA - 0.3, -0.2);
+    c.fillStyle = estGradCil(c, 2.55, 3.15, EST_AC); c.fillRect(2.55, yp, 0.6, Math.max(0.5, -yp));
+    estChapa(c, 2.42, -0.22, 0.86, 0.22);
+    c.fillStyle = estGradV(c, yA - 0.55, yA + 0.55, ['#7a8b91', '#46575e', '#1f292d']); c.fillRect(1.6, yA - 0.55, 1.65, 1.1);
+    c.fillStyle = estGradV(c, yA - 0.85, yA + 0.85, ['#a5b2b6', '#6a7a80', '#2e3a3e']); c.fillRect(3.2, yA - 0.85, 0.3, 1.7);
+    c.fillStyle = NAR; c.fillRect(3.48, yA - 0.85, 0.12, 1.7);
+    for (const y of [-0.6, -0.2, 0.2, 0.6]) estPerno(c, 3.35, yA + y, 0.06);
+  }
+  // 9. el módem en su poste sobre el módulo y la baliza ámbar con su jaula sobre el armario
+  estModem(c, -3.85, -3.5, -4.5);
+  estChapa(c, -7.05, -5.5, 0.6, 0.6, ['#4f5d62', '#334046', '#182124']);
+  c.fillStyle = 'rgba(255,170,60,.85)'; c.beginPath(); c.arc(-6.75, -5.55, 0.24, Math.PI, 0); c.fill();
+  c.strokeStyle = '#1b2124'; c.lineWidth = 0.04; c.beginPath(); c.arc(-6.75, -5.55, 0.27, Math.PI, 0); c.moveTo(-6.75, -5.82); c.lineTo(-6.75, -5.55); c.moveTo(-6.95, -5.72); c.lineTo(-6.55, -5.72); c.stroke();
+  // 10. en Flegetonte, la caja de placas de recambio a medio abrir
+  if (viejo) {
+    estChapa(c, -4.45, -0.95, 1.5, 0.95, ['#6c5a3c', '#54452c', '#2e2616']);
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(-4.45, -0.95, 1.5, 0.12);
+    c.save(); c.translate(-4.45, -0.95); c.rotate(Math.PI + 0.6); estChapa(c, 0, 0, 1.5, 0.14, ['#7d6a48', '#5e4e33', '#30281a']); c.restore();   // la tapa, abierta hacia atrás
+    for (let k = 0; k < 3; k++) { const x = -4.25 + k * 0.42; c.fillStyle = estGradV(c, -1.35, -0.85, ['#b7bec0', '#7f8789', '#454c4e']); c.fillRect(x, -1.35 + k * 0.05, 0.32, 0.5); estPerno(c, x + 0.16, -1.2 + k * 0.05, 0.03); }
+  }
+  // 11. años sin nadie: sedimento en lo de arriba, nieve, colgantes bajo la bancada y algo de vida fija
+  const sil = new Path2D(); sil.rect(-8.2, 0, 11.9, 0.9); sil.rect(-7.9, -4.9, 3.4, 4.9); sil.roundRect(-4.6, -3.5, 6.6, 3.3, 1.65); sil.rect(-4.3, -5.6, 0.9, 1.1);
+  if (viejo) sil.rect(-4.45, -0.95, 1.5, 0.95);
+  bqSedimento(c, sil, viejo ? 0.24 : 0.16, r, -8.5, 4, -6.5, 1);
+  bqNieve(c, sil, viejo ? 520 : 320, 0.3, r, -8.5, 4, -6.5, 1);
+  bqColgantes(c, [[-6.6, 0.9], [-5.0, 0.9], [-2.2, 0.9], [-1.0, 0.9], [1.4, 0.9]], viejo ? 0.7 : 0.45, r);
+  estVidaAbisal(c, [[-8.0, 0], [3.0, 0], [-6.0, -5.08], [3.4, 0]], viejo ? 0.55 : 0.35, r);
   c.restore();
 }
 // Posición en el mundo de un punto local del taller
@@ -15094,7 +15960,7 @@ function focosTaller(T) {
 }
 function brillosTaller(T, brillo, sx, sy, E, t) {
   for (const p of focosTaller(T)) { brillo(sx(p.x), sy(p.y), 5 * E, 'rgb(255,214,150)', 0.22); brillo(sx(p.x), sy(p.y), 1.1 * E, 'rgb(255,240,210)', 0.9); }
-  for (const [k, lx] of [[0, -3.3], [1, -1.6], [2, 0.1]]) { if (T.id === 'flegetonte' && k === 1) continue; const p = enTaller(T, lx, -1.95); brillo(sx(p.x), sy(p.y), 1.6 * E, 'rgb(255,200,120)', 0.55); }
+  for (const [k, lx] of OJOS_TALLER.map((x, k) => [k, x])) { if (T.id === 'flegetonte' && k === 1) continue; const p = enTaller(T, lx, -1.95); brillo(sx(p.x), sy(p.y), 1.6 * E, 'rgb(255,200,120)', 0.55); }
   const b = enTaller(T, -6.75, -5.65); brillo(sx(b.x), sy(b.y), 1.2 * E, 'rgb(255,170,60)', 0.35 + 0.45 * Math.max(0, Math.sin(t * 1.6)));
   const hay = reservaTaller(T.id).n > 0 || !tallerG(T.id).visto, q = enTaller(T, -5.1, -4.1);
   brillo(sx(q.x), sy(q.y), 0.7 * E, hay ? 'rgb(90,230,140)' : 'rgb(230,80,74)', 0.8);
@@ -19608,7 +20474,7 @@ function bqRemolcador(c, r, prof) {
 }
 
 // El sprite de un barco: se pinta a una resolución escalonada (pasos de ~19 %) para no repintarlo en cada zoom
-function claveBarco(m, E) { const Er = Math.min(64, Math.pow(2, Math.ceil(Math.log2(Math.max(2, E)) * 4) / 4)); return [Er, m.i + '|' + m.barco.tipo + '|' + Er + '|' + G.semilla]; }
+function claveBarco(m, E) { const Er = Math.min(64, Math.pow(2, Math.ceil(Math.log2(Math.max(2, escAcople(E))) * 4) / 4)); return [Er, m.i + '|' + m.barco.tipo + '|' + Er + '|' + G.semilla]; }
 function spriteBarco(m, E) {
   const B = m.barco, [Er, clave] = claveBarco(m, E);
   if (cacheBarcos.has(clave)) return cacheBarcos.get(clave);
@@ -19643,9 +20509,11 @@ function precalentarPecios(yTop, yBot, E) {
   for (const m of Fosa.mesetas()) {
     if (!cerca(m.y) || !lejos(m.y)) continue;
     if (m.barco && !m.barco.estacion && !cacheBarcos.has(claveBarco(m, E)[1])) { spriteBarco(m, E); return; }
-    if (m.pdi && m.pdi.id === 'orfeo' && m._sprE !== E.toFixed(3)) { spriteRepisa(m, E, dibujarOrfeoRestos, 5); return; }
+    if (m.barco && EST_SPRITE[m.barco.estacion]) { const id = m.barco.estacion, enc = !!estadoEst(id).energia; if (!cacheEst.has(claveEst(id, enc, E)[1])) { spriteEstacion(id, enc, m, E); return; } }   // v260
+    if (m.pdi && m.pdi.id === 'orfeo' && m._sprE !== escAcople(E).toFixed(3)) { spriteRepisa(m, E, dibujarOrfeoRestos, 5); return; }
   }
-  for (const R of rescatesActivos()) { const p = posRescate(R); if (cerca(p.y) && lejos(p.y) && R._sprK !== R.id + E.toFixed(3)) { spriteRescate(R, E); return; } }
+  for (const T of talleresSecretos()) if (cerca(T.deck) && lejos(T.deck) && T._sprK !== claveTaller(T, E)[2]) { spriteTaller(T, E); return; }   // v263
+  for (const R of rescatesActivos()) { const p = posRescate(R); if (cerca(p.y) && lejos(p.y) && R._sprK !== R.id + escAcople(E).toFixed(3)) { spriteRescate(R, E); return; } }
   for (const p of todosLosPecios()) if (cerca(p.y) && lejos(p.y)) { const n0 = cachePecio.size; spritePecio(p, E); if (cachePecio.size !== n0) return; }
 }
 /* ---------------------------------------------------------------------
@@ -19984,7 +20852,7 @@ function dibujarBarco(m, sx, sy, E) {
     ctx.fillStyle = 'rgba(70,64,52,.85)'; ctx.beginPath(); ctx.ellipse(0, 0.2, 17, 0.9, 0, Math.PI, 0); ctx.fill();   // sedimento contra las patas
     if (B.estacion === 'estigia') { ctx.save(); ctx.translate(t1X(m), 0); dibujarT1(inm ? inm.t : 0); ctx.restore(); }
     ctx.scale(ESC_EST, ESC_EST);
-    dibujarEstacion(B.estacion, inm ? inm.t : 0, B.flip, m);
+    dibujarEstacion(B.estacion, inm ? inm.t : 0, B.flip, m, E);
     ctx.restore(); return;
   }
   // v219: pesquero, velero, remolcador y las dos mitades del destructor: un sprite detallado pintado una vez (spriteBarco)
@@ -20267,6 +21135,7 @@ function danoPecio(c, P, chV, DT, r) {
 // Recién hundido: poco sedimento y nada de vida. Se guarda en caché por tamaño, chasis y causa.
 const PECIO_ROT = 0.35;
 function spritePecio(p, E) {
+  E = escAcople(E);   // v267: a la escala del acercamiento máximo, se estampa reducido (kAcople)
   const ch = p.chasis || 'explorador', cau = p.causa && CAUSAS[p.causa] ? p.causa : 'casco', clave = Math.round(E * 4) / 4 + '|' + ch + '|' + cau + '|' + (p.id | 0);
   if (cachePecio.has(clave)) return cachePecio.get(clave);
   if (cachePecio.size > 6) cachePecio.clear();
@@ -20282,7 +21151,7 @@ function dibujarPecio(p, sx, sy, E) {
   const sp = spritePecio(p, E);
   ctx.save(); ctx.translate(sx(p.x), sy(p.y)); ctx.rotate(PECIO_ROT);
   ctx.globalAlpha = p.saqueado ? 0.55 : 1;
-  ctx.drawImage(sp.cv, -sp.ox, -sp.oy);
+  { const kq = kAcople(); ctx.drawImage(sp.cv, -sp.ox * kq, -sp.oy * kq, sp.cv.width * kq, sp.cv.height * kq); }
   ctx.restore();
 }
 /* ---- Fauna que ataca: una forma por especie (marcadores del arte de Unity) ----
@@ -23026,7 +23895,7 @@ function iniciarInmersion() {
   if (consejoActivo) consejoActivo.cerrar();   // el consejo de la base no baja al agua
   inm = crearInmersion();
   iniciarTutorial();   // v254
-  cam.x = inm.sub.x; cam.y = inm.sub.y;
+  cam.x = inm.sub.x; cam.y = inm.sub.y; cam.zoomS = cam.zoom = 1; cam.esc = cam.base;   // v266
   document.body.classList.toggle('tactil', esTactil());
   document.getElementById('base').hidden = true;
   document.getElementById('hud').hidden = false; aplicarHudCompacto();
