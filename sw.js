@@ -1,7 +1,8 @@
 // Service worker de Abismo.
 // IMPORTANTE: sube CACHE_NAME cada vez que cambies index.html, el manifest o los iconos,
 // así los móviles que ya tienen la app instalada descargan la versión nueva.
-const CACHE_NAME = 'abismo-v279';
+const PREFIJO = 'abismo-v';   // v281: solo borra sus propias cachés (la demo usa 'abismo-demo-v')
+const CACHE_NAME = PREFIJO + '283';
 const ARCHIVOS = ['./', './index.html', './manifest.json', './favicon-32.png', './apple-touch-icon-180.png',
   './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png'];
 
@@ -9,7 +10,7 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {   // borra las cachés de versiones anteriores
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith(PREFIJO) && k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
