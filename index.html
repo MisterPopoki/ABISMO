@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0a1620"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon-180.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Abismo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2168,7 +2168,7 @@ body.tactil .hud-botones #h-pausa.btc{padding:4px 9px}
         <button class="menu-bt" type="button" data-menu="completo" hidden>Juego completo</button>
       </nav>
       </div>
-      <p class="menu-pie"><span>Partida única · se guarda en este dispositivo</span> · <span class="menu-ver">v297</span></p>
+      <p class="menu-pie"><span>Partida única · se guarda en este dispositivo</span> · <span class="menu-ver">v299</span></p>
     </div>
   </div>
 
@@ -32709,4 +32709,10 @@ if (hot && typeof hot.ready === 'function') hot.ready(arrancar); else arrancar((
 })();
 </script>
 
+<script>
+// v298: service worker (sw.js, junto a index.html). Solo en una web de verdad (https o localhost) y fuera de marcos;
+// si no está, se ignora. Es lo que hace la app instalable y actualiza los móviles al subir una versión nueva.
+if ('serviceWorker' in navigator && window.top === window && (location.protocol === 'https:' || location.hostname === 'localhost'))
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
 </body></html>
