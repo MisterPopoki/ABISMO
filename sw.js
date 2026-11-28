@@ -2,7 +2,7 @@
 // IMPORTANTE: sube CACHE_NAME cada vez que cambies index.html, el manifest o los iconos,
 // así los móviles que ya tienen la app instalada descargan la versión nueva.
 const PREFIJO = 'abismo-v';   // v281: solo borra sus propias cachés (la demo usa 'abismo-demo-v')
-const CACHE_NAME = PREFIJO + '293';
+const CACHE_NAME = PREFIJO + '297';
 const ARCHIVOS = ['./', './index.html', './manifest.json', './favicon-32.png', './apple-touch-icon-180.png',
   './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png'];
 
